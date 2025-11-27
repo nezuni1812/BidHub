@@ -11,9 +11,13 @@ const pool = new Pool({
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
+  // Set client encoding to UTF-8
+  client_encoding: 'UTF8',
 });
 
-pool.on('connect', () => {
+pool.on('connect', (client) => {
+  // Set encoding for each connection
+  client.query("SET client_encoding TO 'UTF8'");
   console.log('✓ Database connected');
 });
 
