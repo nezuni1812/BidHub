@@ -19,8 +19,15 @@ app.use(helmet());
 app.use(cors());
 app.use(compression());
 app.use(morgan(config.env === 'development' ? 'dev' : 'combined'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ charset: 'utf-8' }));
+app.use(express.urlencoded({ extended: true, charset: 'utf-8' }));
+
+// Set default charset for responses
+app.use((req, res, next) => {
+  res.charset = 'utf-8';
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  next();
+});
 
 // Swagger documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
