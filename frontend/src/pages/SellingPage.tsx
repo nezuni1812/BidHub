@@ -1,7 +1,7 @@
 import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import Link from "next/link"
+import { Link } from "react-router-dom";
 import { CheckCircle, Users, TrendingUp, DollarSign } from "lucide-react"
 
 export default function SellingPage() {
@@ -38,7 +38,7 @@ export default function SellingPage() {
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
             Join thousands of sellers earning money by auctioning their items on AuctionHub
           </p>
-          <Link href="/seller/post-item">
+          <Link to="/seller/post-item">
             <Button size="lg">Post Your First Item</Button>
           </Link>
         </div>
@@ -82,7 +82,7 @@ export default function SellingPage() {
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">Ready to start selling?</h2>
           <p className="text-muted-foreground mb-8">Get access to millions of potential buyers</p>
-          <Link href="/register">
+          <Link to="/register">
             <Button size="lg" className="gap-2">
               Create Free Account
             </Button>

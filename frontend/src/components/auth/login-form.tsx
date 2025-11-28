@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import Link from "next/link"
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -39,7 +39,7 @@ export function LoginForm() {
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <Label htmlFor="password">Password</Label>
-              <Link href="#" className="text-sm text-primary hover:underline">
+              <Link to="#" className="text-sm text-primary hover:underline">
                 Forgot?
               </Link>
             </div>
@@ -69,7 +69,7 @@ export function LoginForm() {
 
         <p className="text-center text-sm text-muted-foreground mt-6">
           Don't have an account?{" "}
-          <Link href="/register" className="text-primary font-semibold hover:underline">
+          <Link to="/register" className="text-primary font-semibold hover:underline">
             Sign up
           </Link>
         </p>

@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import Link from "next/link"
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -75,7 +75,7 @@ export function RegisterForm() {
 
         <p className="text-center text-sm text-muted-foreground mt-6">
           Already have an account?{" "}
-          <Link href="/login" className="text-primary font-semibold hover:underline">
+          <Link to="/login" className="text-primary font-semibold hover:underline">
             Sign in
           </Link>
         </p>

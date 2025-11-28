@@ -2,21 +2,21 @@
 
 import type React from "react"
 
-import Link from "next/link"
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button"
 import { Search } from "lucide-react"
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useNavigate } from "react-router-dom";
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
-  const router = useRouter()
+  const navigate = useNavigate();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) {
-      router.push(`/?q=${encodeURIComponent(searchQuery)}`)
+      navigate(`/?q=${encodeURIComponent(searchQuery)}`)
     }
   }
 
@@ -24,7 +24,7 @@ export function Navigation() {
     <nav className="sticky top-0 z-50 bg-background border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <Link href="/" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-lg">AH</span>
             </div>
@@ -45,23 +45,23 @@ export function Navigation() {
           </form>
 
           <div className="hidden md:flex items-center gap-1">
-            <Link href="/selling" className="px-3 py-2 text-sm font-medium hover:bg-muted rounded-md transition">
+            <Link to="/selling" className="px-3 py-2 text-sm font-medium hover:bg-muted rounded-md transition">
               Sell
             </Link>
           </div>
 
           <div className="flex items-center gap-2">
-            <Link href="/dashboard">
+            <Link to="/dashboard">
               <Button variant="ghost" size="sm">
                 Dashboard
               </Button>
             </Link>
-            <Link href="/auth/login">
+            <Link to="/auth/login">
               <Button variant="ghost" size="sm">
                 Login
               </Button>
             </Link>
-            <Link href="/auth/register">
+            <Link to="/auth/register">
               <Button size="sm">Sign up</Button>
             </Link>
           </div>

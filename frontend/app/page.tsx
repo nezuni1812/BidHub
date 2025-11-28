@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import Link from "next/link"
+import { Link } from "react-router-dom";
 import { Search, Heart, Filter, X } from "lucide-react"
 import { useState } from "react"
 import { SearchFilters } from "@/components/search-filters"
@@ -243,7 +243,7 @@ export default function Home() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {sortedProducts.map((product) => (
-                  <Link key={product.id} href={`/product/${product.id}`}>
+                  <Link key={product.id} to={`/product/${product.id}`}>
                     <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer h-full flex flex-col">
                       <div className="relative h-48 bg-muted overflow-hidden group">
                         <img
