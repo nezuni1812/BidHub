@@ -14,26 +14,32 @@ const db = require('./config/database');
 
 const app = express();
 
+// Swagger documentation - MUST be before other middleware
+app.use('/api-docs', swaggerUi.serve);
+app.get('/api-docs', swaggerUi.setup(swaggerSpecs, {
+  explorer: true,
+  customCss: '.swagger-ui .topbar { display: none }'
+}));
+
 // Middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
 app.use(cors());
 app.use(compression());
 app.use(morgan(config.env === 'development' ? 'dev' : 'combined'));
 app.use(express.json({ charset: 'utf-8' }));
 app.use(express.urlencoded({ extended: true, charset: 'utf-8' }));
 
-// Set default charset for responses
+// Set default charset for API responses only
 app.use((req, res, next) => {
-  res.charset = 'utf-8';
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  if (!req.path.startsWith('/api-docs')) {
+    res.charset = 'utf-8';
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  }
   next();
 });
-
-// Swagger documentation
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
-  explorer: true,
-  customCss: '.swagger-ui .topbar { display: none }'
-}));
 
 // Routes
 app.get('/', (req, res) => {
