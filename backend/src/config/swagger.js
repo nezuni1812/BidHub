@@ -39,6 +39,14 @@ const options = {
       {
         name: 'Products',
         description: 'Product and auction endpoints'
+      },
+      {
+        name: 'Bidder',
+        description: 'Bidder operations (watchlist, bidding, questions, ratings)'
+      },
+      {
+        name: 'Seller',
+        description: 'Seller operations (create products, manage auctions, deny bidders)'
       }
     ]
   },
