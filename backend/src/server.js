@@ -1,4 +1,5 @@
 const express = require('express');
+const http = require('http');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -11,8 +12,12 @@ const routes = require('./routes');
 const swaggerSpecs = require('./config/swagger');
 const { errorHandler, notFound } = require('./middleware/errorHandler');
 const db = require('./config/database');
+const initSocket = require('./socket');
+const { initScheduler, stopScheduler } = require('./jobs/auctionScheduler');
+const { getRedisClient, closeRedis } = require('./services/redisClient');
 
 const app = express();
+const server = http.createServer(app);
 
 // Swagger documentation - MUST be before other middleware
 app.use('/api-docs', swaggerUi.serve);
@@ -53,13 +58,17 @@ app.get('/', (req, res) => {
 
 app.use(config.apiPrefix, routes);
 
+// Make Socket.IO available to controllers
+const io = initSocket(server);
+app.set('io', io);
+
 // Error handlers
 app.use(notFound);
 app.use(errorHandler);
 
 // Start server
 const PORT = config.port;
-app.listen(PORT, async () => {
+server.listen(PORT, async () => {
   console.log(`
 ╔════════════════════════════════════════════╗
 ║                                            ║
@@ -78,23 +87,73 @@ app.listen(PORT, async () => {
 ║  🚀 Base URL:                              ║
 ║  http://localhost:${PORT}${config.apiPrefix}      ║
 ║                                            ║
+║  🔌 WebSocket:                             ║
+║  ws://localhost:${PORT}                      ║
+║                                            ║
 ╚════════════════════════════════════════════╝
   `);
   
   // Test database connection
   try {
     await db.query('SELECT NOW()');
-    console.log('✓ Database connection successful\n');
+    console.log('✓ Database connection successful');
   } catch (error) {
-    console.error('✗ Database connection failed:', error.message, '\n');
+    console.error('✗ Database connection failed:', error.message);
   }
+
+  // Test Redis connection
+  try {
+    const redis = getRedisClient();
+    await redis.ping();
+    console.log('✓ Redis connection successful');
+  } catch (error) {
+    console.error('✗ Redis connection failed:', error.message);
+  }
+
+  // Start background jobs
+  initScheduler(io);
+  
+  console.log('');
 });
+
+// Graceful shutdown
+async function gracefulShutdown(signal) {
+  console.log(`\n${signal} received. Starting graceful shutdown...`);
+  
+  // Stop accepting new connections
+  server.close(async () => {
+    console.log('HTTP server closed');
+    
+    // Stop scheduled jobs
+    stopScheduler();
+    
+    // Close Redis connection
+    await closeRedis();
+    
+    // Close database pool
+    await db.pool.end();
+    console.log('Database pool closed');
+    
+    console.log('Graceful shutdown completed');
+    process.exit(0);
+  });
+
+  // Force shutdown after 30 seconds
+  setTimeout(() => {
+    console.error('Forced shutdown after timeout');
+    process.exit(1);
+  }, 30000);
+}
+
+// Handle shutdown signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
-  console.error('UNHANDLED REJECTION! 💥 Shutting down...');
+  console.error('UNHANDLED REJECTION! 💥');
   console.error(err);
-  process.exit(1);
+  gracefulShutdown('UNHANDLED_REJECTION');
 });
 
-module.exports = app;
+module.exports = { app, server, io };

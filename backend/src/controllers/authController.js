@@ -150,7 +150,17 @@ const login = asyncHandler(async (req, res) => {
     throw new UnauthorizedError('Account not verified. Please verify your email.');
   }
   
+  // Debug logs
+  console.log('=== LOGIN DEBUG ===');
+  console.log('Email:', email);
+  console.log('Password from request:', password);
+  console.log('Password hash from DB:', user.password_hash);
+  console.log('User ID:', user.id);
+  
   const isPasswordValid = await User.comparePassword(password, user.password_hash);
+  
+  console.log('Password match result:', isPasswordValid);
+  console.log('===================');
   
   if (!isPasswordValid) {
     throw new UnauthorizedError('Invalid credentials');
