@@ -506,8 +506,8 @@ exports.allowUnratedBidder = asyncHandler(async (req, res) => {
     const bidderResult = await client.query(
       `SELECT u.id, COALESCE(COUNT(r.id), 0) as rating_count
        FROM users u
-       LEFT JOIN ratings r ON u.id = r.receiver_id
-       WHERE u.id = $1 AND u.is_deleted = false
+       LEFT JOIN user_ratings r ON u.id = r.rated_user_id
+       WHERE u.id = $1 AND u.is_active = true
        GROUP BY u.id`,
       [bidderId]
     );
