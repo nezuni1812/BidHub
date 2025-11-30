@@ -160,6 +160,7 @@ CREATE TABLE user_ratings (
 CREATE INDEX idx_ratings_rated_user ON user_ratings (rated_user_id);
 
 -- Bảng Upgrade Requests
+-- Bảng Upgrade Requests
 CREATE TABLE upgrade_requests (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,
@@ -170,9 +171,12 @@ CREATE TABLE upgrade_requests (
             'rejected'
         )
     ),
+    admin_note TEXT,
     requested_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     processed_at TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+    processed_by BIGINT,
+    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (processed_by) REFERENCES users (id) ON DELETE SET NULL
 );
 
 -- Bảng Denied Bidders

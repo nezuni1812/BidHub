@@ -383,7 +383,7 @@ exports.getUpgradeRequests = asyncHandler(async (req, res) => {
     page = 1,
     limit = 20,
     status = 'pending',
-    sort = 'created_at',
+    sort = 'requested_at',
     order = 'DESC'
   } = req.query;
 
