@@ -507,89 +507,992 @@
 			]
 		},
 		{
-			"name": "Test Data Examples",
+			"name": "Bidder APIs",
 			"item": [
 				{
-					"name": "Search Vietnamese - Dien thoai",
+					"name": "Get Profile",
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/products?keyword=dien thoai&page=1&page_size=10",
+							"raw": "{{base_url}}/bidder/profile",
 							"host": ["{{base_url}}"],
-							"path": ["products"],
-							"query": [
-								{
-									"key": "keyword",
-									"value": "dien thoai",
-									"description": "Search without accents"
-								},
-								{
-									"key": "page",
-									"value": "1"
-								},
-								{
-									"key": "page_size",
-									"value": "10"
-								}
-							]
-						},
-						"description": "Test Vietnamese search without accents"
+							"path": ["bidder", "profile"]
+						}
 					}
 				},
 				{
-					"name": "Get Products Ending Soon",
+					"name": "Get Bidding Products",
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/products?sort_by=end_time_asc&page=1&page_size=10",
+							"raw": "{{base_url}}/bidder/bidding?page=1&page_size=20",
 							"host": ["{{base_url}}"],
-							"path": ["products"],
+							"path": ["bidder", "bidding"],
 							"query": [
-								{
-									"key": "sort_by",
-									"value": "end_time_asc"
-								},
-								{
-									"key": "page",
-									"value": "1"
-								},
-								{
-									"key": "page_size",
-									"value": "10"
-								}
+								{"key": "page", "value": "1"},
+								{"key": "page_size", "value": "20"}
 							]
-						},
-						"description": "Get products ending soonest"
+						}
 					}
 				},
 				{
-					"name": "Get Highest Price Products",
+					"name": "Get Won Products",
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/products?sort_by=price_desc&page=1&page_size=10",
+							"raw": "{{base_url}}/bidder/won?page=1&page_size=20",
 							"host": ["{{base_url}}"],
-							"path": ["products"],
+							"path": ["bidder", "won"],
 							"query": [
-								{
-									"key": "sort_by",
-									"value": "price_desc"
-								},
-								{
-									"key": "page",
-									"value": "1"
-								},
-								{
-									"key": "page_size",
-									"value": "10"
-								}
+								{"key": "page", "value": "1"},
+								{"key": "page_size", "value": "20"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Watchlist",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/bidder/watchlist?page=1&page_size=20",
+							"host": ["{{base_url}}"],
+							"path": ["bidder", "watchlist"],
+							"query": [
+								{"key": "page", "value": "1"},
+								{"key": "page_size", "value": "20"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Add to Watchlist",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/bidder/watchlist/:productId",
+							"host": ["{{base_url}}"],
+							"path": ["bidder", "watchlist", ":productId"],
+							"variable": [{"key": "productId", "value": "1"}]
+						}
+					}
+				},
+				{
+					"name": "Remove from Watchlist",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/bidder/watchlist/:productId",
+							"host": ["{{base_url}}"],
+							"path": ["bidder", "watchlist", ":productId"],
+							"variable": [{"key": "productId", "value": "1"}]
+						}
+					}
+				},
+				{
+					"name": "Send Question",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"product_id\": 1,\n  \"question_text\": \"Sản phẩm còn bảo hành không?\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/bidder/questions",
+							"host": ["{{base_url}}"],
+							"path": ["bidder", "questions"]
+						}
+					}
+				},
+				{
+					"name": "Get My Questions",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/bidder/questions?page=1&page_size=20",
+							"host": ["{{base_url}}"],
+							"path": ["bidder", "questions"],
+							"query": [
+								{"key": "page", "value": "1"},
+								{"key": "page_size", "value": "20"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Rate Seller",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"product_id\": 1,\n  \"rating\": 5,\n  \"review\": \"Sản phẩm tốt, giao hàng nhanh!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/bidder/ratings",
+							"host": ["{{base_url}}"],
+							"path": ["bidder", "ratings"]
+						}
+					}
+				},
+				{
+					"name": "Get My Ratings",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/bidder/ratings?page=1&page_size=20",
+							"host": ["{{base_url}}"],
+							"path": ["bidder", "ratings"],
+							"query": [
+								{"key": "page", "value": "1"},
+								{"key": "page_size", "value": "20"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Request Upgrade to Seller",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/bidder/upgrade-request",
+							"host": ["{{base_url}}"],
+							"path": ["bidder", "upgrade-request"]
+						}
+					}
+				},
+				{
+					"name": "Check Upgrade Request Status",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/bidder/upgrade-request",
+							"host": ["{{base_url}}"],
+							"path": ["bidder", "upgrade-request"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Seller APIs",
+			"item": [
+				{
+					"name": "Get Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/seller/profile",
+							"host": ["{{base_url}}"],
+							"path": ["seller", "profile"]
+						}
+					}
+				},
+				{
+					"name": "Get My Products",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/seller/products?status=&page=1&page_size=20",
+							"host": ["{{base_url}}"],
+							"path": ["seller", "products"],
+							"query": [
+								{"key": "status", "value": ""},
+								{"key": "page", "value": "1"},
+								{"key": "page_size", "value": "20"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Product Detail",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/seller/products/:id",
+							"host": ["{{base_url}}"],
+							"path": ["seller", "products", ":id"],
+							"variable": [{"key": "id", "value": "1"}]
+						}
+					}
+				},
+				{
+					"name": "Create Product",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"iPhone 15 Pro Max 256GB - Chính hãng VN/A\",\n  \"description\": \"Máy mới 100% nguyên seal, chưa active, fullbox đầy đủ phụ kiện. Bảo hành chính hãng Apple 12 tháng tại các trung tâm bảo hành ủy quyền trên toàn quốc. Màu Titan Tự Nhiên, dung lượng 256GB.\",\n  \"category_id\": 1,\n  \"start_price\": 25000000,\n  \"buy_now_price\": 35000000,\n  \"bid_step\": 500000,\n  \"start_time\": \"2025-12-01T00:00:00Z\",\n  \"end_time\": \"2025-12-10T23:59:59Z\",\n  \"images\": [\n    {\"url\": \"https://cdn.hoanghamobile.com/i/productlist/dsp/Uploads/2023/09/13/image-removebg-preview-55.png\", \"is_main\": true},\n    {\"url\": \"https://cdn.hoanghamobile.com/i/productlist/dsp/Uploads/2023/09/13/image-removebg-preview-2023-09-13t161650-624.png\", \"is_main\": false},\n    {\"url\": \"https://cdn.hoanghamobile.com/i/productlist/dsp/Uploads/2023/09/13/image-removebg-preview-2023-09-13t161713-118.png\", \"is_main\": false}\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/seller/products",
+							"host": ["{{base_url}}"],
+							"path": ["seller", "products"]
+						}
+					}
+				},
+				{
+					"name": "Update Product",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"iPhone 15 Pro Max 512GB\",\n  \"description\": \"Cập nhật mô tả sản phẩm\",\n  \"buy_now_price\": 38000000\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/seller/products/:id",
+							"host": ["{{base_url}}"],
+							"path": ["seller", "products", ":id"],
+							"variable": [{"key": "id", "value": "1"}]
+						}
+					}
+				},
+				{
+					"name": "Delete Product",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/seller/products/:id",
+							"host": ["{{base_url}}"],
+							"path": ["seller", "products", ":id"],
+							"variable": [{"key": "id", "value": "1"}]
+						}
+					}
+				},
+				{
+					"name": "Get Questions",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/seller/questions?status=&page=1&page_size=20",
+							"host": ["{{base_url}}"],
+							"path": ["seller", "questions"],
+							"query": [
+								{"key": "status", "value": ""},
+								{"key": "page", "value": "1"},
+								{"key": "page_size", "value": "20"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Answer Question",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"answer_text\": \"Sản phẩm còn bảo hành 12 tháng chính hãng.\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/seller/questions/:id/answer",
+							"host": ["{{base_url}}"],
+							"path": ["seller", "questions", ":id", "answer"],
+							"variable": [{"key": "id", "value": "1"}]
+						}
+					}
+				},
+				{
+					"name": "Get Ratings",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/seller/ratings?page=1&page_size=20",
+							"host": ["{{base_url}}"],
+							"path": ["seller", "ratings"],
+							"query": [
+								{"key": "page", "value": "1"},
+								{"key": "page_size", "value": "20"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Denied Bidders",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/seller/denied-bidders?page=1&page_size=20",
+							"host": ["{{base_url}}"],
+							"path": ["seller", "denied-bidders"],
+							"query": [
+								{"key": "page", "value": "1"},
+								{"key": "page_size", "value": "20"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Deny Bidder",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"Vi phạm quy định đấu giá\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/seller/products/:productId/deny/:bidderId",
+							"host": ["{{base_url}}"],
+							"path": ["seller", "products", ":productId", "deny", ":bidderId"],
+							"variable": [
+								{"key": "productId", "value": "1"},
+								{"key": "bidderId", "value": "5"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Allow Bidder",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/seller/products/:productId/allow/:bidderId",
+							"host": ["{{base_url}}"],
+							"path": ["seller", "products", ":productId", "allow", ":bidderId"],
+							"variable": [
+								{"key": "productId", "value": "1"},
+								{"key": "bidderId", "value": "5"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Allow Unrated Bidder",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/seller/products/:productId/allow-unrated-bidder/:bidderId",
+							"host": ["{{base_url}}"],
+							"path": ["seller", "products", ":productId", "allow-unrated-bidder", ":bidderId"],
+							"variable": [
+								{"key": "productId", "value": "1"},
+								{"key": "bidderId", "value": "6"}
 							]
 						},
-						"description": "Get products with highest prices"
+						"description": "Grant permission for unrated bidder (no ratings yet) to participate in auction"
 					}
+				},
+				{
+					"name": "Get Statistics",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/seller/statistics",
+							"host": ["{{base_url}}"],
+							"path": ["seller", "statistics"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Admin APIs",
+			"item": [
+				{
+					"name": "Categories",
+					"item": [
+						{
+							"name": "Get All Categories",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/admin/categories?page=1&limit=20&search=&sort=name",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "categories"],
+									"query": [
+										{"key": "page", "value": "1"},
+										{"key": "limit", "value": "20"},
+										{"key": "search", "value": ""},
+										{"key": "sort", "value": "name"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get Category by ID",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/admin/categories/:id",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "categories", ":id"],
+									"variable": [{"key": "id", "value": "1"}]
+								}
+							}
+						},
+						{
+							"name": "Create Category",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "POST",
+								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Thời trang\",\n  \"description\": \"Quần áo, giày dép, phụ kiện\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/admin/categories",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "categories"]
+								}
+							}
+						},
+						{
+							"name": "Update Category",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "PUT",
+								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Điện tử & Công nghệ\",\n  \"description\": \"Các sản phẩm điện tử và công nghệ\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/admin/categories/:id",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "categories", ":id"],
+									"variable": [{"key": "id", "value": "1"}]
+								}
+							}
+						},
+						{
+							"name": "Delete Category",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/admin/categories/:id",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "categories", ":id"],
+									"variable": [{"key": "id", "value": "10"}]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Products",
+					"item": [
+						{
+							"name": "Get All Products",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/admin/products?page=1&limit=20&status=&category_id=&seller_id=&search=&sort=created_at&order=DESC",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "products"],
+									"query": [
+										{"key": "page", "value": "1"},
+										{"key": "limit", "value": "20"},
+										{"key": "status", "value": ""},
+										{"key": "category_id", "value": ""},
+										{"key": "seller_id", "value": ""},
+										{"key": "search", "value": ""},
+										{"key": "sort", "value": "created_at"},
+										{"key": "order", "value": "DESC"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get Product by ID",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/admin/products/:id",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "products", ":id"],
+									"variable": [{"key": "id", "value": "1"}]
+								}
+							}
+						},
+						{
+							"name": "Remove Product",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "DELETE",
+								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"reason\": \"Vi phạm chính sách đấu giá\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/admin/products/:id",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "products", ":id"],
+									"variable": [{"key": "id", "value": "1"}]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Users",
+					"item": [
+						{
+							"name": "Get All Users",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/admin/users?page=1&limit=20&role=&is_active=&search=&sort=created_at&order=DESC",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "users"],
+									"query": [
+										{"key": "page", "value": "1"},
+										{"key": "limit", "value": "20"},
+										{"key": "role", "value": ""},
+										{"key": "is_active", "value": ""},
+										{"key": "search", "value": ""},
+										{"key": "sort", "value": "created_at"},
+										{"key": "order", "value": "DESC"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get User by ID",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/admin/users/:id",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "users", ":id"],
+									"variable": [{"key": "id", "value": "1"}]
+								}
+							}
+						},
+						{
+							"name": "Update User",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "PUT",
+								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"full_name\": \"Updated Name\",\n  \"email\": \"newemail@test.com\",\n  \"role\": \"seller\",\n  \"is_active\": true\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/admin/users/:id",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "users", ":id"],
+									"variable": [{"key": "id", "value": "10"}]
+								}
+							}
+						},
+						{
+							"name": "Delete User",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/admin/users/:id",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "users", ":id"],
+									"variable": [{"key": "id", "value": "50"}]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Upgrade Requests",
+					"item": [
+						{
+							"name": "Get All Requests",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/admin/upgrade-requests?page=1&limit=20&status=pending&sort=created_at&order=DESC",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "upgrade-requests"],
+									"query": [
+										{"key": "page", "value": "1"},
+										{"key": "limit", "value": "20"},
+										{"key": "status", "value": "pending"},
+										{"key": "sort", "value": "created_at"},
+										{"key": "order", "value": "DESC"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get Request by ID",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/admin/upgrade-requests/:id",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "upgrade-requests", ":id"],
+									"variable": [{"key": "id", "value": "1"}]
+								}
+							}
+						},
+						{
+							"name": "Approve Request",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/admin/upgrade-requests/:id/approve",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "upgrade-requests", ":id", "approve"],
+									"variable": [{"key": "id", "value": "1"}]
+								}
+							}
+						},
+						{
+							"name": "Reject Request",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "POST",
+								"header": [{"key": "Content-Type", "value": "application/json"}],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"reason\": \"Chưa đủ điều kiện để trở thành seller\"\n}"
+								},
+								"url": {
+									"raw": "{{base_url}}/admin/upgrade-requests/:id/reject",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "upgrade-requests", ":id", "reject"],
+									"variable": [{"key": "id", "value": "1"}]
+								}
+							}
+						}
+					]
+				},
+				{
+					"name": "Dashboard",
+					"item": [
+						{
+							"name": "Get Overview",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/admin/dashboard/overview?period=30d",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "dashboard", "overview"],
+									"query": [{"key": "period", "value": "30d"}]
+								}
+							}
+						},
+						{
+							"name": "Get Auction Stats",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/admin/dashboard/auctions?period=30d&interval=day",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "dashboard", "auctions"],
+									"query": [
+										{"key": "period", "value": "30d"},
+										{"key": "interval", "value": "day"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get Revenue Stats",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/admin/dashboard/revenue?period=30d&interval=day",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "dashboard", "revenue"],
+									"query": [
+										{"key": "period", "value": "30d"},
+										{"key": "interval", "value": "day"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get User Stats",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/admin/dashboard/users?period=30d&interval=day",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "dashboard", "users"],
+									"query": [
+										{"key": "period", "value": "30d"},
+										{"key": "interval", "value": "day"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get Top Sellers",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/admin/dashboard/top-sellers?period=30d&limit=10",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "dashboard", "top-sellers"],
+									"query": [
+										{"key": "period", "value": "30d"},
+										{"key": "limit", "value": "10"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get Top Bidders",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/admin/dashboard/top-bidders?period=30d&limit=10",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "dashboard", "top-bidders"],
+									"query": [
+										{"key": "period", "value": "30d"},
+										{"key": "limit", "value": "10"}
+									]
+								}
+							}
+						},
+						{
+							"name": "Get Category Stats",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{base_url}}/admin/dashboard/categories?period=30d",
+									"host": ["{{base_url}}"],
+									"path": ["admin", "dashboard", "categories"],
+									"query": [{"key": "period", "value": "30d"}]
+								}
+							}
+						}
+					]
 				}
 			]
 		}

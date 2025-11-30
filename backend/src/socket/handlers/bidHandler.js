@@ -155,17 +155,25 @@ module.exports = (io, socket) => {
         });
       }
 
-      // For unrated users, check system setting
+      // For unrated users, check system setting AND seller permission
       if (totalRatings === 0) {
+        // First check system-wide setting
         const settingResult = await db.query(
           "SELECT setting_value FROM system_settings WHERE setting_key = 'allow_unrated_bidders'"
         );
         const allowUnrated = settingResult.rows[0]?.setting_value === 'true';
         
-        if (!allowUnrated) {
+        // If system allows OR seller granted permission, allow bid
+        const permissionResult = await db.query(
+          'SELECT id FROM unrated_bidder_permissions WHERE product_id = $1 AND bidder_id = $2',
+          [productId, userId]
+        );
+        const hasSellerPermission = permissionResult.rows.length > 0;
+
+        if (!allowUnrated && !hasSellerPermission) {
           await releaseLock(lock);
           return socket.emit(EVENTS.BID_ERROR, { 
-            message: 'Bạn cần có đánh giá trước khi đấu giá',
+            message: 'Bạn cần có đánh giá hoặc được người bán cho phép trước khi đấu giá',
             code: 'NO_RATINGS'
           });
         }

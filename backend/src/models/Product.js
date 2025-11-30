@@ -302,6 +302,271 @@ class Product {
       }
     };
   }
+
+  // ================================================
+  // ADMIN METHODS
+  // ================================================
+
+  static async findAllAdmin({ status, category_id, seller_id, search, sort = 'created_at', order = 'DESC', limit = 20, offset = 0 }) {
+    let query = `
+      SELECT 
+        p.id,
+        p.title,
+        p.status,
+        p.starting_price,
+        p.current_price,
+        p.buy_now_price,
+        p.bid_step,
+        p.total_bids,
+        p.start_time,
+        p.end_time,
+        p.created_at,
+        p.updated_at,
+        u.id as seller_id,
+        u.full_name as seller_name,
+        u.email as seller_email,
+        c.name as category_name,
+        pi.url as main_image
+      FROM products p
+      INNER JOIN users u ON p.seller_id = u.id
+      INNER JOIN categories c ON p.category_id = c.id
+      LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_main = true
+      WHERE 1=1
+    `;
+
+    const params = [];
+    let paramIndex = 1;
+
+    if (status) {
+      query += ` AND p.status = $${paramIndex}`;
+      params.push(status);
+      paramIndex++;
+    }
+
+    if (category_id) {
+      query += ` AND p.category_id = $${paramIndex}`;
+      params.push(category_id);
+      paramIndex++;
+    }
+
+    if (seller_id) {
+      query += ` AND p.seller_id = $${paramIndex}`;
+      params.push(seller_id);
+      paramIndex++;
+    }
+
+    if (search) {
+      query += ` AND (p.title ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex})`;
+      params.push(`%${search}%`);
+      paramIndex++;
+    }
+
+    // Sort
+    const validSorts = {
+      'created_at': 'p.created_at',
+      'name': 'p.title',
+      'current_price': 'p.current_price',
+      'end_time': 'p.end_time',
+      'bid_count': 'p.total_bids'
+    };
+    query += ` ORDER BY ${validSorts[sort] || 'p.created_at'} ${order}`;
+
+    query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    params.push(limit, offset);
+
+    const result = await db.query(query, params);
+    return result.rows;
+  }
+
+  static async countAdmin({ status, category_id, seller_id, search }) {
+    let query = 'SELECT COUNT(*) FROM products p WHERE 1=1';
+    const params = [];
+    let paramIndex = 1;
+
+    if (status) {
+      query += ` AND p.status = $${paramIndex}`;
+      params.push(status);
+      paramIndex++;
+    }
+
+    if (category_id) {
+      query += ` AND p.category_id = $${paramIndex}`;
+      params.push(category_id);
+      paramIndex++;
+    }
+
+    if (seller_id) {
+      query += ` AND p.seller_id = $${paramIndex}`;
+      params.push(seller_id);
+      paramIndex++;
+    }
+
+    if (search) {
+      query += ` AND (p.title ILIKE $${paramIndex} OR p.description ILIKE $${paramIndex})`;
+      params.push(`%${search}%`);
+      paramIndex++;
+    }
+
+    const result = await db.query(query, params);
+    return parseInt(result.rows[0].count);
+  }
+
+  static async findByIdAdmin(id) {
+    const query = `
+      SELECT 
+        p.*,
+        u.id as seller_id,
+        u.full_name as seller_name,
+        u.email as seller_email,
+        u.rating as seller_rating,
+        c.name as category_name,
+        COALESCE(
+          json_agg(
+            DISTINCT jsonb_build_object(
+              'id', pi.id,
+              'url', pi.url,
+              'is_main', pi.is_main
+            )
+          ) FILTER (WHERE pi.id IS NOT NULL),
+          '[]'
+        ) as images,
+        COALESCE(
+          json_agg(
+            DISTINCT jsonb_build_object(
+              'id', b.id,
+              'user_id', b.user_id,
+              'bidder_name', ub.full_name,
+              'bid_price', b.bid_price,
+              'is_auto', b.is_auto,
+              'created_at', b.created_at
+            )
+          ) FILTER (WHERE b.id IS NOT NULL) ORDER BY b.created_at DESC,
+          '[]'
+        ) as recent_bids
+      FROM products p
+      INNER JOIN users u ON p.seller_id = u.id
+      INNER JOIN categories c ON p.category_id = c.id
+      LEFT JOIN product_images pi ON p.id = pi.product_id
+      LEFT JOIN bids b ON p.id = b.product_id
+      LEFT JOIN users ub ON b.user_id = ub.id
+      WHERE p.id = $1
+      GROUP BY p.id, u.id, u.full_name, u.email, u.rating, c.name
+    `;
+    const result = await db.query(query, [id]);
+    return result.rows[0];
+  }
+
+  static async updateStatus(id, status) {
+    const query = `
+      UPDATE products
+      SET status = $1, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $2
+      RETURNING *
+    `;
+    const result = await db.query(query, [status, id]);
+    return result.rows[0];
+  }
+
+  static async countByStatus() {
+    const query = `
+      SELECT 
+        status,
+        COUNT(*) as count
+      FROM products
+      GROUP BY status
+    `;
+    const result = await db.query(query);
+    
+    const stats = {
+      pending: 0,
+      approved: 0,
+      active: 0,
+      ended: 0,
+      removed: 0
+    };
+
+    result.rows.forEach(row => {
+      stats[row.status] = parseInt(row.count);
+    });
+
+    return stats;
+  }
+
+  static async countByPeriod(days = 30) {
+    const query = `
+      SELECT COUNT(*) as count
+      FROM products
+      WHERE created_at > NOW() - INTERVAL '${days} days'
+    `;
+    const result = await db.query(query);
+    return parseInt(result.rows[0].count);
+  }
+
+  static async countActive() {
+    const query = `
+      SELECT COUNT(*) as count
+      FROM products
+      WHERE status = 'active' AND end_time > CURRENT_TIMESTAMP
+    `;
+    const result = await db.query(query);
+    return parseInt(result.rows[0].count);
+  }
+
+  static async getTotalRevenue(days = 30) {
+    const query = `
+      SELECT COALESCE(SUM(current_price), 0) as revenue
+      FROM products
+      WHERE status = 'ended'
+      AND end_time > NOW() - INTERVAL '${days} days'
+      AND current_price > starting_price
+    `;
+    const result = await db.query(query);
+    return result.rows[0].revenue;
+  }
+
+  static async getStatsByInterval(days = 30, interval = 'day') {
+    const intervalFormat = {
+      'day': 'YYYY-MM-DD',
+      'week': 'IYYY-IW',
+      'month': 'YYYY-MM'
+    }[interval] || 'YYYY-MM-DD';
+
+    const query = `
+      SELECT 
+        TO_CHAR(created_at, '${intervalFormat}') as period,
+        COUNT(*) as total_auctions,
+        COUNT(CASE WHEN status = 'active' THEN 1 END) as active_auctions,
+        COUNT(CASE WHEN status = 'ended' THEN 1 END) as ended_auctions
+      FROM products
+      WHERE created_at > NOW() - INTERVAL '${days} days'
+      GROUP BY period
+      ORDER BY period
+    `;
+    const result = await db.query(query);
+    return result.rows;
+  }
+
+  static async getRevenueByInterval(days = 30, interval = 'day') {
+    const intervalFormat = {
+      'day': 'YYYY-MM-DD',
+      'week': 'IYYY-IW',
+      'month': 'YYYY-MM'
+    }[interval] || 'YYYY-MM-DD';
+
+    const query = `
+      SELECT 
+        TO_CHAR(end_time, '${intervalFormat}') as period,
+        COUNT(*) as total_sales,
+        COALESCE(SUM(CASE WHEN current_price > starting_price THEN current_price END), 0) as revenue
+      FROM products
+      WHERE status = 'ended'
+      AND end_time > NOW() - INTERVAL '${days} days'
+      GROUP BY period
+      ORDER BY period
+    `;
+    const result = await db.query(query);
+    return result.rows;
+  }
 }
 
 module.exports = Product;

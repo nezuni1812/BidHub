@@ -47,6 +47,10 @@ const options = {
       {
         name: 'Seller',
         description: 'Seller operations (create products, manage auctions, deny bidders)'
+      },
+      {
+        name: 'Admin',
+        description: 'Administrator operations (manage categories, products, users, upgrade requests, dashboard)'
       }
     ]
   },

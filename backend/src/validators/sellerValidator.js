@@ -57,9 +57,23 @@ exports.createProductValidation = [
   body('images')
     .isArray({ min: 3 }).withMessage('Must provide at least 3 images')
     .custom((images) => {
-      if (!images.every(img => typeof img === 'string' && img.length > 0)) {
-        throw new Error('All images must be valid URLs');
+      // Check if images is array of objects with url and is_main
+      if (!images.every(img => 
+        typeof img === 'object' && 
+        img !== null &&
+        typeof img.url === 'string' && 
+        img.url.length > 0 &&
+        typeof img.is_main === 'boolean'
+      )) {
+        throw new Error('All images must have valid url (string) and is_main (boolean)');
       }
+      
+      // Check if exactly one image is marked as main
+      const mainImages = images.filter(img => img.is_main === true);
+      if (mainImages.length !== 1) {
+        throw new Error('Exactly one image must be marked as main (is_main: true)');
+      }
+      
       return true;
     })
 ];
@@ -116,6 +130,14 @@ exports.rateWinnerValidation = [
 exports.cancelTransactionValidation = [
   param('productId')
     .isInt({ min: 1 }).withMessage('Invalid product ID')
+];
+
+exports.allowUnratedBidderValidation = [
+  param('productId')
+    .isInt({ min: 1 }).withMessage('Invalid product ID'),
+  
+  param('bidderId')
+    .isInt({ min: 1 }).withMessage('Invalid bidder ID')
 ];
 
 exports.paginationValidation = [

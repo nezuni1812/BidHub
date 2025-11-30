@@ -124,6 +124,97 @@ class UpgradeRequest {
     const result = await db.query(query, [userId]);
     return result.rows.length > 0;
   }
+
+  // ================================================
+  // ADMIN METHODS
+  // ================================================
+
+  static async findAll({ status = 'pending', sort = 'created_at', order = 'DESC', limit = 20, offset = 0 }) {
+    const query = `
+      SELECT 
+        ur.id,
+        ur.user_id,
+        ur.status,
+        ur.requested_at as created_at,
+        ur.processed_at,
+        ur.admin_note,
+        u.full_name,
+        u.email,
+        u.rating,
+        u.created_at as user_created_at,
+        COUNT(DISTINCT b.id) as total_bids,
+        COUNT(DISTINCT p.id) FILTER (WHERE p.winner_id = u.id) as auctions_won
+      FROM upgrade_requests ur
+      INNER JOIN users u ON ur.user_id = u.id
+      LEFT JOIN bids b ON u.id = b.user_id
+      LEFT JOIN products p ON p.winner_id = u.id
+      WHERE ur.status = $1
+      GROUP BY ur.id, u.id
+      ORDER BY ur.${sort} ${order}
+      LIMIT $2 OFFSET $3
+    `;
+    const result = await db.query(query, [status, limit, offset]);
+    return result.rows;
+  }
+
+  static async count(status = 'pending') {
+    const query = `
+      SELECT COUNT(*) 
+      FROM upgrade_requests 
+      WHERE status = $1
+    `;
+    const result = await db.query(query, [status]);
+    return parseInt(result.rows[0].count);
+  }
+
+  static async findById(id) {
+    const query = `
+      SELECT 
+        ur.*,
+        u.full_name,
+        u.email,
+        u.rating,
+        u.address,
+        u.date_of_birth,
+        u.created_at as user_created_at,
+        COUNT(DISTINCT b.id) as total_bids,
+        COUNT(DISTINCT p.id) FILTER (WHERE p.winner_id = u.id) as auctions_won,
+        COALESCE(SUM(CASE WHEN p.winner_id = u.id THEN p.current_price END), 0) as total_spent
+      FROM upgrade_requests ur
+      INNER JOIN users u ON ur.user_id = u.id
+      LEFT JOIN bids b ON u.id = b.user_id
+      LEFT JOIN products p ON p.winner_id = u.id
+      WHERE ur.id = $1
+      GROUP BY ur.id, u.id
+    `;
+    const result = await db.query(query, [id]);
+    return result.rows[0];
+  }
+
+  static async updateStatus(id, status, adminId, reason = null) {
+    const query = `
+      UPDATE upgrade_requests
+      SET 
+        status = $1, 
+        processed_at = CURRENT_TIMESTAMP,
+        admin_note = $2
+      WHERE id = $3
+      RETURNING *
+    `;
+    const result = await db.query(query, [status, reason, id]);
+    return result.rows[0];
+  }
+
+  static async countApprovedByPeriod(days = 30) {
+    const query = `
+      SELECT COUNT(*) as count
+      FROM upgrade_requests
+      WHERE status = 'approved'
+      AND processed_at > NOW() - INTERVAL '${days} days'
+    `;
+    const result = await db.query(query);
+    return parseInt(result.rows[0].count);
+  }
 }
 
 module.exports = UpgradeRequest;

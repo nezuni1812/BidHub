@@ -18,15 +18,19 @@ async function socketAuth(socket, next) {
     // Get token from handshake auth or query
     const token = socket.handshake.auth?.token || socket.handshake.query?.token;
     
+    console.log('[SOCKET AUTH] Token received:', token ? 'Yes' : 'No');
+    
     if (!token) {
       return next(new Error('Authentication token required'));
     }
 
     // Verify JWT token
-    const decoded = jwt.verify(token, config.jwtSecret);
+    const decoded = jwt.verify(token, config.jwt.accessSecret);
+    console.log('[SOCKET AUTH] Token decoded:', decoded);
     
     // Get user from database
-    const user = await User.getById(decoded.id);
+    const user = await User.findById(decoded.id);
+    console.log('[SOCKET AUTH] User found:', user ? user.id : 'No');
     
     if (!user) {
       return next(new Error('User not found'));
@@ -44,9 +48,12 @@ async function socketAuth(socket, next) {
 
     // Join user's personal room for notifications
     socket.join(`user-${user.id}`);
+    
+    console.log('[SOCKET AUTH] Success: User', user.id, 'authenticated');
 
     next();
   } catch (error) {
+    console.error('[SOCKET AUTH] Error:', error.message, error.name);
     if (error.name === 'JsonWebTokenError') {
       return next(new Error('Invalid authentication token'));
     }
