@@ -49,4 +49,7 @@ module.exports = {
   product: {
     newHighlightMinutes: parseInt(process.env.NEW_PRODUCT_HIGHLIGHT_MINUTES) || 60,
   },
+
+  // Frontend URL for email links
+  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
 };

@@ -79,8 +79,49 @@ const sendPasswordResetEmail = async (email, otp, fullName) => {
   return sendEmail({ to: email, subject, html, text });
 };
 
+const sendQuestionNotificationEmail = async (sellerEmail, sellerName, productTitle, productId, question, askerName) => {
+  const productLink = `${config.frontendUrl}/products/${productId}`;
+  const subject = `BidHub - Câu hỏi mới về sản phẩm "${productTitle}"`;
+  
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #333;">Xin chào ${sellerName},</h2>
+      <p>Bạn có một câu hỏi mới về sản phẩm <strong>${productTitle}</strong>:</p>
+      
+      <div style="background-color: #f9f9f9; border-left: 4px solid #4CAF50; padding: 15px; margin: 20px 0;">
+        <p style="margin: 0; color: #666; font-size: 14px;"><strong>Người hỏi:</strong> ${askerName}</p>
+        <p style="margin: 10px 0 0 0; font-size: 15px; line-height: 1.5;">${question}</p>
+      </div>
+      
+      <p>Vui lòng trả lời câu hỏi của khách hàng để tăng cơ hội bán được sản phẩm.</p>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${productLink}" 
+           style="background-color: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+          Xem chi tiết và trả lời
+        </a>
+      </div>
+      
+      <p style="color: #666; font-size: 13px;">Hoặc copy link sau vào trình duyệt:<br>
+        <a href="${productLink}" style="color: #4CAF50;">${productLink}</a>
+      </p>
+      
+      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+      <p style="color: #999; font-size: 12px;">
+        Email này được gửi tự động, vui lòng không reply.<br>
+        © 2025 BidHub. All rights reserved.
+      </p>
+    </div>
+  `;
+  
+  const text = `Xin chào ${sellerName},\n\nBạn có câu hỏi mới về sản phẩm "${productTitle}":\n\nNgười hỏi: ${askerName}\nCâu hỏi: ${question}\n\nTrả lời tại: ${productLink}`;
+  
+  return sendEmail({ to: sellerEmail, subject, html, text });
+};
+
 module.exports = {
   sendEmail,
   sendOTPEmail,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  sendQuestionNotificationEmail
 };

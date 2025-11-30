@@ -1,5 +1,6 @@
 const asyncHandler = require('../middleware/asyncHandler');
 const { BadRequestError, ForbiddenError, NotFoundError } = require('../utils/errors');
+const { sendQuestionNotificationEmail } = require('../utils/email');
 const Watchlist = require('../models/Watchlist');
 const Bid = require('../models/Bid');
 const Product = require('../models/Product');
@@ -173,7 +174,25 @@ const askQuestion = asyncHandler(async (req, res) => {
   
   const questionRecord = await Question.create(product_id, req.user.id, question);
   
-  // TODO: Send email notification to seller
+  // Send email notification to seller
+  try {
+    const seller = await User.findById(product.seller_id);
+    const asker = await User.findById(req.user.id);
+    
+    if (seller && seller.email) {
+      await sendQuestionNotificationEmail(
+        seller.email,
+        seller.full_name,
+        product.title,
+        product_id,
+        question,
+        asker.full_name
+      );
+    }
+  } catch (emailError) {
+    console.error('Failed to send question notification email:', emailError);
+    // Don't throw error - question is still created
+  }
   
   res.status(201).json({
     success: true,
