@@ -147,6 +147,20 @@ class Bid {
     const result = await db.query(query, [productId]);
     return result.rows[0]?.highest_bid || null;
   }
+
+  // ================================================
+  // ADMIN METHODS
+  // ================================================
+
+  static async getTotalBids(days = 30) {
+    const query = `
+      SELECT COUNT(*) as count
+      FROM bids
+      WHERE created_at > NOW() - INTERVAL '${days} days'
+    `;
+    const result = await db.query(query);
+    return parseInt(result.rows[0].count);
+  }
 }
 
 module.exports = Bid;

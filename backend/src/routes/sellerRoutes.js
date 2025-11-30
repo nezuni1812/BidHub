@@ -15,7 +15,7 @@ const {
 
 // All routes require authentication and seller role
 router.use(authenticate);
-router.use(authorize(['seller', 'admin']));
+router.use(authorize('seller', 'admin'));
 
 /**
  * @swagger

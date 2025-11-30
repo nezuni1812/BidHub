@@ -42,7 +42,7 @@ const authenticate = asyncHandler(async (req, res, next) => {
  * Check if user has required role
  */
 const authorize = (...roles) => {
-  return (req, res, next) => {
+  return asyncHandler(async (req, res, next) => {
     if (!req.user) {
       throw new UnauthorizedError('Not authenticated');
     }
@@ -52,7 +52,7 @@ const authorize = (...roles) => {
     }
     
     next();
-  };
+  });
 };
 
 /**

@@ -4,6 +4,7 @@ const productRoutes = require('./productRoutes');
 const authRoutes = require('./authRoutes');
 const bidderRoutes = require('./bidderRoutes');
 const sellerRoutes = require('./sellerRoutes');
+const adminRoutes = require('./adminRoutes');
 
 const router = express.Router();
 
@@ -20,7 +21,8 @@ router.get('/', (req, res) => {
       categories: '/api/v1/categories',
       products: '/api/v1/products',
       bidder: '/api/v1/bidder',
-      seller: '/api/v1/seller'
+      seller: '/api/v1/seller',
+      admin: '/api/v1/admin'
     }
   });
 });
@@ -40,6 +42,7 @@ router.use('/products', productRoutes);
 router.use('/auth', authRoutes);
 router.use('/bidder', bidderRoutes);
 router.use('/seller', sellerRoutes);
+router.use('/admin', adminRoutes);
 
 module.exports = router;
 

@@ -58,12 +58,12 @@ exports.createProduct = asyncHandler(async (req, res) => {
     const product = productResult.rows[0];
 
     // Insert images
-    for (let i = 0; i < images.length; i++) {
+    for (const image of images) {
       const imageQuery = `
         INSERT INTO product_images (product_id, url, is_main)
         VALUES ($1, $2, $3)
       `;
-      await client.query(imageQuery, [product.id, images[i], i === 0]);
+      await client.query(imageQuery, [product.id, image.url, image.is_main]);
     }
 
     await client.query('COMMIT');
