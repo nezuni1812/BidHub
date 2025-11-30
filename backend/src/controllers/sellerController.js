@@ -5,6 +5,8 @@ const DescriptionHistory = require('../models/DescriptionHistory');
 const Question = require('../models/Question');
 const Bid = require('../models/Bid');
 const Rating = require('../models/Rating');
+const User = require('../models/User');
+const { sendQuestionAnsweredEmail, sendBidderDeniedEmail } = require('../utils/email');
 const db = require('../config/database');
 const { BadRequestError, NotFoundError, ForbiddenError } = require('../utils/errors');
 
@@ -200,6 +202,23 @@ exports.denyBidder = asyncHandler(async (req, res) => {
 
     await client.query('COMMIT');
 
+    // Send email notification to denied bidder
+    try {
+      const deniedBidder = await User.findById(bidder_id);
+      if (deniedBidder && deniedBidder.email) {
+        await sendBidderDeniedEmail(
+          deniedBidder.email,
+          deniedBidder.full_name,
+          product.title,
+          productId,
+          reason || 'Không có lý do cụ thể'
+        );
+      }
+    } catch (emailError) {
+      console.error('[SELLER] Email notification error:', emailError);
+      // Don't fail denial if email fails
+    }
+
     res.json({
       success: true,
       message: 'Bidder denied successfully',
@@ -236,8 +255,46 @@ exports.answerQuestion = asyncHandler(async (req, res) => {
   // Answer question
   const updatedQuestion = await Question.answer(questionId, answer);
 
-  // TODO: Send email notification to asker
-  // await sendEmail(question.asker_email, 'Your question has been answered', ...);
+  // Send email notifications
+  try {
+    // Get asker info
+    const asker = await User.findById(question.asker_id);
+    if (asker && asker.email) {
+      await sendQuestionAnsweredEmail(
+        asker.email,
+        asker.full_name,
+        question.product_title,
+        question.product_id,
+        question.question,
+        answer
+      );
+    }
+
+    // Get all watchers who asked questions on this product
+    const watchersQuery = await db.query(
+      `SELECT DISTINCT u.id, u.email, u.full_name
+       FROM questions q
+       INNER JOIN users u ON q.asker_id = u.id
+       WHERE q.product_id = $1 AND q.asker_id != $2`,
+      [question.product_id, question.asker_id]
+    );
+
+    for (const watcher of watchersQuery.rows) {
+      if (watcher.email) {
+        await sendQuestionAnsweredEmail(
+          watcher.email,
+          watcher.full_name,
+          question.product_title,
+          question.product_id,
+          question.question,
+          answer
+        );
+      }
+    }
+  } catch (emailError) {
+    console.error('[SELLER] Email notification error:', emailError);
+    // Don't fail answer if email fails
+  }
 
   res.json({
     success: true,

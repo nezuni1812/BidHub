@@ -74,6 +74,21 @@ const paginationValidation = [
     .isInt({ min: 1, max: 100 }).withMessage('Page size must be between 1-100')
 ];
 
+const setAutoBidValidation = [
+  body('product_id')
+    .notEmpty().withMessage('Product ID is required')
+    .isInt({ min: 1 }).withMessage('Invalid product ID'),
+  body('max_price')
+    .notEmpty().withMessage('Max price is required')
+    .isFloat({ min: 0 }).withMessage('Max price must be a positive number')
+];
+
+const cancelAutoBidValidation = [
+  param('productId')
+    .notEmpty().withMessage('Product ID is required')
+    .isInt({ min: 1 }).withMessage('Invalid product ID')
+];
+
 module.exports = {
   addToWatchlistValidation,
   removeFromWatchlistValidation,
@@ -82,5 +97,7 @@ module.exports = {
   rateUserValidation,
   updateProfileValidation,
   changePasswordValidation,
-  paginationValidation
+  paginationValidation,
+  setAutoBidValidation,
+  cancelAutoBidValidation
 };

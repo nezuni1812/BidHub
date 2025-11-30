@@ -1,99 +1,87 @@
 /**
- * Real-time Bidding Handler with Redis Distributed Locking
+ * AUTO-BIDDING Handler with Redis Distributed Locking
  * 
- * USE CASE: Multiple users bidding on same product simultaneously
+ * SYSTEM: Users set MAX PRICE → System auto-bids incrementally
  * 
- * PROBLEM WITHOUT LOCKING:
- * User A sees price: 1,000,000 → bids 1,100,000
- * User B sees price: 1,000,000 → bids 1,050,000 (lower!)
- * Both submit at exact same time → Race condition!
- * Result: Invalid bid accepted OR data corruption
+ * AUTO-BIDDING ALGORITHM:
+ * - User sets max_price (not direct bid)
+ * - System calculates MINIMAL WINNING BID
+ * - Only bid what's needed to win (not full max_price)
+ * - If outbid, automatically re-bid up to max_price
+ * - Multiple users: highest max_price wins at (2nd_highest + step)
+ * - Tie-breaker: Earlier timestamp wins
  * 
- * SOLUTION WITH REDIS LOCK:
- * User A acquires lock → processes bid → releases lock → User B gets lock
- * User B sees updated price: 1,100,000 → bid rejected (too low)
- * Result: Data consistency guaranteed!
+ * EXAMPLE SCENARIOS:
  * 
- * FLOW DIAGRAM:
- * ┌─────────┐         ┌─────────┐         ┌─────────┐
- * │ User A  │         │  Redis  │         │ User B  │
- * └────┬────┘         └────┬────┘         └────┬────┘
- *      │                   │                   │
- *      │ place-bid         │                   │ place-bid
- *      ├──────────────────>│<──────────────────┤
- *      │                   │                   │
- *      │ acquire lock ✓    │                   │
- *      │<──────────────────┤                   │
- *      │                   │  acquire lock ✗   │
- *      │                   ├──────────────────>│
- *      │                   │   (wait/retry)    │
- *      │                   │                   │
- *      │ process bid       │                   │
- *      │ update DB         │                   │
- *      │ broadcast         │                   │
- *      │                   │                   │
- *      │ release lock      │                   │
- *      ├──────────────────>│                   │
- *      │                   │                   │
- *      │                   │  acquire lock ✓   │
- *      │                   ├──────────────────>│
- *      │                   │                   │
- *      │                   │   process bid     │
- *      │                   │   (sees new price)│
- *      │                   │                   │
- *      │<──────broadcast───┼───────────────────│
- *      │                   │                   │
+ * Scenario 1: Simple Auto-Bid
+ * Product at 10M, step 100K
+ * User A sets max 11M → System bids 10.1M (current + step)
+ * User B sets max 10.8M → System bids 10.9M (B's max + step)
+ * Result: A wins at 10.9M (not 11M!)
+ * 
+ * Scenario 2: Outbid Triggers Auto-Bid
+ * Product at 10.5M, A has max 11M (currently winning at 10.5M)
+ * User C sets max 11.5M → Triggers A's auto-bid
+ * System calculates: A can bid up to 11M, C wins at 11.1M (A's max + step)
+ * Result: C wins at minimal 11.1M (not 11.5M!)
+ * 
+ * Scenario 3: Same Max Price (Tie-Breaker)
+ * User A sets max 11M at 10:00:00
+ * User B sets max 11M at 10:00:05
+ * Result: A wins at 11M (earlier timestamp)
  */
 
 const Bid = require('../../models/Bid');
 const Product = require('../../models/Product');
+const AutoBid = require('../../models/AutoBid');
 const DeniedBidder = require('../../models/DeniedBidder');
 const Rating = require('../../models/Rating');
 const { acquireLockWithRetry, releaseLock } = require('../../services/lockService');
+const { sendBidPlacedEmail } = require('../../utils/email');
+const User = require('../../models/User');
 const db = require('../../config/database');
 const EVENTS = require('../events');
 
 module.exports = (io, socket) => {
   /**
-   * Handle: place-bid event
+   * Handle: set-auto-bid event (REPLACES manual bidding)
    * 
    * CLIENT SENDS:
    * {
    *   productId: 123,
-   *   bidPrice: 1500000
+   *   maxPrice: 15000000
    * }
    * 
    * SERVER RESPONDS:
-   * Success: emit('bid-success', { bid, product })
+   * Success: emit('auto-bid-success', { autoBid, actualBidPlaced })
    * Error: emit('bid-error', { message })
    * 
    * BROADCASTS TO ROOM:
    * emit('new-bid', { productId, currentPrice, totalBids, bidder, timestamp })
    */
   socket.on(EVENTS.PLACE_BID, async (data) => {
-    const { productId, bidPrice } = data;
+    const { productId, maxPrice } = data;
     const userId = socket.userId;
     const lockKey = `bid-lock:product-${productId}`;
     let lock = null;
 
     try {
-      console.log(`[BID] User ${userId} attempting bid ${bidPrice} on product ${productId}`);
+      console.log(`[AUTO-BID] User ${userId} setting max ${maxPrice} on product ${productId}`);
 
-      // STEP 1: Acquire distributed lock (max 3 retries, 100ms delay)
-      // This ensures only ONE bid is processed at a time for this product
+      // STEP 1: Acquire distributed lock
       lock = await acquireLockWithRetry(lockKey, 5000, 3, 100);
       
       if (!lock) {
-        console.log(`[BID] Lock acquisition failed for product ${productId}`);
+        console.log(`[AUTO-BID] Lock acquisition failed for product ${productId}`);
         return socket.emit(EVENTS.BID_ERROR, { 
           message: 'Có nhiều người đang đấu giá, vui lòng thử lại sau 1 giây',
           code: 'LOCK_FAILED'
         });
       }
 
-      console.log(`[BID] Lock acquired: ${lock.key}`);
+      console.log(`[AUTO-BID] Lock acquired: ${lock.key}`);
 
-      // STEP 2: Get product details (FRESH data after lock acquired)
+      // STEP 2: Get product details (FRESH data after lock)
       const product = await Product.getById(productId);
       
       if (!product) {
@@ -157,13 +145,11 @@ module.exports = (io, socket) => {
 
       // For unrated users, check system setting AND seller permission
       if (totalRatings === 0) {
-        // First check system-wide setting
         const settingResult = await db.query(
           "SELECT setting_value FROM system_settings WHERE setting_key = 'allow_unrated_bidders'"
         );
         const allowUnrated = settingResult.rows[0]?.setting_value === 'true';
         
-        // If system allows OR seller granted permission, allow bid
         const permissionResult = await db.query(
           'SELECT id FROM unrated_bidder_permissions WHERE product_id = $1 AND bidder_id = $2',
           [productId, userId]
@@ -179,24 +165,89 @@ module.exports = (io, socket) => {
         }
       }
 
-      // STEP 7: Validate bid price (CRITICAL: use FRESH product data)
-      const minValidBid = parseFloat(product.current_price) + parseFloat(product.bid_step);
-      
-      if (bidPrice < minValidBid) {
+      // STEP 7: Validate max price
+      if (maxPrice <= product.current_price) {
         await releaseLock(lock);
         return socket.emit(EVENTS.BID_ERROR, { 
-          message: `Giá đặt tối thiểu phải là ${minValidBid.toLocaleString('vi-VN')} VND`,
-          code: 'BID_TOO_LOW',
-          minBid: minValidBid,
+          message: `Giá tối đa phải lớn hơn giá hiện tại ${product.current_price.toLocaleString('vi-VN')} VND`,
+          code: 'MAX_PRICE_TOO_LOW',
           currentPrice: product.current_price
         });
       }
 
-      // STEP 8: Create bid in database
-      const bid = await Bid.create(productId, userId, bidPrice, false);
-      console.log(`[BID] Bid created: ${bid.id}`);
+      // STEP 8: Save/Update auto-bid configuration
+      await AutoBid.createOrUpdate(userId, productId, maxPrice);
+      console.log(`[AUTO-BID] Config saved: User ${userId} max ${maxPrice}`);
 
-      // STEP 9: Update product (current_price, total_bids, winner_id)
+      // STEP 9: Calculate minimal winning bid
+      // Get all active auto-bids for this product (excluding current user)
+      const allAutoBids = await AutoBid.getAllActiveForProduct(productId);
+      const otherAutoBids = allAutoBids.filter(ab => ab.user_id !== userId);
+      
+      let actualBidPrice;
+      let previousWinnerId = null;
+
+      if (otherAutoBids.length === 0) {
+        // No competition: bid current_price + step
+        actualBidPrice = parseFloat(product.current_price) + parseFloat(product.bid_step);
+      } else {
+        // Sort by max_price DESC, created_at ASC (higher max wins, earlier timestamp breaks ties)
+        otherAutoBids.sort((a, b) => {
+          const priceDiff = parseFloat(b.max_price) - parseFloat(a.max_price);
+          if (priceDiff !== 0) return priceDiff;
+          return new Date(a.created_at) - new Date(b.created_at);
+        });
+
+        const highestCompetitor = otherAutoBids[0];
+        const highestCompetitorMax = parseFloat(highestCompetitor.max_price);
+
+        if (maxPrice > highestCompetitorMax) {
+          // Current user wins: bid competitor's max + step
+          actualBidPrice = highestCompetitorMax + parseFloat(product.bid_step);
+          previousWinnerId = highestCompetitor.user_id;
+        } else if (maxPrice === highestCompetitorMax) {
+          // Tie: check timestamps
+          const currentUserConfig = allAutoBids.find(ab => ab.user_id === userId);
+          if (new Date(currentUserConfig.created_at) < new Date(highestCompetitor.created_at)) {
+            // Current user was first: wins at max_price
+            actualBidPrice = maxPrice;
+            previousWinnerId = highestCompetitor.user_id;
+          } else {
+            // Competitor was first: current user cannot outbid
+            await releaseLock(lock);
+            return socket.emit(EVENTS.BID_ERROR, { 
+              message: `Giá tối đa của bạn bằng người khác nhưng bạn đặt sau. Hãy tăng giá tối đa để thắng.`,
+              code: 'MAX_PRICE_TIE_LOST',
+              currentPrice: product.current_price
+            });
+          }
+        } else {
+          // Current user's max is lower: cannot win
+          await releaseLock(lock);
+          return socket.emit(EVENTS.BID_ERROR, { 
+            message: `Giá tối đa của bạn thấp hơn người khác. Giá hiện tại: ${product.current_price.toLocaleString('vi-VN')} VND`,
+            code: 'MAX_PRICE_TOO_LOW_COMPETITION',
+            currentPrice: product.current_price
+          });
+        }
+      }
+
+      // Ensure actualBidPrice doesn't exceed user's maxPrice
+      if (actualBidPrice > maxPrice) {
+        actualBidPrice = maxPrice;
+      }
+
+      // Ensure actualBidPrice meets minimum requirement
+      const minValidBid = parseFloat(product.current_price) + parseFloat(product.bid_step);
+      if (actualBidPrice < minValidBid) {
+        actualBidPrice = minValidBid;
+      }
+
+      // STEP 10: Create bid in database
+      const bid = await Bid.create(productId, userId, actualBidPrice, true); // is_auto = true
+      console.log(`[AUTO-BID] Bid placed: ${bid.id} at ${actualBidPrice}`);
+
+      // STEP 11: Update product
       await db.query(
         `UPDATE products 
          SET current_price = $1, 
@@ -204,20 +255,10 @@ module.exports = (io, socket) => {
              winner_id = $2,
              updated_at = CURRENT_TIMESTAMP
          WHERE id = $3`,
-        [bidPrice, userId, productId]
+        [actualBidPrice, userId, productId]
       );
 
-      // STEP 10: Get previous highest bidder
-      const previousBidResult = await db.query(
-        `SELECT user_id FROM bids 
-         WHERE product_id = $1 AND user_id != $2
-         ORDER BY bid_price DESC, created_at ASC
-         LIMIT 1`,
-        [productId, userId]
-      );
-      const previousBidderId = previousBidResult.rows[0]?.user_id;
-
-      // STEP 11: Check auto-extend (if bid placed within 5 minutes of end time)
+      // STEP 12: Check auto-extend (if bid placed within 5 minutes of end time)
       const timeLeft = new Date(product.end_time) - now;
       const autoExtendThreshold = 5 * 60 * 1000; // 5 minutes
       const autoExtendDuration = 10 * 60 * 1000; // 10 minutes
@@ -231,7 +272,6 @@ module.exports = (io, socket) => {
         );
         wasExtended = true;
         
-        // Broadcast auto-extend to all watchers
         io.to(`product-${productId}`).emit(EVENTS.AUCTION_EXTENDED, {
           productId,
           newEndTime,
@@ -239,18 +279,65 @@ module.exports = (io, socket) => {
           reason: 'Có lượt đặt giá mới trong 5 phút cuối'
         });
         
-        console.log(`[BID] Auction auto-extended for product ${productId}`);
+        console.log(`[AUTO-BID] Auction auto-extended for product ${productId}`);
       }
 
-      // STEP 12: Release lock (ASAP to allow other bids)
+      // STEP 13: Send email notifications
+      try {
+        // Get seller info
+        const seller = await User.findById(product.seller_id);
+        if (seller && seller.email) {
+          await sendBidPlacedEmail(
+            seller.email,
+            seller.full_name,
+            product.title,
+            productId,
+            actualBidPrice,
+            false // not outbid
+          );
+        }
+
+        // Get current bidder info
+        const bidder = await User.findById(userId);
+        if (bidder && bidder.email) {
+          await sendBidPlacedEmail(
+            bidder.email,
+            bidder.full_name,
+            product.title,
+            productId,
+            actualBidPrice,
+            false // not outbid
+          );
+        }
+
+        // Notify previous winner (outbid)
+        if (previousWinnerId) {
+          const previousWinner = await User.findById(previousWinnerId);
+          if (previousWinner && previousWinner.email) {
+            await sendBidPlacedEmail(
+              previousWinner.email,
+              previousWinner.full_name,
+              product.title,
+              productId,
+              actualBidPrice,
+              true // is outbid
+            );
+          }
+        }
+      } catch (emailError) {
+        console.error('[AUTO-BID] Email notification error:', emailError);
+        // Don't fail the bid if email fails
+      }
+
+      // STEP 14: Release lock (ASAP)
       await releaseLock(lock);
       lock = null;
-      console.log(`[BID] Lock released for product ${productId}`);
+      console.log(`[AUTO-BID] Lock released for product ${productId}`);
 
-      // STEP 13: Broadcast to all users watching this product
+      // STEP 15: Broadcast to all watchers
       io.to(`product-${productId}`).emit(EVENTS.NEW_BID, {
         productId,
-        currentPrice: bidPrice,
+        currentPrice: actualBidPrice,
         totalBids: parseInt(product.total_bids) + 1,
         bidder: {
           id: userId,
@@ -258,42 +345,49 @@ module.exports = (io, socket) => {
           name: `${socket.userName.charAt(0)}${'*'.repeat(socket.userName.length - 1)}`
         },
         timestamp: new Date(),
-        wasExtended
+        wasExtended,
+        isAutoBid: true
       });
 
-      // STEP 14: Notify previous highest bidder (they've been outbid)
-      if (previousBidderId) {
-        io.to(`user-${previousBidderId}`).emit(EVENTS.OUTBID, {
+      // STEP 16: Notify previous winner (they've been outbid)
+      if (previousWinnerId) {
+        io.to(`user-${previousWinnerId}`).emit(EVENTS.OUTBID, {
           productId,
           productTitle: product.title,
           productImage: product.main_image,
-          newPrice: bidPrice,
-          yourPrice: product.current_price,
+          newPrice: actualBidPrice,
+          yourMaxPrice: otherAutoBids.find(ab => ab.user_id === previousWinnerId)?.max_price,
           timestamp: new Date()
         });
       }
 
-      // STEP 15: Send success response to bidder
+      // STEP 17: Send success response to user
       socket.emit(EVENTS.BID_SUCCESS, {
+        autoBid: {
+          productId,
+          maxPrice,
+          actualBidPlaced: actualBidPrice,
+          savings: maxPrice - actualBidPrice // how much they saved
+        },
         bid: {
           id: bid.id,
           productId,
-          bidPrice,
+          bidPrice: actualBidPrice,
           createdAt: bid.created_at
         },
         product: {
           id: productId,
           title: product.title,
-          currentPrice: bidPrice,
+          currentPrice: actualBidPrice,
           totalBids: parseInt(product.total_bids) + 1
         },
         wasExtended
       });
 
-      console.log(`[BID] Success: User ${userId} bid ${bidPrice} on product ${productId}`);
+      console.log(`[AUTO-BID] Success: User ${userId} max ${maxPrice} → bid ${actualBidPrice} (saved ${maxPrice - actualBidPrice})`);
 
     } catch (error) {
-      console.error('[BID] Error:', error);
+      console.error('[AUTO-BID] Error:', error);
       
       // Release lock on error
       if (lock) {
@@ -309,7 +403,6 @@ module.exports = (io, socket) => {
 
   /**
    * Handle: Join product room
-   * Users join this room to receive real-time updates for a specific product
    */
   socket.on(EVENTS.JOIN_PRODUCT, (productId) => {
     socket.join(`product-${productId}`);
@@ -318,7 +411,6 @@ module.exports = (io, socket) => {
 
   /**
    * Handle: Leave product room
-   * Clean up when user navigates away from product page
    */
   socket.on(EVENTS.LEAVE_PRODUCT, (productId) => {
     socket.leave(`product-${productId}`);

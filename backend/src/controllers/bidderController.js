@@ -8,6 +8,7 @@ const User = require('../models/User');
 const Question = require('../models/Question');
 const Rating = require('../models/Rating');
 const UpgradeRequest = require('../models/UpgradeRequest');
+const AutoBid = require('../models/AutoBid');
 const db = require('../config/database');
 
 /**
@@ -398,6 +399,87 @@ const changePassword = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * @desc    Set auto-bid for a product
+ * @route   POST /api/v1/bidder/auto-bid
+ * @access  Private (Bidder)
+ */
+const setAutoBid = asyncHandler(async (req, res) => {
+  const { product_id, max_price } = req.body;
+
+  // Check product exists and is active
+  const product = await Product.getById(product_id);
+  if (!product) {
+    throw new NotFoundError('Product not found');
+  }
+
+  if (product.status !== 'active') {
+    throw new BadRequestError('Cannot set auto-bid on inactive product');
+  }
+
+  // Check not seller
+  if (product.seller_id === req.user.id) {
+    throw new ForbiddenError('Cannot bid on your own product');
+  }
+
+  // Check auction not ended
+  if (new Date(product.end_time) <= new Date()) {
+    throw new BadRequestError('Auction has ended');
+  }
+
+  // Check max_price > current_price
+  if (max_price <= product.current_price) {
+    throw new BadRequestError(`Max price must be greater than current price (${product.current_price})`);
+  }
+
+  // Create/update auto-bid
+  const autoBid = await AutoBid.createOrUpdate(req.user.id, product_id, max_price);
+
+  res.status(201).json({
+    success: true,
+    message: 'Auto-bid configured successfully',
+    data: autoBid
+  });
+});
+
+/**
+ * @desc    Get user's auto-bids
+ * @route   GET /api/v1/bidder/auto-bid
+ * @access  Private (Bidder)
+ */
+const getAutoBids = asyncHandler(async (req, res) => {
+  const { page = 1, page_size = 20 } = req.query;
+
+  const result = await AutoBid.getUserAutoBids(req.user.id, page, page_size);
+
+  res.json({
+    success: true,
+    data: result.items,
+    pagination: result.pagination
+  });
+});
+
+/**
+ * @desc    Cancel auto-bid
+ * @route   DELETE /api/v1/bidder/auto-bid/:productId
+ * @access  Private (Bidder)
+ */
+const cancelAutoBid = asyncHandler(async (req, res) => {
+  const { productId } = req.params;
+
+  const autoBid = await AutoBid.deactivate(req.user.id, productId);
+
+  if (!autoBid) {
+    throw new NotFoundError('Auto-bid not found');
+  }
+
+  res.json({
+    success: true,
+    message: 'Auto-bid cancelled successfully',
+    data: autoBid
+  });
+});
+
 module.exports = {
   addToWatchlist,
   removeFromWatchlist,
@@ -411,5 +493,8 @@ module.exports = {
   requestUpgrade,
   getUpgradeRequest,
   updateProfile,
-  changePassword
+  changePassword,
+  setAutoBid,
+  getAutoBids,
+  cancelAutoBid
 };

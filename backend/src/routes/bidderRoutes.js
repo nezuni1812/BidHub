@@ -13,7 +13,10 @@ const {
   requestUpgrade,
   getUpgradeRequest,
   updateProfile,
-  changePassword
+  changePassword,
+  setAutoBid,
+  getAutoBids,
+  cancelAutoBid
 } = require('../controllers/bidderController');
 const {
   addToWatchlistValidation,
@@ -23,7 +26,9 @@ const {
   rateUserValidation,
   updateProfileValidation,
   changePasswordValidation,
-  paginationValidation
+  paginationValidation,
+  setAutoBidValidation,
+  cancelAutoBidValidation
 } = require('../validators/bidderValidator');
 const validate = require('../middleware/validate');
 const { authenticate, authorize } = require('../middleware/auth');
@@ -341,5 +346,142 @@ router.post('/upgrade-request', requestUpgrade);
  *         description: Request status retrieved
  */
 router.get('/upgrade-request', getUpgradeRequest);
+
+/**
+ * @swagger
+ * /bidder/auto-bid:
+ *   post:
+ *     tags: [Bidder]
+ *     summary: Set auto-bid configuration
+ *     description: Configure maximum price for automatic bidding. System will bid incrementally up to this limit.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - product_id
+ *               - max_price
+ *             properties:
+ *               product_id:
+ *                 type: integer
+ *                 example: 1
+ *               max_price:
+ *                 type: number
+ *                 format: float
+ *                 example: 15000000
+ *                 description: Maximum price willing to pay (VND)
+ *     responses:
+ *       201:
+ *         description: Auto-bid configured successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Auto-bid configured successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                     user_id:
+ *                       type: integer
+ *                     product_id:
+ *                       type: integer
+ *                     max_price:
+ *                       type: number
+ *                     is_active:
+ *                       type: boolean
+ *       400:
+ *         description: Invalid request (product inactive, auction ended, max_price too low)
+ *       403:
+ *         description: Cannot bid on own product
+ */
+router.post('/auto-bid', setAutoBidValidation, validate, setAutoBid);
+
+/**
+ * @swagger
+ * /bidder/auto-bid:
+ *   get:
+ *     tags: [Bidder]
+ *     summary: Get user's active auto-bid configurations
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: page_size
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *     responses:
+ *       200:
+ *         description: Auto-bid list retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       product_id:
+ *                         type: integer
+ *                       max_price:
+ *                         type: number
+ *                       title:
+ *                         type: string
+ *                       current_price:
+ *                         type: number
+ *                       end_time:
+ *                         type: string
+ *                         format: date-time
+ *                       image_url:
+ *                         type: string
+ *                 pagination:
+ *                   type: object
+ */
+router.get('/auto-bid', paginationValidation, validate, getAutoBids);
+
+/**
+ * @swagger
+ * /bidder/auto-bid/{productId}:
+ *   delete:
+ *     tags: [Bidder]
+ *     summary: Cancel auto-bid for a product
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Auto-bid cancelled successfully
+ *       404:
+ *         description: Auto-bid not found
+ */
+router.delete('/auto-bid/:productId', cancelAutoBidValidation, validate, cancelAutoBid);
 
 module.exports = router;
