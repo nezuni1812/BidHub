@@ -132,6 +132,14 @@ exports.cancelTransactionValidation = [
     .isInt({ min: 1 }).withMessage('Invalid product ID')
 ];
 
+exports.allowUnratedBidderValidation = [
+  param('productId')
+    .isInt({ min: 1 }).withMessage('Invalid product ID'),
+  
+  param('bidderId')
+    .isInt({ min: 1 }).withMessage('Invalid bidder ID')
+];
+
 exports.paginationValidation = [
   query('page')
     .optional()

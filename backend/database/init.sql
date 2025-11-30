@@ -187,6 +187,23 @@ CREATE TABLE denied_bidders (
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
+-- Bảng Unrated Bidder Permissions (Seller allows unrated bidders to bid)
+CREATE TABLE unrated_bidder_permissions (
+    id BIGSERIAL PRIMARY KEY,
+    product_id BIGINT NOT NULL,
+    bidder_id BIGINT NOT NULL,
+    seller_id BIGINT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (product_id, bidder_id),
+    FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE,
+    FOREIGN KEY (bidder_id) REFERENCES users (id) ON DELETE CASCADE,
+    FOREIGN KEY (seller_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_unrated_permissions_product ON unrated_bidder_permissions (product_id);
+
+CREATE INDEX idx_unrated_permissions_bidder ON unrated_bidder_permissions (bidder_id);
+
 -- Bảng Refresh Tokens (JWT Security)
 CREATE TABLE refresh_tokens (
     id BIGSERIAL PRIMARY KEY,

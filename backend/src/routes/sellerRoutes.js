@@ -10,6 +10,7 @@ const {
   answerQuestionValidation,
   rateWinnerValidation,
   cancelTransactionValidation,
+  allowUnratedBidderValidation,
   paginationValidation
 } = require('../validators/sellerValidator');
 
@@ -43,11 +44,11 @@ router.use(authorize('seller', 'admin'));
  *                 type: string
  *                 minLength: 10
  *                 maxLength: 255
- *                 example: "iPhone 15 Pro Max 256GB"
+ *                 example: "iPhone 15 Pro Max 256GB - Chính hãng VN/A"
  *               description:
  *                 type: string
  *                 minLength: 50
- *                 example: "Brand new iPhone 15 Pro Max, sealed box, full warranty..."
+ *                 example: "Máy mới 100% nguyên seal, chưa active, fullbox đầy đủ phụ kiện. Bảo hành chính hãng Apple 12 tháng tại các trung tâm bảo hành ủy quyền trên toàn quốc."
  *               category_id:
  *                 type: integer
  *                 example: 1
@@ -66,16 +67,39 @@ router.use(authorize('seller', 'admin'));
  *               auto_extend:
  *                 type: boolean
  *                 example: true
+ *               start_time:
+ *                 type: string
+ *                 format: date-time
+ *                 example: "2025-12-01T00:00:00Z"
  *               end_time:
  *                 type: string
  *                 format: date-time
- *                 example: "2025-12-31T23:59:59Z"
+ *                 example: "2025-12-10T23:59:59Z"
+ *                 description: "Must be at least 24 hours in the future"
  *               images:
  *                 type: array
  *                 minItems: 3
  *                 items:
- *                   type: string
- *                 example: ["https://example.com/img1.jpg", "https://example.com/img2.jpg", "https://example.com/img3.jpg"]
+ *                   type: object
+ *                   required:
+ *                     - url
+ *                     - is_main
+ *                   properties:
+ *                     url:
+ *                       type: string
+ *                       format: uri
+ *                       example: "https://cdn.hoanghamobile.com/i/productlist/dsp/Uploads/2023/09/13/image-removebg-preview-55.png"
+ *                     is_main:
+ *                       type: boolean
+ *                       example: true
+ *                       description: "Exactly one image must have is_main: true"
+ *                 example:
+ *                   - url: "https://cdn.hoanghamobile.com/i/productlist/dsp/Uploads/2023/09/13/image-removebg-preview-55.png"
+ *                     is_main: true
+ *                   - url: "https://cdn.hoanghamobile.com/i/productlist/dsp/Uploads/2023/09/13/image-removebg-preview-2.png"
+ *                     is_main: false
+ *                   - url: "https://cdn.hoanghamobile.com/i/productlist/dsp/Uploads/2023/09/13/image-removebg-preview-3.png"
+ *                     is_main: false
  *     responses:
  *       201:
  *         description: Product created successfully
@@ -376,6 +400,63 @@ router.post(
   cancelTransactionValidation,
   validate,
   sellerController.cancelTransaction
+);
+
+/**
+ * @swagger
+ * /seller/products/{productId}/allow-unrated-bidder/{bidderId}:
+ *   post:
+ *     summary: Allow unrated bidder to bid on product
+ *     description: Grant permission for a bidder with no ratings to participate in the auction. This is needed because normally bidders need 80%+ positive rating or at least some ratings to bid.
+ *     tags: [Seller]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Product ID
+ *       - in: path
+ *         name: bidderId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Bidder user ID with no ratings
+ *     responses:
+ *       200:
+ *         description: Permission granted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Unrated bidder permission granted"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     product_id:
+ *                       type: integer
+ *                     bidder_id:
+ *                       type: integer
+ *       400:
+ *         description: Bidder already has ratings or auction not active
+ *       403:
+ *         description: Not product owner
+ *       404:
+ *         description: Product or bidder not found
+ */
+router.post(
+  '/products/:productId/allow-unrated-bidder/:bidderId',
+  allowUnratedBidderValidation,
+  validate,
+  sellerController.allowUnratedBidder
 );
 
 module.exports = router;

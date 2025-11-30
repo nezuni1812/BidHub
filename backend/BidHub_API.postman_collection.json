@@ -975,6 +975,27 @@
 					}
 				},
 				{
+					"name": "Allow Unrated Bidder",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/seller/products/:productId/allow-unrated-bidder/:bidderId",
+							"host": ["{{base_url}}"],
+							"path": ["seller", "products", ":productId", "allow-unrated-bidder", ":bidderId"],
+							"variable": [
+								{"key": "productId", "value": "1"},
+								{"key": "bidderId", "value": "6"}
+							]
+						},
+						"description": "Grant permission for unrated bidder (no ratings yet) to participate in auction"
+					}
+				},
+				{
 					"name": "Get Statistics",
 					"request": {
 						"auth": {

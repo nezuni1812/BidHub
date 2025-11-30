@@ -473,3 +473,76 @@ exports.cancelTransaction = asyncHandler(async (req, res) => {
     client.release();
   }
 });
+
+// Allow unrated bidder to bid on product
+exports.allowUnratedBidder = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { productId, bidderId } = req.params;
+
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+
+    // Verify product ownership
+    const productResult = await client.query(
+      'SELECT seller_id, status FROM products WHERE id = $1',
+      [productId]
+    );
+
+    if (productResult.rows.length === 0) {
+      throw new NotFoundError('Product not found');
+    }
+
+    const product = productResult.rows[0];
+    if (product.seller_id !== userId) {
+      throw new ForbiddenError('You can only manage permissions for your own products');
+    }
+
+    if (product.status !== 'active') {
+      throw new BadRequestError('Can only grant permissions for active auctions');
+    }
+
+    // Verify bidder exists and has no ratings
+    const bidderResult = await client.query(
+      `SELECT u.id, COALESCE(COUNT(r.id), 0) as rating_count
+       FROM users u
+       LEFT JOIN ratings r ON u.id = r.receiver_id
+       WHERE u.id = $1 AND u.is_deleted = false
+       GROUP BY u.id`,
+      [bidderId]
+    );
+
+    if (bidderResult.rows.length === 0) {
+      throw new NotFoundError('Bidder not found');
+    }
+
+    const ratingCount = parseInt(bidderResult.rows[0].rating_count);
+    if (ratingCount > 0) {
+      throw new BadRequestError('This bidder already has ratings and does not need special permission');
+    }
+
+    // Grant permission (upsert)
+    await client.query(
+      `INSERT INTO unrated_bidder_permissions (product_id, bidder_id, seller_id)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (product_id, bidder_id) DO NOTHING`,
+      [productId, bidderId, userId]
+    );
+
+    await client.query('COMMIT');
+
+    res.json({
+      success: true,
+      message: 'Unrated bidder permission granted',
+      data: {
+        product_id: parseInt(productId),
+        bidder_id: parseInt(bidderId)
+      }
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+});
