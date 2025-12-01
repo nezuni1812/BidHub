@@ -6,6 +6,7 @@ const Question = require('../models/Question');
 const Bid = require('../models/Bid');
 const Rating = require('../models/Rating');
 const User = require('../models/User');
+const ImageUploadService = require('../services/imageUploadService');
 const { sendQuestionAnsweredEmail, sendBidderDeniedEmail } = require('../utils/email');
 const db = require('../config/database');
 const { BadRequestError, NotFoundError, ForbiddenError } = require('../utils/errors');
@@ -21,14 +22,27 @@ exports.createProduct = asyncHandler(async (req, res) => {
     buy_now_price,
     bid_step,
     auto_extend,
-    end_time,
-    images // Array of image URLs, minimum 3
+    end_time
   } = req.body;
 
-  // Validate minimum 3 images
-  if (!images || images.length < 3) {
-    throw new BadRequestError('Product must have at least 3 images');
+  // Check if files were uploaded
+  if (!req.files || !req.files.main_image || !req.files.additional_images) {
+    throw new BadRequestError('Vui lòng upload ảnh đại diện và ít nhất 3 ảnh phụ');
   }
+
+  const mainImage = req.files.main_image[0];
+  const additionalImages = req.files.additional_images;
+
+  // Validate minimum 3 additional images
+  if (additionalImages.length < 3) {
+    throw new BadRequestError('Sản phẩm cần có ít nhất 3 ảnh phụ');
+  }
+
+  // Upload main image to R2
+  const mainImageResult = await ImageUploadService.uploadImage(mainImage);
+
+  // Upload additional images to R2
+  const additionalImageResults = await ImageUploadService.uploadMultipleImages(additionalImages);
 
   // Create product
   const client = await db.pool.connect();
@@ -59,13 +73,18 @@ exports.createProduct = asyncHandler(async (req, res) => {
 
     const product = productResult.rows[0];
 
-    // Insert images
-    for (const image of images) {
-      const imageQuery = `
-        INSERT INTO product_images (product_id, url, is_main)
-        VALUES ($1, $2, $3)
-      `;
-      await client.query(imageQuery, [product.id, image.url, image.is_main]);
+    // Insert main image
+    await client.query(
+      'INSERT INTO product_images (product_id, url, is_main) VALUES ($1, $2, $3)',
+      [product.id, mainImageResult.url, true]
+    );
+
+    // Insert additional images
+    for (const imageResult of additionalImageResults) {
+      await client.query(
+        'INSERT INTO product_images (product_id, url, is_main) VALUES ($1, $2, $3)',
+        [product.id, imageResult.url, false]
+      );
     }
 
     await client.query('COMMIT');
@@ -80,6 +99,16 @@ exports.createProduct = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     await client.query('ROLLBACK');
+    
+    // Cleanup uploaded images if product creation fails
+    try {
+      await ImageUploadService.deleteImage(ImageUploadService.extractFilenameFromUrl(mainImageResult.url));
+      const filenames = additionalImageResults.map(img => ImageUploadService.extractFilenameFromUrl(img.url));
+      await ImageUploadService.deleteMultipleImages(filenames);
+    } catch (cleanupError) {
+      console.error('Failed to cleanup images:', cleanupError);
+    }
+    
     throw error;
   } finally {
     client.release();
