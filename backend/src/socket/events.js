@@ -21,6 +21,15 @@ module.exports = {
   AUCTION_ENDED: 'auction-ended',
   PRICE_UPDATE: 'price-update',
   
+  // Order & Chat Events
+  NEW_MESSAGE: 'new-message',
+  PAYMENT_RECEIVED: 'payment-received',
+  SHIPPING_ADDRESS_UPDATED: 'shipping-address-updated',
+  ORDER_SHIPPED: 'order-shipped',
+  DELIVERY_CONFIRMED: 'delivery-confirmed',
+  RATING_RECEIVED: 'rating-received',
+  ORDER_CANCELLED: 'order-cancelled',
+  
   // Connection Events
   CONNECT: 'connection',
   DISCONNECT: 'disconnect',

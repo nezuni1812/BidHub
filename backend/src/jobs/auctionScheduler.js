@@ -26,6 +26,7 @@ const db = require('../config/database');
 const Product = require('../models/Product');
 const AutoBid = require('../models/AutoBid');
 const User = require('../models/User');
+const Order = require('../models/Order');
 const { sendAuctionEndedWinnerEmail, sendAuctionEndedNoWinnerEmail } = require('../utils/email');
 const EVENTS = require('../socket/events');
 
@@ -178,6 +179,19 @@ function startEndAuctionsJob() {
         });
 
         if (hasWinner) {
+          // Create order automatically
+          try {
+            await Order.create(
+              product.id,
+              product.winner_id,
+              product.seller_id,
+              product.current_price
+            );
+            console.log(`[SCHEDULER] Order created for product ${product.id}`);
+          } catch (orderError) {
+            console.error('[SCHEDULER] Error creating order:', orderError);
+          }
+
           // Notify winner
           io.to(`user-${product.winner_id}`).emit(EVENTS.AUCTION_ENDED, {
             productId: product.id,
