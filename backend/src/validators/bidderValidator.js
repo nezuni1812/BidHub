@@ -12,15 +12,6 @@ const removeFromWatchlistValidation = [
     .isInt({ min: 1 }).withMessage('Invalid product ID')
 ];
 
-const placeBidValidation = [
-  body('product_id')
-    .notEmpty().withMessage('Product ID is required')
-    .isInt({ min: 1 }).withMessage('Invalid product ID'),
-  body('bid_price')
-    .notEmpty().withMessage('Bid price is required')
-    .isFloat({ min: 0 }).withMessage('Bid price must be a positive number')
-];
-
 const askQuestionValidation = [
   body('product_id')
     .notEmpty().withMessage('Product ID is required')
@@ -92,7 +83,6 @@ const cancelAutoBidValidation = [
 module.exports = {
   addToWatchlistValidation,
   removeFromWatchlistValidation,
-  placeBidValidation,
   askQuestionValidation,
   rateUserValidation,
   updateProfileValidation,

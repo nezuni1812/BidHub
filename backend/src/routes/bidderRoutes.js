@@ -4,7 +4,6 @@ const {
   addToWatchlist,
   removeFromWatchlist,
   getWatchlist,
-  placeBid,
   askQuestion,
   getBiddingProducts,
   getWonProducts,
@@ -21,7 +20,6 @@ const {
 const {
   addToWatchlistValidation,
   removeFromWatchlistValidation,
-  placeBidValidation,
   askQuestionValidation,
   rateUserValidation,
   updateProfileValidation,
@@ -105,38 +103,6 @@ router.get('/watchlist', paginationValidation, validate, getWatchlist);
  *         description: Product removed from watchlist
  */
 router.delete('/watchlist/:productId', removeFromWatchlistValidation, validate, removeFromWatchlist);
-
-/**
- * @swagger
- * /bidder/bid:
- *   post:
- *     tags: [Bidder]
- *     summary: Place a bid on product
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - product_id
- *               - bid_price
- *             properties:
- *               product_id:
- *                 type: integer
- *               bid_price:
- *                 type: number
- *     responses:
- *       201:
- *         description: Bid placed successfully
- *       400:
- *         description: Invalid bid
- *       403:
- *         description: Not allowed to bid
- */
-router.post('/bid', placeBidValidation, validate, placeBid);
 
 /**
  * @swagger

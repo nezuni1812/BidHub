@@ -8,7 +8,9 @@ const {
   refreshAccessToken,
   logout,
   logoutAll,
-  getMe
+  getMe,
+  googleAuth,
+  googleCallback
 } = require('../controllers/authController');
 const {
   registerValidation,
@@ -213,5 +215,37 @@ router.post('/logout-all', authenticate, logoutAll);
  *         description: Unauthorized
  */
 router.get('/me', authenticate, getMe);
+
+/**
+ * @swagger
+ * /auth/google:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Initiate Google OAuth login
+ *     description: Redirects to Google login page
+ *     responses:
+ *       302:
+ *         description: Redirect to Google OAuth
+ */
+router.get('/google', googleAuth);
+
+/**
+ * @swagger
+ * /auth/google/callback:
+ *   get:
+ *     tags: [Auth]
+ *     summary: Google OAuth callback
+ *     description: Handles Google OAuth callback and redirects to frontend with tokens
+ *     parameters:
+ *       - in: query
+ *         name: code
+ *         schema:
+ *           type: string
+ *         description: Authorization code from Google
+ *     responses:
+ *       302:
+ *         description: Redirect to frontend with access_token and refresh_token
+ */
+router.get('/google/callback', googleCallback);
 
 module.exports = router;

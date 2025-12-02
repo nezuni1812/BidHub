@@ -6,6 +6,7 @@ const { generateOTP, getOTPExpirationTime } = require('../utils/otp');
 const { sendOTPEmail } = require('../utils/email');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwt');
 const db = require('../config/database');
+const passport = require('../config/passport');
 
 /**
  * @desc    Register new user
@@ -295,6 +296,52 @@ const getMe = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * @desc    Initiate Google OAuth
+ * @route   GET /api/v1/auth/google
+ * @access  Public
+ */
+const googleAuth = passport.authenticate('google', {
+  scope: ['profile', 'email'],
+  session: false
+});
+
+/**
+ * @desc    Google OAuth callback
+ * @route   GET /api/v1/auth/google/callback
+ * @access  Public
+ */
+const googleCallback = (req, res, next) => {
+  passport.authenticate('google', { session: false }, async (err, user, info) => {
+    try {
+      if (err) {
+        console.error('Google auth error:', err);
+        return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/login?error=auth_failed`);
+      }
+
+      if (!user) {
+        return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/login?error=user_not_found`);
+      }
+
+      // Generate tokens
+      const accessToken = generateAccessToken(user.id, user.role);
+      const refreshToken = generateRefreshToken(user.id);
+
+      // Save refresh token
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+      await RefreshToken.create(user.id, refreshToken, expiresAt);
+
+      // Redirect to frontend with tokens
+      const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/google/success?access_token=${accessToken}&refresh_token=${refreshToken}`;
+      
+      res.redirect(redirectUrl);
+    } catch (error) {
+      console.error('Google callback error:', error);
+      res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/login?error=callback_failed`);
+    }
+  })(req, res, next);
+};
+
 module.exports = {
   register,
   verifyOTP,
@@ -303,5 +350,7 @@ module.exports = {
   refreshAccessToken,
   logout,
   logoutAll,
-  getMe
+  getMe,
+  googleAuth,
+  googleCallback
 };

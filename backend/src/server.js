@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const swaggerUi = require('swagger-ui-express');
+const passport = require('./config/passport');
 require('dotenv').config();
 
 const config = require('./config');
@@ -41,6 +42,9 @@ app.use(compression());
 app.use(morgan(config.env === 'development' ? 'dev' : 'combined'));
 app.use(express.json({ charset: 'utf-8' }));
 app.use(express.urlencoded({ extended: true, charset: 'utf-8' }));
+
+// Initialize Passport
+app.use(passport.initialize());
 
 // Set default charset for API responses only
 app.use((req, res, next) => {
