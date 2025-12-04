@@ -44,16 +44,18 @@ export function Navigation() {
             </div>
           </form>
 
-          <div className="hidden md:flex items-center gap-1">
+          <div className="flex items-center gap-2">
             <Link to="/selling" className="px-3 py-2 text-sm font-medium hover:bg-muted rounded-md transition">
               Sell
             </Link>
-          </div>
-
-          <div className="flex items-center gap-2">
             <Link to="/dashboard">
               <Button variant="ghost" size="sm">
                 Dashboard
+              </Button>
+            </Link>
+            <Link to="/chat">
+              <Button variant="ghost" size="sm">
+                Chat
               </Button>
             </Link>
             <Link to="/auth/login">

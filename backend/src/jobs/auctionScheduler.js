@@ -24,6 +24,10 @@
 const cron = require('node-cron');
 const db = require('../config/database');
 const Product = require('../models/Product');
+const AutoBid = require('../models/AutoBid');
+const User = require('../models/User');
+const Order = require('../models/Order');
+const { sendAuctionEndedWinnerEmail, sendAuctionEndedNoWinnerEmail } = require('../utils/email');
 const EVENTS = require('../socket/events');
 
 let io = null;
@@ -175,6 +179,19 @@ function startEndAuctionsJob() {
         });
 
         if (hasWinner) {
+          // Create order automatically
+          try {
+            await Order.create(
+              product.id,
+              product.winner_id,
+              product.seller_id,
+              product.current_price
+            );
+            console.log(`[SCHEDULER] Order created for product ${product.id}`);
+          } catch (orderError) {
+            console.error('[SCHEDULER] Error creating order:', orderError);
+          }
+
           // Notify winner
           io.to(`user-${product.winner_id}`).emit(EVENTS.AUCTION_ENDED, {
             productId: product.id,
@@ -210,9 +227,55 @@ function startEndAuctionsJob() {
           console.log(`[SCHEDULER] Auction ended with no bids: Product ${product.id}`);
         }
 
-        // TODO: Send email notifications
-        // await sendEmailToWinner(product.winner_email, product);
-        // await sendEmailToSeller(product.seller_email, product);
+        // Deactivate all auto-bids for ended auction
+        await AutoBid.deactivateAllForProduct(product.id);
+
+        // Send email notifications
+        try {
+          const seller = await User.findById(product.seller_id);
+          
+          if (product.winner_id) {
+            // Get winner info
+            const winner = await User.findById(product.winner_id);
+            
+            // Email to winner
+            if (winner && winner.email) {
+              await sendAuctionEndedWinnerEmail(
+                winner.email,
+                winner.full_name,
+                product.title,
+                product.id,
+                product.current_price,
+                true // isWinner
+              );
+            }
+
+            // Email to seller
+            if (seller && seller.email) {
+              await sendAuctionEndedWinnerEmail(
+                seller.email,
+                seller.full_name,
+                product.title,
+                product.id,
+                product.current_price,
+                false // not winner (is seller)
+              );
+            }
+          } else {
+            // No winner - email seller
+            if (seller && seller.email) {
+              await sendAuctionEndedNoWinnerEmail(
+                seller.email,
+                seller.full_name,
+                product.title,
+                product.id
+              );
+            }
+          }
+        } catch (emailError) {
+          console.error('[SCHEDULER] Email notification error:', emailError);
+          // Don't fail auction end if email fails
+        }
       }
 
     } catch (error) {

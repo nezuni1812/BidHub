@@ -5,6 +5,8 @@ const authRoutes = require('./authRoutes');
 const bidderRoutes = require('./bidderRoutes');
 const sellerRoutes = require('./sellerRoutes');
 const adminRoutes = require('./adminRoutes');
+const orderRoutes = require('./orderRoutes');
+const chatRoutes = require('./chatRoutes');
 
 const router = express.Router();
 
@@ -22,7 +24,9 @@ router.get('/', (req, res) => {
       products: '/api/v1/products',
       bidder: '/api/v1/bidder',
       seller: '/api/v1/seller',
-      admin: '/api/v1/admin'
+      admin: '/api/v1/admin',
+      orders: '/api/v1/orders',
+      chat: '/api/v1/chat'
     }
   });
 });
@@ -43,6 +47,8 @@ router.use('/auth', authRoutes);
 router.use('/bidder', bidderRoutes);
 router.use('/seller', sellerRoutes);
 router.use('/admin', adminRoutes);
+router.use('/orders', orderRoutes);
+router.use('/chat', chatRoutes);
 
 module.exports = router;
 

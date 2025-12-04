@@ -1,5 +1,6 @@
 const asyncHandler = require('../middleware/asyncHandler');
 const { BadRequestError, ForbiddenError, NotFoundError } = require('../utils/errors');
+const { sendQuestionNotificationEmail } = require('../utils/email');
 const Watchlist = require('../models/Watchlist');
 const Bid = require('../models/Bid');
 const Product = require('../models/Product');
@@ -7,6 +8,7 @@ const User = require('../models/User');
 const Question = require('../models/Question');
 const Rating = require('../models/Rating');
 const UpgradeRequest = require('../models/UpgradeRequest');
+const AutoBid = require('../models/AutoBid');
 const db = require('../config/database');
 
 /**
@@ -69,93 +71,7 @@ const getWatchlist = asyncHandler(async (req, res) => {
   });
 });
 
-/**
- * @desc    Place a bid on product
- * @route   POST /api/v1/bidder/bid
- * @access  Private (Bidder)
- */
-const placeBid = asyncHandler(async (req, res) => {
-  const { product_id, bid_price } = req.body;
-  const userId = req.user.id;
-  
-  // Get product details
-  const product = await Product.getById(product_id);
-  if (!product) {
-    throw new NotFoundError('Product not found');
-  }
-  
-  // Check if product is active
-  if (product.status !== 'active') {
-    throw new BadRequestError('Product is not available for bidding');
-  }
-  
-  // Check if auction has ended
-  if (new Date(product.end_time) < new Date()) {
-    throw new BadRequestError('Auction has ended');
-  }
-  
-  // Check if bidder is the seller
-  if (product.seller_id === userId) {
-    throw new ForbiddenError('You cannot bid on your own product');
-  }
-  
-  // Check if bidder is denied
-  const deniedQuery = `
-    SELECT id FROM denied_bidders
-    WHERE product_id = $1 AND user_id = $2
-  `;
-  const deniedResult = await db.query(deniedQuery, [product_id, userId]);
-  if (deniedResult.rows.length > 0) {
-    throw new ForbiddenError('You are not allowed to bid on this product');
-  }
-  
-  // Get bidder rating stats
-  const ratingStats = await Rating.getUserRatingStats(userId);
-  const totalRatings = parseInt(ratingStats.total_ratings);
-  const positivePercentage = parseFloat(ratingStats.positive_percentage) || 0;
-  
-  // Check rating requirement
-  if (totalRatings > 0 && positivePercentage < 80) {
-    throw new ForbiddenError('Your rating must be at least 80% to bid on this product');
-  }
-  
-  // Check if seller allows unrated bidders
-  if (totalRatings === 0) {
-    const settingQuery = `
-      SELECT setting_value FROM system_settings
-      WHERE setting_key = 'allow_unrated_bidders'
-    `;
-    const settingResult = await db.query(settingQuery);
-    const allowUnrated = settingResult.rows[0]?.setting_value === 'true';
-    
-    if (!allowUnrated) {
-      throw new ForbiddenError('You need ratings to bid on this product');
-    }
-  }
-  
-  // Validate bid price
-  const minValidBid = parseFloat(product.current_price) + parseFloat(product.bid_step);
-  if (bid_price < minValidBid) {
-    throw new BadRequestError(`Minimum bid must be ${minValidBid.toLocaleString('vi-VN')} VND`);
-  }
-  
-  // Create bid
-  const bid = await Bid.create(product_id, userId, bid_price);
-  
-  // Note: Trigger will automatically update product.current_price and total_bids
-  
-  res.status(201).json({
-    success: true,
-    message: 'Bid placed successfully',
-    data: {
-      bid_id: bid.id,
-      product_id,
-      bid_price,
-      created_at: bid.created_at,
-      next_min_bid: bid_price + parseFloat(product.bid_step)
-    }
-  });
-});
+
 
 /**
  * @desc    Ask question about product
@@ -173,7 +89,25 @@ const askQuestion = asyncHandler(async (req, res) => {
   
   const questionRecord = await Question.create(product_id, req.user.id, question);
   
-  // TODO: Send email notification to seller
+  // Send email notification to seller
+  try {
+    const seller = await User.findById(product.seller_id);
+    const asker = await User.findById(req.user.id);
+    
+    if (seller && seller.email) {
+      await sendQuestionNotificationEmail(
+        seller.email,
+        seller.full_name,
+        product.title,
+        product_id,
+        question,
+        asker.full_name
+      );
+    }
+  } catch (emailError) {
+    console.error('Failed to send question notification email:', emailError);
+    // Don't throw error - question is still created
+  }
   
   res.status(201).json({
     success: true,
@@ -379,11 +313,91 @@ const changePassword = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * @desc    Set auto-bid for a product
+ * @route   POST /api/v1/bidder/auto-bid
+ * @access  Private (Bidder)
+ */
+const setAutoBid = asyncHandler(async (req, res) => {
+  const { product_id, max_price } = req.body;
+
+  // Check product exists and is active
+  const product = await Product.getById(product_id);
+  if (!product) {
+    throw new NotFoundError('Product not found');
+  }
+
+  if (product.status !== 'active') {
+    throw new BadRequestError('Cannot set auto-bid on inactive product');
+  }
+
+  // Check not seller
+  if (product.seller_id === req.user.id) {
+    throw new ForbiddenError('Cannot bid on your own product');
+  }
+
+  // Check auction not ended
+  if (new Date(product.end_time) <= new Date()) {
+    throw new BadRequestError('Auction has ended');
+  }
+
+  // Check max_price > current_price
+  if (max_price <= product.current_price) {
+    throw new BadRequestError(`Max price must be greater than current price (${product.current_price})`);
+  }
+
+  // Create/update auto-bid
+  const autoBid = await AutoBid.createOrUpdate(req.user.id, product_id, max_price);
+
+  res.status(201).json({
+    success: true,
+    message: 'Auto-bid configured successfully',
+    data: autoBid
+  });
+});
+
+/**
+ * @desc    Get user's auto-bids
+ * @route   GET /api/v1/bidder/auto-bid
+ * @access  Private (Bidder)
+ */
+const getAutoBids = asyncHandler(async (req, res) => {
+  const { page = 1, page_size = 20 } = req.query;
+
+  const result = await AutoBid.getUserAutoBids(req.user.id, page, page_size);
+
+  res.json({
+    success: true,
+    data: result.items,
+    pagination: result.pagination
+  });
+});
+
+/**
+ * @desc    Cancel auto-bid
+ * @route   DELETE /api/v1/bidder/auto-bid/:productId
+ * @access  Private (Bidder)
+ */
+const cancelAutoBid = asyncHandler(async (req, res) => {
+  const { productId } = req.params;
+
+  const autoBid = await AutoBid.deactivate(req.user.id, productId);
+
+  if (!autoBid) {
+    throw new NotFoundError('Auto-bid not found');
+  }
+
+  res.json({
+    success: true,
+    message: 'Auto-bid cancelled successfully',
+    data: autoBid
+  });
+});
+
 module.exports = {
   addToWatchlist,
   removeFromWatchlist,
   getWatchlist,
-  placeBid,
   askQuestion,
   getBiddingProducts,
   getWonProducts,
@@ -392,5 +406,8 @@ module.exports = {
   requestUpgrade,
   getUpgradeRequest,
   updateProfile,
-  changePassword
+  changePassword,
+  setAutoBid,
+  getAutoBids,
+  cancelAutoBid
 };

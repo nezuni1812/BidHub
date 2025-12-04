@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const sellerController = require('../controllers/sellerController');
 const { authenticate, authorize } = require('../middleware/auth');
+const upload = require('../middleware/upload');
 const validate = require('../middleware/validate');
 const {
   createProductValidation,
@@ -22,14 +23,15 @@ router.use(authorize('seller', 'admin'));
  * @swagger
  * /seller/products:
  *   post:
- *     summary: Create a new product for auction (Seller only)
+ *     summary: Create a new product with image upload to Cloudflare R2 (Seller only)
+ *     description: Upload product images to Cloudflare R2 and create auction product. Requires 1 main image and at least 3 additional images.
  *     tags: [Seller]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
@@ -38,7 +40,8 @@ router.use(authorize('seller', 'admin'));
  *               - category_id
  *               - start_price
  *               - end_time
- *               - images
+ *               - main_image
+ *               - additional_images
  *             properties:
  *               title:
  *                 type: string
@@ -52,59 +55,90 @@ router.use(authorize('seller', 'admin'));
  *               category_id:
  *                 type: integer
  *                 example: 1
+ *                 description: "Category ID (1=Electronics, 2=Fashion, etc.)"
  *               start_price:
  *                 type: number
  *                 minimum: 1000
  *                 example: 25000000
+ *                 description: "Starting price in VND"
  *               buy_now_price:
  *                 type: number
  *                 minimum: 1000
  *                 example: 35000000
+ *                 description: "Buy now price (optional)"
  *               bid_step:
  *                 type: number
  *                 minimum: 1000
  *                 example: 500000
+ *                 description: "Minimum bid increment (default: 10000)"
  *               auto_extend:
  *                 type: boolean
  *                 example: true
- *               start_time:
- *                 type: string
- *                 format: date-time
- *                 example: "2025-12-01T00:00:00Z"
+ *                 description: "Auto-extend auction by 10 minutes if bid within last 5 minutes"
  *               end_time:
  *                 type: string
  *                 format: date-time
- *                 example: "2025-12-10T23:59:59Z"
- *                 description: "Must be at least 24 hours in the future"
- *               images:
+ *                 example: "2025-12-31T23:59:59Z"
+ *                 description: "Auction end time (ISO 8601 format)"
+ *               main_image:
+ *                 type: string
+ *                 format: binary
+ *                 description: "Main product image (JPEG/PNG/WEBP, max 5MB) - REQUIRED"
+ *               additional_images:
  *                 type: array
- *                 minItems: 3
  *                 items:
- *                   type: object
- *                   required:
- *                     - url
- *                     - is_main
- *                   properties:
- *                     url:
- *                       type: string
- *                       format: uri
- *                       example: "https://cdn.hoanghamobile.com/i/productlist/dsp/Uploads/2023/09/13/image-removebg-preview-55.png"
- *                     is_main:
- *                       type: boolean
- *                       example: true
- *                       description: "Exactly one image must have is_main: true"
- *                 example:
- *                   - url: "https://cdn.hoanghamobile.com/i/productlist/dsp/Uploads/2023/09/13/image-removebg-preview-55.png"
- *                     is_main: true
- *                   - url: "https://cdn.hoanghamobile.com/i/productlist/dsp/Uploads/2023/09/13/image-removebg-preview-2.png"
- *                     is_main: false
- *                   - url: "https://cdn.hoanghamobile.com/i/productlist/dsp/Uploads/2023/09/13/image-removebg-preview-3.png"
- *                     is_main: false
+ *                   type: string
+ *                   format: binary
+ *                 description: "At least 3 additional images (JPEG/PNG/WEBP, max 5MB each) - REQUIRED"
+ *                 minItems: 3
+ *                 maxItems: 9
  *     responses:
  *       201:
- *         description: Product created successfully
+ *         description: Product created successfully with images uploaded to R2
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Product created successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: integer
+ *                       example: 123
+ *                     title:
+ *                       type: string
+ *                     current_price:
+ *                       type: number
+ *                     images:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           url:
+ *                             type: string
+ *                             example: "https://images.bidhub.com/products/1701234567890-abc123.jpg"
+ *                           is_main:
+ *                             type: boolean
  *       400:
- *         description: Validation error
+ *         description: Validation error or missing images
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Vui lòng upload ảnh đại diện và ít nhất 3 ảnh phụ"
  *       401:
  *         description: Unauthorized
  *       403:
@@ -112,6 +146,10 @@ router.use(authorize('seller', 'admin'));
  */
 router.post(
   '/products',
+  upload.fields([
+    { name: 'main_image', maxCount: 1 },
+    { name: 'additional_images', maxCount: 9 }
+  ]),
   createProductValidation,
   validate,
   sellerController.createProduct

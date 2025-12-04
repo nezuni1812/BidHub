@@ -129,13 +129,13 @@ class UpgradeRequest {
   // ADMIN METHODS
   // ================================================
 
-  static async findAll({ status = 'pending', sort = 'created_at', order = 'DESC', limit = 20, offset = 0 }) {
+  static async findAll({ status = 'pending', sort = 'requested_at', order = 'DESC', limit = 20, offset = 0 }) {
     const query = `
       SELECT 
         ur.id,
         ur.user_id,
         ur.status,
-        ur.requested_at as created_at,
+        ur.requested_at,
         ur.processed_at,
         ur.admin_note,
         u.full_name,
