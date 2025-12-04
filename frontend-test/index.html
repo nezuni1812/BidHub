@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BidHub - Test Real-time Bidding</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 BidHub - Real-time Auction Test</h1>
+            <div id="connection-status" class="status disconnected">
+                <span class="dot"></span>
+                <span class="text">Disconnected</span>
+            </div>
+        </header>
+
+        <!-- Login Section -->
+        <section id="login-section" class="card">
+            <h2>🔐 Login</h2>
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" id="email" placeholder="user@example.com" value="bidder1@example.com">
+            </div>
+            <div class="form-group">
+                <label>Password:</label>
+                <input type="password" id="password" placeholder="Password" value="password123">
+            </div>
+            <button id="login-btn" class="btn btn-primary">Login & Connect</button>
+            
+            <div class="divider">
+                <span>HOẶC</span>
+            </div>
+            
+            <button id="google-login-btn" class="btn btn-google">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"/>
+                    <path d="M9.003 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.96v2.332C2.44 15.983 5.485 18 9.003 18z" fill="#34A853"/>
+                    <path d="M3.964 10.712c-.18-.54-.282-1.117-.282-1.71 0-.593.102-1.17.282-1.71V4.96H.957C.347 6.175 0 7.55 0 9.002c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+                    <path d="M9.003 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.464.891 11.426 0 9.003 0 5.485 0 2.44 2.017.96 4.958L3.967 7.29c.708-2.127 2.692-3.71 5.036-3.71z" fill="#EA4335"/>
+                </svg>
+                Đăng nhập với Google
+            </button>
+            
+            <div id="login-error" class="error"></div>
+        </section>
+
+        <!-- Product Selection -->
+        <section id="product-section" class="card" style="display: none;">
+            <h2>📦 Select Product</h2>
+            <div class="form-group">
+                <label>Product ID:</label>
+                <input type="number" id="product-id" placeholder="Enter product ID" value="1">
+            </div>
+            <button id="join-product-btn" class="btn btn-secondary">Join Product Room</button>
+        </section>
+
+        <!-- Bidding Interface -->
+        <section id="bidding-section" class="card" style="display: none;">
+            <div class="product-header">
+                <h2 id="product-title">Loading...</h2>
+                <button id="leave-product-btn" class="btn btn-small">Leave</button>
+            </div>
+
+            <div class="price-display">
+                <div class="current-price">
+                    <label>Current Price:</label>
+                    <h1 id="current-price">0 VND</h1>
+                </div>
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="label">Total Bids:</span>
+                        <span id="total-bids" class="value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">Time Left:</span>
+                        <span id="time-left" class="value">--:--:--</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">Status:</span>
+                        <span id="auction-status" class="value badge">Active</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bidding Form -->
+            <div class="bid-form">
+                <h3>🤖 Đấu Giá Tự Động</h3>
+                <div class="auto-bid-info">
+                    <p><strong>Hệ thống đấu giá tự động:</strong></p>
+                    <ul>
+                        <li>✅ Đặt giá <strong>tối đa</strong> bạn sẵn sàng trả</li>
+                        <li>✅ Hệ thống tự động đấu giá <strong>tăng dần</strong> để bạn thắng</li>
+                        <li>✅ Chỉ trả <strong>mức giá tối thiểu</strong> cần thiết để thắng</li>
+                        <li>✅ Tự động tham gia khi bị trả giá</li>
+                    </ul>
+                </div>
+                <div class="form-group">
+                    <label>Giá Tối Đa Bạn Sẵn Sàng Trả (VND):</label>
+                    <input type="number" id="bid-amount" placeholder="Nhập giá tối đa">
+                    <small id="min-bid-hint">Tối thiểu: <span id="min-bid">0</span> VND</small>
+                </div>
+                <button id="place-bid-btn" class="btn btn-primary btn-large">
+                    🤖 Đặt Giá Tự Động
+                </button>
+            </div>
+
+            <!-- Bid History -->
+            <div class="bid-history">
+                <h3>📜 Lịch Sử Đấu Giá (Real-time)</h3>
+                <div id="bid-history-list" class="history-list">
+                    <p class="empty-state">Chưa có lượt đấu giá nào...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Chat Section -->
+        <section id="chat-section" class="card" style="display: none;">
+            <div class="chat-header">
+                <h2>💬 Chat với Seller</h2>
+                <button id="close-chat-btn" class="btn btn-small">Close</button>
+            </div>
+            
+            <div class="chat-info">
+                <p><strong>Order ID:</strong> <span id="chat-order-id">-</span></p>
+                <p><strong>Chat với:</strong> <span id="chat-with">-</span></p>
+            </div>
+
+            <div id="chat-messages" class="chat-messages">
+                <p class="empty-state">Chưa có tin nhắn nào...</p>
+            </div>
+
+            <div class="chat-input-container">
+                <input type="text" id="chat-input" placeholder="Nhập tin nhắn..." class="chat-input">
+                <button id="send-message-btn" class="btn btn-primary btn-send">
+                    Gửi
+                </button>
+            </div>
+        </section>
+
+        <!-- Event Log -->
+        <section id="event-log-section" class="card">
+            <div class="log-header">
+                <h3>📡 Real-time Event Log</h3>
+                <div>
+                    <button id="open-chat-btn" class="btn btn-small" style="display: none; margin-right: 10px; background: #10b981;">💬 Chat</button>
+                    <button id="clear-log-btn" class="btn btn-small">Clear</button>
+                </div>
+            </div>
+            <div id="event-log" class="event-log">
+                <p class="log-item log-info">Waiting for connection...</p>
+            </div>
+        </section>
+
+        <!-- Toast Notifications -->
+        <div id="toast-container"></div>
+    </div>
+
+    <!-- Socket.IO CDN -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

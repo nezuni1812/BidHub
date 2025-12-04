@@ -332,7 +332,18 @@ const googleCallback = (req, res, next) => {
       await RefreshToken.create(user.id, refreshToken, expiresAt);
 
       // Redirect to frontend with tokens
-      const redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/google/success?access_token=${accessToken}&refresh_token=${refreshToken}`;
+      // Check if request is from frontend-test (simple test app)
+      const referer = req.get('referer') || '';
+      const isFrontendTest = referer.includes('frontend-test') || referer.includes('127.0.0.1');
+      
+      let redirectUrl;
+      if (isFrontendTest || process.env.NODE_ENV !== 'production') {
+        // Redirect to simple test frontend
+        redirectUrl = `http://localhost:5500/oauth-callback.html?token=${accessToken}`;
+      } else {
+        // Redirect to main React frontend
+        redirectUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/google/success?access_token=${accessToken}&refresh_token=${refreshToken}`;
+      }
       
       res.redirect(redirectUrl);
     } catch (error) {
