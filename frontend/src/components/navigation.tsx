@@ -4,20 +4,47 @@ import type React from "react"
 
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button"
-import { Search } from "lucide-react"
+import { Search, LogOut, User, Settings } from "lucide-react"
 import { useState } from "react"
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchQuery.trim()) {
       navigate(`/?q=${encodeURIComponent(searchQuery)}`)
     }
+  }
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/auth/login");
+  }
+
+  // Get user initials for avatar
+  const getUserInitials = (name?: string) => {
+    if (!name) return '?';
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   }
 
   return (
@@ -58,14 +85,56 @@ export function Navigation() {
                 Chat
               </Button>
             </Link>
-            <Link to="/auth/login">
-              <Button variant="ghost" size="sm">
-                Login
-              </Button>
-            </Link>
-            <Link to="/auth/register">
-              <Button size="sm">Sign up</Button>
-            </Link>
+
+            {user ? (
+              // Show user menu when logged in
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2">
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {getUserInitials(user.full_name || user.email)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="hidden sm:inline font-medium">{user.full_name || user.email}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-medium">{user.full_name}</p>
+                      <p className="text-xs text-muted-foreground">{user.email}</p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate(`/profile/${user.email}`)}>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/profile/settings')}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              // Show login/signup buttons when not logged in
+              <>
+                <Link to="/auth/login">
+                  <Button variant="ghost" size="sm">
+                    Login
+                  </Button>
+                </Link>
+                <Link to="/auth/register">
+                  <Button size="sm">Sign up</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

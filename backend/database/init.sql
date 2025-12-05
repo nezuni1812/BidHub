@@ -24,7 +24,7 @@ CREATE TABLE users (
     ),
     full_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
+    password_hash VARCHAR(255), -- Optional for OAuth users
     address TEXT,
     date_of_birth DATE,
     rating DECIMAL(3, 2) DEFAULT 0 CHECK (
@@ -34,9 +34,17 @@ CREATE TABLE users (
     otp_code VARCHAR(10),
     otp_expired_at TIMESTAMP,
     is_active BOOLEAN DEFAULT TRUE,
+    -- Google OAuth fields
+    google_id VARCHAR(255) UNIQUE,
+    auth_provider VARCHAR(20) DEFAULT 'email' CHECK (
+        auth_provider IN ('email', 'google')
+    ),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Index for faster Google OAuth lookups
+CREATE INDEX idx_users_google_id ON users (google_id);
 
 -- Bảng Product
 CREATE TABLE products (

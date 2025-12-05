@@ -3,6 +3,7 @@ import Home from "@/pages/Home";
 import SellingPage from "@/pages/SellingPage";
 import LoginPage from "@/pages/LoginPage";
 import RegisterPage from "@/pages/RegisterPage";
+import GoogleCallbackPage from "@/pages/GoogleCallbackPage";
 import ProductDetail from "@/pages/ProductDetail";
 import DashboardPage from "@/pages/Dashboard";
 import CheckoutPage from "@/pages/CheckoutPage";
@@ -21,8 +22,11 @@ export default function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/checkout/:id" element={<CheckoutPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route path="/auth/login" element={<LoginPage />} />
           <Route path="/auth/register" element={<RegisterPage />} />
+          <Route path="/auth/google/success" element={<GoogleCallbackPage />} />
         </Routes>
       </BrowserRouter>
     </ChatProvider>
