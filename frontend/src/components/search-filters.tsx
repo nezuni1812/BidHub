@@ -1,7 +1,16 @@
 "use client"
 import { Card } from "@/components/ui/card"
-import { ChevronDown } from "lucide-react"
-import { useState } from "react"
+import { ChevronDown, ChevronRight } from "lucide-react"
+import { useState, useEffect } from "react"
+import { api } from "@/lib/api"
+
+interface Category {
+  id: string
+  name: string
+  parent_id: string | null
+  product_count: string
+  children?: Category[]
+}
 
 interface SearchFiltersProps {
   filters: {
@@ -15,17 +24,70 @@ interface SearchFiltersProps {
   onChange: (filters: any) => void
 }
 
-const categories = ["Electronics", "Fashion", "Home", "Sports", "Art"]
 const conditions = ["Excellent", "Like New", "Good", "Fair"]
 const ratings = [4, 3.5, 3, 2.5, 0]
 
 export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
+  const [categories, setCategories] = useState<Category[]>([])
   const [expandedSections, setExpandedSections] = useState({
     category: true,
     price: true,
     condition: true,
     rating: true,
   })
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    fetchCategories()
+  }, [])
+
+  const fetchCategories = async () => {
+    try {
+      const response = await api.get<{ success: boolean; data: Category[] }>('/categories/tree')
+      console.log('Full API Response:', response)
+      
+      // Check if response is the wrapped format or direct array
+      let categoriesData: Category[] = []
+      
+      if (Array.isArray(response)) {
+        // Response is direct array (shouldn't happen but handle it)
+        categoriesData = response
+        console.log('Response is direct array')
+      } else if (response.success && response.data) {
+        // Response is wrapped format
+        categoriesData = response.data
+        console.log('Response has success wrapper')
+      } else if (Array.isArray((response as any).data)) {
+        // Fallback: check if response itself has data array
+        categoriesData = (response as any).data
+        console.log('Response.data is array')
+      }
+      
+      if (categoriesData.length > 0) {
+        console.log('Setting categories:', categoriesData.length, 'categories')
+        setCategories(categoriesData)
+        // Auto-expand first few parent categories
+        const initialExpanded = new Set(categoriesData.slice(0, 3).map(c => c.id))
+        setExpandedCategories(initialExpanded)
+      } else {
+        console.error('No categories data found in response')
+      }
+    } catch (error) {
+      console.error('Failed to fetch categories:', error)
+    }
+  }
+
+  const toggleCategory = (categoryId: string) => {
+    setExpandedCategories(prev => {
+      const next = new Set(prev)
+      if (next.has(categoryId)) {
+        next.delete(categoryId)
+      } else {
+        next.add(categoryId)
+      }
+      return next
+    })
+  }
 
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => ({
@@ -49,23 +111,77 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
             <ChevronDown className={`w-4 h-4 transition-transform ${expandedSections.category ? "" : "-rotate-90"}`} />
           </button>
           {expandedSections.category && (
-            <div className="space-y-2">
-              {categories.map((cat) => (
-                <label key={cat} className="flex items-center gap-3 cursor-pointer hover:opacity-75 transition">
-                  <input
-                    type="checkbox"
-                    checked={filters.category === cat}
-                    onChange={(e) =>
-                      onChange({
-                        ...filters,
-                        category: e.target.checked ? cat : null,
-                      })
-                    }
-                    className="w-4 h-4 rounded border-border cursor-pointer"
-                  />
-                  <span className="text-sm">{cat}</span>
-                </label>
-              ))}
+            <div className="space-y-1 max-h-96 overflow-y-auto">
+              {categories.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic">Loading categories...</p>
+              ) : (
+                categories.map((parent) => (
+                <div key={parent.id} className="space-y-1">
+                  {/* Parent Category */}
+                  <div className="flex items-start gap-1">
+                    {parent.children && parent.children.length > 0 && (
+                      <button
+                        onClick={() => toggleCategory(parent.id)}
+                        className="mt-1 hover:bg-muted rounded p-0.5 transition-colors"
+                      >
+                        <ChevronRight 
+                          className={`w-3.5 h-3.5 transition-transform ${
+                            expandedCategories.has(parent.id) ? 'rotate-90' : ''
+                          }`} 
+                        />
+                      </button>
+                    )}
+                    <label className="flex items-center gap-2 cursor-pointer hover:opacity-75 transition flex-1 py-1">
+                      <input
+                        type="checkbox"
+                        checked={filters.category === parent.id}
+                        onChange={(e) =>
+                          onChange({
+                            ...filters,
+                            category: e.target.checked ? parent.id : null,
+                          })
+                        }
+                        className="w-3.5 h-3.5 rounded border-border cursor-pointer flex-shrink-0"
+                      />
+                      <span className="text-sm font-medium">{parent.name}</span>
+                      {parent.product_count && parseInt(parent.product_count) > 0 && (
+                        <span className="text-xs text-muted-foreground">({parent.product_count})</span>
+                      )}
+                    </label>
+                  </div>
+
+                  {/* Child Categories */}
+                  {parent.children && 
+                   parent.children.length > 0 && 
+                   expandedCategories.has(parent.id) && (
+                    <div className="ml-5 space-y-1 border-l-2 border-border pl-2">
+                      {parent.children.map((child) => (
+                        <label 
+                          key={child.id} 
+                          className="flex items-center gap-2 cursor-pointer hover:opacity-75 transition py-1"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={filters.category === child.id}
+                            onChange={(e) =>
+                              onChange({
+                                ...filters,
+                                category: e.target.checked ? child.id : null,
+                              })
+                            }
+                            className="w-3.5 h-3.5 rounded border-border cursor-pointer flex-shrink-0"
+                          />
+                          <span className="text-sm">{child.name}</span>
+                          {child.product_count && parseInt(child.product_count) > 0 && (
+                            <span className="text-xs text-muted-foreground">({child.product_count})</span>
+                          )}
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))
+              )}
             </div>
           )}
         </div>
