@@ -24,6 +24,12 @@ class ApiClient {
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}${endpoint}`;
     
+    console.log('🚀 [API CLIENT] Request:', {
+      url,
+      method: options.method || 'GET',
+      endpoint
+    });
+    
     // Get token from localStorage
     const token = localStorage.getItem('access_token');
     
@@ -34,6 +40,7 @@ class ApiClient {
     // Add authorization header if token exists
     if (token && !endpoint.includes('/auth/')) {
       headers['Authorization'] = `Bearer ${token}`;
+      console.log('🔑 [API CLIENT] Token added to request');
     }
 
     // Merge with provided headers
@@ -42,20 +49,30 @@ class ApiClient {
     }
 
     try {
+      console.log('⏳ [API CLIENT] Fetching...');
       const response = await fetch(url, {
         ...options,
         headers,
       });
 
+      console.log('📡 [API CLIENT] Response status:', response.status, response.statusText);
+
       const data = await response.json();
+      
+      console.log('📦 [API CLIENT] Response data:', data);
 
       if (!response.ok) {
+        console.error('❌ [API CLIENT] Request failed:', {
+          status: response.status,
+          data
+        });
         throw new Error(data.message || data.error || 'Request failed');
       }
 
+      console.log('✅ [API CLIENT] Request successful');
       return data;
     } catch (error) {
-      console.error('API Error:', error);
+      console.error('💥 [API CLIENT] Error:', error);
       throw error;
     }
   }

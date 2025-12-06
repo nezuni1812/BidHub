@@ -15,7 +15,8 @@ interface Category {
 interface SearchFiltersProps {
   filters: {
     search: string
-    category: string | null
+    category: number | null
+    categoryName: string | null
     priceRange: [number, number]
     sortBy: string
     condition: string | null
@@ -134,19 +135,17 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
                     <label className="flex items-center gap-2 cursor-pointer hover:opacity-75 transition flex-1 py-1">
                       <input
                         type="checkbox"
-                        checked={filters.category === parent.id}
+                        checked={filters.category === parseInt(parent.id)}
                         onChange={(e) =>
                           onChange({
                             ...filters,
-                            category: e.target.checked ? parent.id : null,
+                            category: e.target.checked ? parseInt(parent.id) : null,
+                            categoryName: e.target.checked ? parent.name : null,
                           })
                         }
                         className="w-3.5 h-3.5 rounded border-border cursor-pointer flex-shrink-0"
                       />
                       <span className="text-sm font-medium">{parent.name}</span>
-                      {parent.product_count && parseInt(parent.product_count) > 0 && (
-                        <span className="text-xs text-muted-foreground">({parent.product_count})</span>
-                      )}
                     </label>
                   </div>
 
@@ -162,19 +161,17 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
                         >
                           <input
                             type="checkbox"
-                            checked={filters.category === child.id}
+                            checked={filters.category === parseInt(child.id)}
                             onChange={(e) =>
                               onChange({
                                 ...filters,
-                                category: e.target.checked ? child.id : null,
+                                category: e.target.checked ? parseInt(child.id) : null,
+                                categoryName: e.target.checked ? child.name : null,
                               })
                             }
                             className="w-3.5 h-3.5 rounded border-border cursor-pointer flex-shrink-0"
                           />
                           <span className="text-sm">{child.name}</span>
-                          {child.product_count && parseInt(child.product_count) > 0 && (
-                            <span className="text-xs text-muted-foreground">({child.product_count})</span>
-                          )}
                         </label>
                       ))}
                     </div>

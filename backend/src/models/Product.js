@@ -94,7 +94,16 @@ class Product {
     }
 
     if (category_id) {
-      whereConditions.push(`p.category_id = $${paramIndex}`);
+      // Get all child categories
+      whereConditions.push(`p.category_id IN (
+        WITH RECURSIVE category_tree AS (
+          SELECT id FROM categories WHERE id = $${paramIndex}
+          UNION
+          SELECT c.id FROM categories c
+          INNER JOIN category_tree ct ON c.parent_id = ct.id
+        )
+        SELECT id FROM category_tree
+      )`);
       params.push(category_id);
       paramIndex++;
     }
