@@ -16,6 +16,8 @@ import {
   getImageUrl
 } from "@/lib/products"
 import type { Product, ProductSearchParams } from "@/lib/products"
+import { getWatchlist, addToWatchlist, removeFromWatchlist } from "@/lib/watchlist"
+import { useToast } from "@/components/ui/use-toast"
 
 interface Filters {
   search: string
@@ -25,9 +27,11 @@ interface Filters {
   sortBy: string
   condition: string | null
   sellerRating: number
+  showWatchlist: boolean
 }
 
 export default function Home() {
+  const { toast } = useToast();
   const [filters, setFilters] = useState<Filters>({
     search: "",
     category: null,
@@ -36,7 +40,9 @@ export default function Home() {
     sortBy: "newest",
     condition: null,
     sellerRating: 0,
+    showWatchlist: false,
   })
+  const [watchlistIds, setWatchlistIds] = useState<Set<number>>(new Set())
   const [showFilters, setShowFilters] = useState(true)
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(false)
@@ -56,11 +62,33 @@ export default function Home() {
       products: products.slice(0, 2) // Log first 2 products
     });
   }, [products]);
+  
+  // Load watchlist IDs on initial mount
+  useEffect(() => {
+    const loadWatchlistIds = async () => {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+      
+      try {
+        const watchlistData = await getWatchlist(1, 100);
+        console.log('💖 [INITIAL_LOAD] Watchlist data:', watchlistData);
+        if (watchlistData.data && watchlistData.data.length > 0) {
+          const ids = new Set(watchlistData.data.map(p => parseInt((p as any).product_id)));
+          console.log('💖 [INITIAL_LOAD] Loaded IDs:', Array.from(ids));
+          setWatchlistIds(ids);
+        }
+      } catch (err) {
+        console.log('Could not load initial watchlist:', err);
+      }
+    };
+    
+    loadWatchlistIds();
+  }, []); // Run once on mount
 
   // Reset page to 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filters.search, filters.category, filters.sortBy]);
+  }, [filters.search, filters.category, filters.sortBy, filters.showWatchlist]);
 
   // Fetch products based on filters
   useEffect(() => {
@@ -70,6 +98,47 @@ export default function Home() {
       setError(null)
       
       try {
+        // If showing watchlist, fetch from watchlist API
+        if (filters.showWatchlist) {
+          const token = localStorage.getItem('access_token');
+          if (!token) {
+            toast({
+              title: "Login Required",
+              description: "Please login to view your watchlist",
+              variant: "destructive"
+            });
+            setProducts([]);
+            setPagination({ page: 1, page_size: 8, total: 0, total_pages: 0 });
+            setLoading(false);
+            return;
+          }
+          
+          const watchlistData = await getWatchlist(currentPage, 8);
+          console.log('💖 [WATCHLIST] API Response:', watchlistData);
+          console.log('💖 [WATCHLIST] Data length:', watchlistData.data?.length || 0);
+          
+          // Transform watchlist data: use product_id as id for rendering
+          const transformedProducts = (watchlistData.data || []).map((item: any) => ({
+            ...item,
+            id: item.product_id // Use product_id as the main id for links and keys
+          }));
+          
+          console.log('💖 [WATCHLIST] Transformed products:', transformedProducts);
+          
+          setProducts(transformedProducts);
+          setPagination(watchlistData.pagination || { page: 1, page_size: 8, total: 0, total_pages: 0 });
+          
+          // Update watchlist IDs - use product_id from watchlist response
+          if (transformedProducts.length > 0) {
+            const ids = new Set(transformedProducts.map(p => parseInt(p.id as any)));
+            console.log('💖 [WATCHLIST] Extracted IDs:', Array.from(ids));
+            setWatchlistIds(ids);
+          }
+          
+          setLoading(false);
+          return;
+        }
+        
         // Map sortBy to backend format
         let sort_by: 'end_time_asc' | 'end_time_desc' | 'price_asc' | 'price_desc' | undefined
         
@@ -124,6 +193,7 @@ export default function Home() {
         
         setProducts(productList)
         setPagination(response.pagination)
+        
         console.log('✨ [HOME] Products state updated successfully')
       } catch (err) {
         console.error('❌ [HOME] Error fetching products:', err)
@@ -139,9 +209,60 @@ export default function Home() {
     }
     
     fetchProducts()
-  }, [filters.search, filters.category, filters.sortBy, currentPage])
+  }, [filters.search, filters.category, filters.sortBy, filters.showWatchlist, currentPage])
+  
+  // Toggle watchlist for a product
+  const toggleWatchlist = async (productId: number, e: React.MouseEvent) => {
+    e.preventDefault(); // Prevent navigation
+    e.stopPropagation();
+    
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      toast({
+        title: "Login Required",
+        description: "Please login to add items to watchlist",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      const isInWatchlist = watchlistIds.has(productId);
+      
+      if (isInWatchlist) {
+        await removeFromWatchlist(productId);
+        setWatchlistIds(prev => {
+          const next = new Set(prev);
+          next.delete(productId);
+          return next;
+        });
+        toast({
+          title: "Removed from watchlist",
+          description: "Product removed from your watchlist"
+        });
+        
+        // If currently viewing watchlist, remove from UI
+        if (filters.showWatchlist) {
+          setProducts(prev => prev.filter(p => parseInt(p.id as any) !== productId));
+        }
+      } else {
+        await addToWatchlist(productId);
+        setWatchlistIds(prev => new Set([...prev, productId]));
+        toast({
+          title: "Added to watchlist",
+          description: "Product added to your watchlist"
+        });
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "Failed to update watchlist",
+        variant: "destructive"
+      });
+    }
+  };
 
-  const hasActiveFilters = filters.search || filters.category || filters.condition || filters.sellerRating > 0
+  const hasActiveFilters = filters.search || filters.category || filters.condition || filters.sellerRating > 0 || filters.showWatchlist
 
   return (
     <div className="min-h-screen bg-background">
@@ -181,7 +302,7 @@ export default function Home() {
                   "Loading..."
                 ) : (
                   <>
-                    Showing {products.length} result{products.length !== 1 ? "s" : ""} 
+                    Showing {products?.length || 0} result{products?.length !== 1 ? "s" : ""} 
                     {pagination.total > 0 && ` of ${pagination.total}`}
                   </>
                 )}
@@ -271,6 +392,7 @@ export default function Home() {
                       sortBy: "newest",
                       condition: null,
                       sellerRating: 0,
+                      showWatchlist: false,
                     })
                   }
                 >
@@ -279,19 +401,30 @@ export default function Home() {
               </Card>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {products.map((product) => (
-                  <Link key={product.id} to={`/product/${product.id}`}>
-                    <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer h-full flex flex-col">
-                      <div className="relative h-48 bg-muted overflow-hidden group">
-                        <img
-                          src={getImageUrl(product.main_image)}
-                          alt={product.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                        />
-                        <button className="absolute top-3 right-3 bg-background/80 backdrop-blur p-2 rounded-full hover:bg-background">
-                          <Heart className="w-5 h-5" />
-                        </button>
-                      </div>
+                {(products || []).map((product) => {
+                  const productId = parseInt(product.id as any);
+                  const isInWatchlist = watchlistIds.has(productId);
+                  
+                  return (
+                    <Link key={product.id} to={`/product/${product.id}`}>
+                      <Card className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer h-full flex flex-col">
+                        <div className="relative h-48 bg-muted overflow-hidden group">
+                          <img
+                            src={getImageUrl(product.main_image)}
+                            alt={product.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          />
+                          <button 
+                            onClick={(e) => toggleWatchlist(productId, e)}
+                            className={`absolute top-3 right-3 backdrop-blur p-2 rounded-full transition-all ${
+                              isInWatchlist 
+                                ? 'bg-red-500 hover:bg-red-600' 
+                                : 'bg-background/80 hover:bg-background'
+                            }`}
+                          >
+                            <Heart className={`w-5 h-5 ${isInWatchlist ? 'fill-white text-white' : ''}`} />
+                          </button>
+                        </div>
                       <div className="p-4 flex flex-col flex-1">
                         <Badge variant="outline" className="w-fit mb-2">
                           {product.category_name}
@@ -320,7 +453,8 @@ export default function Home() {
                       </div>
                     </Card>
                   </Link>
-                ))}
+                  );
+                })}
               </div>
             )}
 

@@ -1,8 +1,9 @@
 "use client"
 import { Card } from "@/components/ui/card"
-import { ChevronDown, ChevronRight } from "lucide-react"
+import { ChevronDown, ChevronRight, Heart } from "lucide-react"
 import { useState, useEffect } from "react"
 import { api } from "@/lib/api"
+import { Button } from "@/components/ui/button"
 
 interface Category {
   id: string
@@ -21,6 +22,7 @@ interface SearchFiltersProps {
     sortBy: string
     condition: string | null
     sellerRating: number
+    showWatchlist: boolean
   }
   onChange: (filters: any) => void
 }
@@ -101,6 +103,18 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
     <div className="space-y-4">
       <Card className="p-6">
         <h3 className="font-semibold mb-4">Filters</h3>
+
+        {/* Watchlist */}
+        <div className="mb-6 pb-6 border-b border-border">
+          <Button
+            variant={filters.showWatchlist ? "default" : "outline"}
+            className="w-full justify-start gap-2"
+            onClick={() => onChange({ ...filters, showWatchlist: !filters.showWatchlist })}
+          >
+            <Heart className={`w-4 h-4 ${filters.showWatchlist ? 'fill-current' : ''}`} />
+            My Watchlist
+          </Button>
+        </div>
 
         {/* Category */}
         <div className="mb-6 pb-6 border-b border-border">

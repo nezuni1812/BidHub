@@ -13,6 +13,7 @@ import { useParams, Link } from "react-router-dom"
 import { getProductById, getProductBids, formatPrice, formatTimeRemaining, getImageUrl, type Product, type Bid } from "@/lib/products"
 import { io, Socket } from "socket.io-client"
 import { useToast } from "@/components/ui/use-toast"
+import { addToWatchlist, removeFromWatchlist, isInWatchlist as checkWatchlist } from "@/lib/watchlist"
 
 export default function ProductDetail() {
     const { id } = useParams<{ id: string }>();
@@ -61,6 +62,13 @@ export default function ProductDetail() {
                 const bidsData = await getProductBids(id);
                 console.log('✅ Bids data:', bidsData);
                 setBids(bidsData.data);
+                
+                // Check watchlist status
+                const token = localStorage.getItem('access_token');
+                if (token) {
+                    const inWatchlist = await checkWatchlist(parseInt(id));
+                    setIsFavorited(inWatchlist);
+                }
                 
             } catch (err) {
                 console.error('❌ Error fetching product:', err);
@@ -261,6 +269,44 @@ export default function ProductDetail() {
             setTimeout(() => resolve(), 1500);
         });
     };
+    
+    const toggleWatchlist = async () => {
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            toast({
+                title: "Login Required",
+                description: "Please login to add items to watchlist",
+                variant: "destructive"
+            });
+            return;
+        }
+        
+        if (!id) return;
+        
+        try {
+            if (isFavorited) {
+                await removeFromWatchlist(parseInt(id));
+                setIsFavorited(false);
+                toast({
+                    title: "Removed from watchlist",
+                    description: "Product removed from your watchlist"
+                });
+            } else {
+                await addToWatchlist(parseInt(id));
+                setIsFavorited(true);
+                toast({
+                    title: "Added to watchlist",
+                    description: "Product added to your watchlist"
+                });
+            }
+        } catch (err) {
+            toast({
+                title: "Error",
+                description: err instanceof Error ? err.message : "Failed to update watchlist",
+                variant: "destructive"
+            });
+        }
+    };
 
 
     return (
@@ -326,8 +372,8 @@ export default function ProductDetail() {
                                     <Button
                                         variant="outline"
                                         size="lg"
-                                        className="flex-1 bg-transparent"
-                                        onClick={() => setIsFavorited(!isFavorited)}
+                                        className={`flex-1 transition-colors ${isFavorited ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-transparent'}`}
+                                        onClick={toggleWatchlist}
                                     >
                                         <Heart className={`w-5 h-5 ${isFavorited ? "fill-current" : ""}`} />
                                     </Button>
