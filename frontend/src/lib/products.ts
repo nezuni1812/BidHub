@@ -158,7 +158,14 @@ export const searchProducts = async (
  */
 export const getProductById = async (id: number | string): Promise<Product> => {
   const response = await api.get<Product>(`/products/${id}`);
-  return response.data!;
+  console.log('🔧 [PRODUCTS API] getProductById response:', response);
+  
+  // API returns { success: true, data: {...} }
+  if (response.success && response.data) {
+    return response.data;
+  }
+  
+  throw new Error('Failed to fetch product');
 };
 
 /**
