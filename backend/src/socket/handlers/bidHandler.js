@@ -176,8 +176,30 @@ module.exports = (io, socket) => {
       }
 
       // STEP 8: Save/Update auto-bid configuration
+      const existingAutoBid = await AutoBid.getActive(userId, productId);
+      const isCurrentWinner = product.winner_id === userId;
+      
       await AutoBid.createOrUpdate(userId, productId, maxPrice);
       console.log(`[AUTO-BID] Config saved: User ${userId} max ${maxPrice}`);
+
+      // SPECIAL CASE: If user is already winning and just updating their max price
+      // Only update the auto-bid config, don't place a new bid
+      if (isCurrentWinner && existingAutoBid) {
+        console.log(`[AUTO-BID] User ${userId} is current winner, just updating max price to ${maxPrice}`);
+        await releaseLock(lock);
+        
+        return socket.emit(EVENTS.BID_SUCCESS, {
+          message: 'Giá tối đa của bạn đã được cập nhật',
+          autoBid: {
+            userId,
+            productId,
+            maxPrice,
+            isCurrentWinner: true
+          },
+          currentPrice: product.current_price,
+          actualBidPlaced: false // No new bid placed
+        });
+      }
 
       // STEP 9: Calculate minimal winning bid
       // Get all active auto-bids for this product (excluding current user)

@@ -210,6 +210,12 @@ export const formatPrice = (price: number): string => {
 /**
  * Calculate time remaining from seconds
  */
+/**
+ * Format time remaining with relative time for < 3 days, date format for >= 3 days
+ * Yêu cầu: 
+ * - Nếu < 3 ngày: hiển thị relative time (3 ngày nữa, 10 phút nữa)
+ * - Nếu >= 3 ngày: hiển thị ngày tháng năm (dd/mm/yyyy HH:mm)
+ */
 export const formatTimeRemaining = (seconds: number): string => {
   if (seconds <= 0) return 'Đã kết thúc';
   
@@ -217,9 +223,33 @@ export const formatTimeRemaining = (seconds: number): string => {
   const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60));
   const minutes = Math.floor((seconds % (60 * 60)) / 60);
   
-  if (days > 0) return `${days} ngày`;
-  if (hours > 0) return `${hours} giờ`;
-  return `${minutes} phút`;
+  // If >= 3 days, show end date/time (dd/mm/yyyy HH:mm)
+  if (days >= 3) {
+    const endTime = new Date(Date.now() + seconds * 1000);
+    const day = String(endTime.getDate()).padStart(2, '0');
+    const month = String(endTime.getMonth() + 1).padStart(2, '0');
+    const year = endTime.getFullYear();
+    const hour = String(endTime.getHours()).padStart(2, '0');
+    const minute = String(endTime.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hour}:${minute}`;
+  }
+  
+  // If < 3 days, show relative format (with "nữa")
+  if (days > 0) {
+    if (hours > 0) {
+      return `${days} ngày ${hours} giờ nữa`;
+    }
+    return `${days} ngày nữa`;
+  }
+  
+  if (hours > 0) {
+    if (minutes > 0) {
+      return `${hours} giờ ${minutes} phút nữa`;
+    }
+    return `${hours} giờ nữa`;
+  }
+  
+  return `${minutes} phút nữa`;
 };
 
 /**

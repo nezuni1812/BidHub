@@ -21,6 +21,10 @@ module.exports = {
   AUCTION_ENDED: 'auction-ended',
   PRICE_UPDATE: 'price-update',
   
+  // Question Events
+  NEW_QUESTION: 'new-question',
+  QUESTION_ANSWERED: 'question-answered',
+  
   // Order & Chat Events
   NEW_MESSAGE: 'new-message',
   PAYMENT_RECEIVED: 'payment-received',

@@ -89,6 +89,20 @@ const askQuestion = asyncHandler(async (req, res) => {
   
   const questionRecord = await Question.create(product_id, req.user.id, question);
   
+  // Emit socket event for real-time update
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`product-${product_id}`).emit('new-question', {
+      productId: product_id,
+      question: {
+        id: questionRecord.id,
+        question: questionRecord.question,
+        user_name: req.user.full_name,
+        created_at: questionRecord.created_at
+      }
+    });
+  }
+  
   // Send email notification to seller
   try {
     const seller = await User.findById(product.seller_id);

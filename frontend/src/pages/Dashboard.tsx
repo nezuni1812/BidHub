@@ -7,78 +7,57 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Link } from "react-router-dom"
 import { Heart, ShoppingCart, Trophy } from "lucide-react"
+import { useState, useEffect } from "react"
+import { useAuth } from "@/contexts/AuthContext"
+import { getActiveBids, getWonProducts, type BiddingProduct, type WonProduct } from "@/lib/dashboard"
+import { getWatchlist } from "@/lib/watchlist"
+import { formatPrice, formatTimeRemaining, getImageUrl, type Product } from "@/lib/products"
 
 export default function DashboardPage() {
-  const userProfile = {
-    name: "John Doe",
-    email: "john@example.com",
-    rating: 4.8,
-    reviews: 42,
-    joinDate: "Jan 15, 2024",
+  const { user } = useAuth();
+  const [activeBids, setActiveBids] = useState<BiddingProduct[]>([]);
+  const [watchlist, setWatchlist] = useState<Product[]>([]);
+  const [wonItems, setWonItems] = useState<WonProduct[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'active' | 'watchlist' | 'won'>('active');
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        if (activeTab === 'active') {
+          const bidsData = await getActiveBids(1, 20);
+          setActiveBids(bidsData.data);
+        } else if (activeTab === 'watchlist') {
+          const watchlistData = await getWatchlist(1, 20);
+          setWatchlist(watchlistData.data);
+        } else if (activeTab === 'won') {
+          const wonData = await getWonProducts(1, 20);
+          setWonItems(wonData.data);
+        }
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [activeTab]);
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          <Card className="p-8 text-center">
+            <p className="text-muted-foreground">Please login to view your dashboard</p>
+          </Card>
+        </div>
+      </div>
+    );
   }
-
-  const watchlist = [
-    {
-      id: 1,
-      name: "Vintage Camera Collection",
-      bid: 2500000,
-      timeLeft: "3 days",
-      status: "Active",
-    },
-    {
-      id: 2,
-      name: "Designer Leather Watch",
-      bid: 5500000,
-      timeLeft: "2 days",
-      status: "Active",
-    },
-  ]
-
-  const activeBids = [
-    {
-      id: 1,
-      name: "Vintage Camera Collection",
-      myBid: 2500000,
-      status: "Winning",
-      bids: 24,
-      timeLeft: "3 days",
-    },
-    {
-      id: 2,
-      name: "Classic Wristwatch",
-      myBid: 3100000,
-      status: "Outbid",
-      bids: 18,
-      timeLeft: "5 days",
-    },
-    {
-      id: 3,
-      name: "Vintage Nike Sneakers",
-      myBid: 1700000,
-      status: "Winning",
-      bids: 31,
-      timeLeft: "6 hours",
-    },
-  ]
-
-  const won = [
-    {
-      id: 1,
-      name: "MacBook Pro 16 2024",
-      finalBid: 45000000,
-      seller: "ElectroHub",
-      wonDate: "Oct 25, 2025",
-      status: "Payment Pending",
-    },
-    {
-      id: 2,
-      name: "Sony PlayStation 5",
-      finalBid: 12000000,
-      seller: "GamingDeals",
-      wonDate: "Oct 20, 2025",
-      status: "Completed",
-    },
-  ]
 
   return (
     <div className="min-h-screen bg-background">
@@ -90,24 +69,21 @@ export default function DashboardPage() {
           <Card className="p-6 sm:p-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-bold mb-2">{userProfile.name}</h1>
-                <p className="text-muted-foreground mb-3">{userProfile.email}</p>
+                <h1 className="text-3xl font-bold mb-2">{user.full_name}</h1>
+                <p className="text-muted-foreground mb-3">{user.email}</p>
                 <div className="flex items-center gap-4">
-                  <div className="flex text-yellow-500">{"★".repeat(Math.floor(userProfile.rating))}</div>
-                  <span className="text-sm text-muted-foreground">
-                    {userProfile.rating} rating ({userProfile.reviews} reviews)
-                  </span>
-                  <span className="text-sm text-muted-foreground">•</span>
-                  <span className="text-sm text-muted-foreground">Member since {userProfile.joinDate}</span>
+                  <span className="text-sm text-muted-foreground">Role: {user.role}</span>
                 </div>
               </div>
-              <Button>Edit Profile</Button>
+              <Link to="/profile/settings">
+                <Button>Edit Profile</Button>
+              </Link>
             </div>
           </Card>
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="active" className="w-full">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
           <TabsList className="grid w-full max-w-md grid-cols-3">
             <TabsTrigger value="active" className="gap-2">
               <ShoppingCart className="w-4 h-4" />
@@ -125,37 +101,46 @@ export default function DashboardPage() {
 
           {/* Active Bids */}
           <TabsContent value="active" className="mt-6 space-y-4">
-            {activeBids.length === 0 ? (
+            {loading ? (
+              <Card className="p-8 text-center">
+                <p className="text-muted-foreground">Loading...</p>
+              </Card>
+            ) : activeBids.length === 0 ? (
               <Card className="p-8 text-center">
                 <ShoppingCart className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                 <p className="text-muted-foreground">No active bids yet</p>
               </Card>
             ) : (
               activeBids.map((bid) => (
-                <Link key={bid.id} to={`/product/${bid.id}`}>
+                <Link key={bid.id} to={`/product/${bid.product_id}`}>
                   <Card className="p-4 sm:p-6 hover:shadow-lg transition-shadow cursor-pointer">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex gap-4">
+                      <img 
+                        src={getImageUrl(bid.main_image)} 
+                        alt={bid.title}
+                        className="w-20 h-20 object-cover rounded"
+                      />
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold text-lg line-clamp-1">{bid.name}</h3>
-                          <Badge
-                            variant={bid.status === "Winning" ? "default" : "outline"}
-                            className={bid.status === "Winning" ? "bg-green-600" : ""}
-                          >
-                            {bid.status === "Winning" ? "✓ Winning" : "Outbid"}
-                          </Badge>
+                          <h3 className="font-semibold text-lg line-clamp-1">{bid.title}</h3>
+                          {bid.is_winning ? (
+                            <Badge className="bg-green-600">✓ Winning</Badge>
+                          ) : (
+                            <Badge variant="outline">Outbid</Badge>
+                          )}
                         </div>
                         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                          <span>Your bid: ${(bid.myBid / 1000000).toFixed(1)}M</span>
+                          <span>Your bid: {formatPrice(parseFloat(bid.my_bid_price))}</span>
                           <span>•</span>
-                          <span>{bid.bids} bids</span>
+                          <span>Current: {formatPrice(parseFloat(bid.current_price))}</span>
                           <span>•</span>
-                          <span className="text-accent font-semibold">{bid.timeLeft} left</span>
+                          <span>{bid.total_bids} bids</span>
+                          <span>•</span>
+                          <span className="text-accent font-semibold">
+                            {formatTimeRemaining(bid.seconds_remaining)} left
+                          </span>
                         </div>
                       </div>
-                      <Button variant="outline" size="sm" className="whitespace-nowrap bg-transparent">
-                        View Item
-                      </Button>
                     </div>
                   </Card>
                 </Link>
@@ -165,27 +150,35 @@ export default function DashboardPage() {
 
           {/* Watchlist */}
           <TabsContent value="watchlist" className="mt-6 space-y-4">
-            {watchlist.length === 0 ? (
+            {loading ? (
+              <Card className="p-8 text-center">
+                <p className="text-muted-foreground">Loading...</p>
+              </Card>
+            ) : watchlist.length === 0 ? (
               <Card className="p-8 text-center">
                 <Heart className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                 <p className="text-muted-foreground">No items in watchlist</p>
               </Card>
             ) : (
-              watchlist.map((item) => (
-                <Link key={item.id} to={`/product/${item.id}`}>
+              watchlist.map((item: any) => (
+                <Link key={item.id} to={`/product/${item.product_id || item.id}`}>
                   <Card className="p-4 sm:p-6 hover:shadow-lg transition-shadow cursor-pointer">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div className="flex gap-4">
+                      <img 
+                        src={getImageUrl(item.main_image)} 
+                        alt={item.title}
+                        className="w-20 h-20 object-cover rounded"
+                      />
                       <div className="flex-1">
-                        <h3 className="font-semibold text-lg mb-2">{item.name}</h3>
+                        <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
                         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                          <span>Current bid: ${(item.bid / 1000000).toFixed(1)}M</span>
+                          <span>Current bid: {formatPrice(parseFloat(item.current_price))}</span>
                           <span>•</span>
-                          <span className="text-accent font-semibold">{item.timeLeft} left</span>
+                          <span className="text-accent font-semibold">
+                            {formatTimeRemaining(parseFloat(item.seconds_remaining))} left
+                          </span>
                         </div>
                       </div>
-                      <Button variant="outline" size="sm" className="whitespace-nowrap bg-transparent">
-                        Place Bid
-                      </Button>
                     </div>
                   </Card>
                 </Link>
@@ -195,42 +188,40 @@ export default function DashboardPage() {
 
           {/* Won Items */}
           <TabsContent value="won" className="mt-6 space-y-4">
-            {won.length === 0 ? (
+            {loading ? (
+              <Card className="p-8 text-center">
+                <p className="text-muted-foreground">Loading...</p>
+              </Card>
+            ) : wonItems.length === 0 ? (
               <Card className="p-8 text-center">
                 <Trophy className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                 <p className="text-muted-foreground">No won items yet</p>
               </Card>
             ) : (
-              won.map((item) => (
+              wonItems.map((item) => (
                 <Card key={item.id} className="p-4 sm:p-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex gap-4">
+                    <img 
+                      src={getImageUrl(item.main_image)} 
+                      alt={item.title}
+                      className="w-20 h-20 object-cover rounded"
+                    />
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
-                        <h3 className="font-semibold text-lg">{item.name}</h3>
-                        <Badge
-                          variant="outline"
-                          className={item.status === "Completed" ? "bg-green-50 text-green-700" : ""}
-                        >
-                          {item.status}
-                        </Badge>
+                        <h3 className="font-semibold text-lg">{item.title}</h3>
+                        {item.order_status && (
+                          <Badge variant="outline">
+                            {item.order_status}
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                        <span>Won for: ${(item.finalBid / 1000000).toFixed(1)}M</span>
+                        <span>Won for: {formatPrice(parseFloat(item.final_price))}</span>
                         <span>•</span>
-                        <span>Seller: {item.seller}</span>
+                        <span>Seller: {item.seller_name}</span>
                         <span>•</span>
-                        <span>{item.wonDate}</span>
+                        <span>{new Date(item.won_date).toLocaleDateString('vi-VN')}</span>
                       </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
-                        Contact Seller
-                      </Button>
-                      {item.status === "Completed" && (
-                        <Button variant="outline" size="sm">
-                          Leave Feedback
-                        </Button>
-                      )}
                     </div>
                   </div>
                 </Card>

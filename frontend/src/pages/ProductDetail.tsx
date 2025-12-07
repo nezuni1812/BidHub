@@ -14,10 +14,13 @@ import { getProductById, getProductBids, formatPrice, formatTimeRemaining, getIm
 import { io, Socket } from "socket.io-client"
 import { useToast } from "@/components/ui/use-toast"
 import { addToWatchlist, removeFromWatchlist, isInWatchlist as checkWatchlist } from "@/lib/watchlist"
+import { askQuestion } from "@/lib/questions"
+import { useAuth } from "@/contexts/AuthContext"
 
 export default function ProductDetail() {
     const { id } = useParams<{ id: string }>();
     const { toast } = useToast();
+    const { user } = useAuth();
     
     const [product, setProduct] = useState<Product | null>(null)
     const [bids, setBids] = useState<Bid[]>([])
@@ -28,6 +31,9 @@ export default function ProductDetail() {
     const [showBidDialog, setShowBidDialog] = useState(false)
     const [showQuestionDialog, setShowQuestionDialog] = useState(false)
     const [socket, setSocket] = useState<Socket | null>(null)
+    
+    // Check if current user is winning
+    const isWinning = user && product && product.winner_id && parseInt(product.winner_id as any) === parseInt(user.id as any);
 
     useEffect(() => {
         if (!id) return;
@@ -176,6 +182,31 @@ export default function ProductDetail() {
             });
         });
         
+        // Listen for new questions
+        newSocket.on('new-question', (data: any) => {
+            console.log('❓ New question posted:', data);
+            
+            setProduct(prev => {
+                if (!prev) return prev;
+                const updatedQuestions = [
+                    {
+                        id: data.question.id,
+                        question: data.question.question,
+                        asker_name: data.question.user_name,
+                        created_at: data.question.created_at,
+                        answer: null
+                    },
+                    ...(prev.questions || [])
+                ];
+                return { ...prev, questions: updatedQuestions };
+            });
+            
+            toast({
+                title: "New Question",
+                description: "Someone asked a question about this item"
+            });
+        });
+        
         setSocket(newSocket);
         
         return () => {
@@ -265,9 +296,24 @@ export default function ProductDetail() {
 
 
     const handleAskQuestion = async (question: string): Promise<void> => {
-        return new Promise<void>((resolve) => {
-            setTimeout(() => resolve(), 1500);
-        });
+        if (!id) {
+            throw new Error('Product ID not found');
+        }
+        
+        try {
+            await askQuestion({
+                product_id: parseInt(id),
+                question: question.trim()
+            });
+            
+            toast({
+                title: "Question Sent!",
+                description: "Your question has been sent to the seller."
+            });
+        } catch (err) {
+            console.error('❌ Error asking question:', err);
+            throw err;
+        }
     };
     
     const toggleWatchlist = async () => {
@@ -346,6 +392,15 @@ export default function ProductDetail() {
                         <Card className="p-6">
                             <div className="space-y-4">
                                 <h1 className="text-2xl font-bold">{product.title}</h1>
+
+                                {isWinning && (
+                                    <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 flex items-center gap-2">
+                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                        <span className="text-sm font-semibold text-green-600 dark:text-green-400">
+                                            🏆 You are currently the highest bidder!
+                                        </span>
+                                    </div>
+                                )}
 
                                 <div className="space-y-2 pb-4 border-b border-border">
                                     <p className="text-sm text-muted-foreground">Current bid</p>

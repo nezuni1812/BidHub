@@ -21,8 +21,21 @@ export function AskQuestionDialog({ isOpen, onClose, sellerName, onAsk }: AskQue
   const [success, setSuccess] = useState(false)
 
   const handleAsk = async () => {
-    if (!question.trim()) {
+    const trimmedQuestion = question.trim();
+    
+    // Validation: question must be 10-1000 characters
+    if (!trimmedQuestion) {
       setError("Please enter your question")
+      return
+    }
+    
+    if (trimmedQuestion.length < 10) {
+      setError("Question must be at least 10 characters long")
+      return
+    }
+    
+    if (trimmedQuestion.length > 1000) {
+      setError("Question must not exceed 1000 characters")
       return
     }
 
@@ -30,7 +43,7 @@ export function AskQuestionDialog({ isOpen, onClose, sellerName, onAsk }: AskQue
     setError("")
 
     try {
-      await onAsk(question)
+      await onAsk(trimmedQuestion)
       setSuccess(true)
       setTimeout(() => {
         onClose()
@@ -38,7 +51,8 @@ export function AskQuestionDialog({ isOpen, onClose, sellerName, onAsk }: AskQue
         setQuestion("")
       }, 2000)
     } catch (err) {
-      setError("Failed to send question. Please try again.")
+      const errorMessage = err instanceof Error ? err.message : "Failed to send question. Please try again.";
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -70,12 +84,15 @@ export function AskQuestionDialog({ isOpen, onClose, sellerName, onAsk }: AskQue
                   <Label htmlFor="question">Your question</Label>
                   <Textarea
                     id="question"
-                    placeholder="Enter your question here..."
+                    placeholder="Enter your question here (minimum 10 characters)..."
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
                     disabled={isLoading}
                     className="mt-2 min-h-24"
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {question.trim().length}/1000 characters {question.trim().length < 10 && question.trim().length > 0 && `(${10 - question.trim().length} more needed)`}
+                  </p>
                 </div>
 
                 {error && (
@@ -89,7 +106,11 @@ export function AskQuestionDialog({ isOpen, onClose, sellerName, onAsk }: AskQue
                   <Button variant="outline" className="flex-1 bg-transparent" onClick={onClose} disabled={isLoading}>
                     Cancel
                   </Button>
-                  <Button className="flex-1" onClick={handleAsk} disabled={!question.trim() || isLoading}>
+                  <Button 
+                    className="flex-1" 
+                    onClick={handleAsk} 
+                    disabled={!question.trim() || question.trim().length < 10 || isLoading}
+                  >
                     {isLoading ? "Sending..." : "Send Question"}
                   </Button>
                 </div>

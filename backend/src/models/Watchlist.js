@@ -36,6 +36,7 @@ class Watchlist {
         p.end_time,
         p.status,
         p.total_bids,
+        EXTRACT(EPOCH FROM (p.end_time - CURRENT_TIMESTAMP)) as seconds_remaining,
         (SELECT url FROM product_images WHERE product_id = p.id AND is_main = true LIMIT 1) as main_image,
         c.name as category_name,
         u.full_name as seller_name
@@ -43,15 +44,16 @@ class Watchlist {
       JOIN products p ON w.product_id = p.id
       JOIN categories c ON p.category_id = c.id
       JOIN users u ON p.seller_id = u.id
-      WHERE w.user_id = $1
+      WHERE w.user_id = $1 AND p.status = 'active'
       ORDER BY w.created_at DESC
       LIMIT $2 OFFSET $3
     `;
     
     const countQuery = `
       SELECT COUNT(*) as total
-      FROM watchlists
-      WHERE user_id = $1
+      FROM watchlists w
+      JOIN products p ON w.product_id = p.id
+      WHERE w.user_id = $1 AND p.status = 'active'
     `;
     
     const [dataResult, countResult] = await Promise.all([

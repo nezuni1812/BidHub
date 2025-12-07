@@ -56,13 +56,16 @@ class Bid {
     const query = `
       SELECT DISTINCT ON (p.id)
         p.id,
+        p.id as product_id,
         p.title,
         p.current_price,
         p.buy_now_price,
         p.end_time,
         p.status,
         p.total_bids,
+        EXTRACT(EPOCH FROM (p.end_time - NOW())) as seconds_remaining,
         (SELECT url FROM product_images WHERE product_id = p.id AND is_main = true LIMIT 1) as main_image,
+        b.bid_price as my_bid_price,
         b.bid_price as my_last_bid,
         b.created_at as my_bid_time,
         CASE WHEN b.user_id = p.winner_id THEN true ELSE false END as is_winning
@@ -102,15 +105,20 @@ class Bid {
     const query = `
       SELECT 
         p.id,
+        p.id as product_id,
         p.title,
+        p.current_price as final_price,
         p.current_price as winning_price,
+        p.end_time as won_date,
         p.end_time,
         p.status,
         (SELECT url FROM product_images WHERE product_id = p.id AND is_main = true LIMIT 1) as main_image,
         u.full_name as seller_name,
-        u.email as seller_email
+        u.email as seller_email,
+        o.status as order_status
       FROM products p
       JOIN users u ON p.seller_id = u.id
+      LEFT JOIN orders o ON o.product_id = p.id
       WHERE p.winner_id = $1 AND p.status = 'completed'
       ORDER BY p.end_time DESC
       LIMIT $2 OFFSET $3
