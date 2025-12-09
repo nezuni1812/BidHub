@@ -9,6 +9,7 @@ import DashboardPage from "@/pages/Dashboard";
 import CheckoutPage from "@/pages/CheckoutPage";
 import { ChatProvider } from "./contexts/ChatContext";
 import ChatPage from "./pages/ChatPage";
+import ProfilePage from "./pages/Profile";
 import "./globals.css";
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/product/:id" element={<ProductDetail />} />
+          <Route path="/profile/:username" element={<ProfilePage />} />
           <Route path="/selling" element={<SellingPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/chat" element={<ChatPage />} />
