@@ -10,6 +10,7 @@ import CheckoutPage from "@/pages/CheckoutPage";
 import { ChatProvider } from "./contexts/ChatContext";
 import ChatPage from "./pages/ChatPage";
 import ProfilePage from "./pages/Profile";
+import PostItemPage from "./pages/PostItem";
 import "./globals.css";
 
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/profile/:username" element={<ProfilePage />} />
           <Route path="/selling" element={<SellingPage />} />
+          <Route path="/seller/post-item" element={<PostItemPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/chat" element={<ChatPage />} />
           <Route path="/checkout/:id" element={<CheckoutPage />} />
