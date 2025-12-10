@@ -5,11 +5,13 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { useParams, Link } from "react-router-dom"
+import { EditProfileDialog } from "@/components/edit-profile-dialog"
+import { useState } from "react"
+import { useParams } from "react-router-dom"
 
 export default function ProfilePage() {
-    const { username } = useParams<{ username: string }>();
-    const user = {
+  const { username } = useParams<{ username: string }>();
+  const [profile, setProfile] = useState({
     username,
     name: "John Doe",
     joinDate: "Jan 15, 2024",
@@ -25,42 +27,18 @@ export default function ProfilePage() {
       itemsBought: 23,
       responseTime: "2 hours",
     },
+  })
+
+  const handleProfileUpdate = (data: { name: string; username: string; avatar: string }) => {
+    setProfile({
+      ...profile,
+      name: data.name,
+      username: data.username,
+      avatar: data.avatar,
+    })
   }
 
-  const ratings = [
-    {
-      id: 1,
-      rating: 5,
-      reviewer: "buyer_123",
-      date: "Oct 25, 2025",
-      comment: "Excellent condition, fast shipping!",
-      type: "positive",
-    },
-    {
-      id: 2,
-      rating: 5,
-      reviewer: "jane_smith",
-      date: "Oct 20, 2025",
-      comment: "Perfect item, great communication",
-      type: "positive",
-    },
-    {
-      id: 3,
-      rating: 4,
-      reviewer: "collector_mike",
-      date: "Oct 15, 2025",
-      comment: "Good quality but took longer than expected",
-      type: "positive",
-    },
-    {
-      id: 4,
-      rating: 1,
-      reviewer: "user_789",
-      date: "Oct 10, 2025",
-      comment: "Item not as described",
-      type: "negative",
-    },
-  ]
+  const isOwnProfile = true // This should be determined by checking if current user matches the profile username
 
   return (
     <div className="min-h-screen bg-background">
@@ -72,28 +50,38 @@ export default function ProfilePage() {
           <Card className="p-8">
             <div className="flex flex-col sm:flex-row gap-6 items-start">
               <img
-                src={user.avatar || "/placeholder.svg"}
-                alt={user.username}
+                src={profile.avatar || "/placeholder.svg"}
+                alt={profile.username}
                 className="w-24 h-24 rounded-full bg-muted object-cover"
               />
               <div className="flex-1">
                 <div className="mb-4">
-                  <h1 className="text-3xl font-bold mb-1">{user.name}</h1>
-                  <p className="text-muted-foreground">@{user.username}</p>
-                  <p className="text-sm text-muted-foreground mt-1">Member since {user.joinDate}</p>
+                  <div className="flex items-center gap-3 mb-1">
+                    <h1 className="text-3xl font-bold">{profile.name}</h1>
+                    {isOwnProfile && (
+                      <EditProfileDialog
+                        currentName={profile.name}
+                        currentUsername={profile.username}
+                        currentAvatar={profile.avatar}
+                        onSave={handleProfileUpdate}
+                      />
+                    )}
+                  </div>
+                  <p className="text-muted-foreground">@{profile.username}</p>
+                  <p className="text-sm text-muted-foreground mt-1">Member since {profile.joinDate}</p>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
                   <div>
-                    <p className="text-2xl font-bold">{user.stats.itemsSold}</p>
+                    <p className="text-2xl font-bold">{profile.stats.itemsSold}</p>
                     <p className="text-xs text-muted-foreground">Items Sold</p>
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{user.stats.itemsBought}</p>
+                    <p className="text-2xl font-bold">{profile.stats.itemsBought}</p>
                     <p className="text-xs text-muted-foreground">Items Bought</p>
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{user.stats.responseTime}</p>
+                    <p className="text-2xl font-bold">{profile.stats.responseTime}</p>
                     <p className="text-xs text-muted-foreground">Avg Response</p>
                   </div>
                 </div>
@@ -105,26 +93,27 @@ export default function ProfilePage() {
               <Card className="p-6 min-w-fit">
                 <h3 className="font-semibold mb-4 text-center">Reputation</h3>
                 <div className="text-center mb-4">
-                  <div className="text-4xl font-bold text-primary">{user.reputation.score}</div>
+                  <div className="text-4xl font-bold text-primary">{profile.reputation.score}</div>
                   <div className="flex text-yellow-500 justify-center my-2">
-                    {"★".repeat(Math.floor(user.reputation.score))}
+                    {"★".repeat(Math.floor(profile.reputation.score))}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    based on {user.reputation.positive + user.reputation.neutral + user.reputation.negative} ratings
+                    based on {profile.reputation.positive + profile.reputation.neutral + profile.reputation.negative}{" "}
+                    ratings
                   </p>
                 </div>
                 <div className="space-y-1 text-sm">
                   <div className="flex items-center gap-2">
                     <span className="inline-block w-2 h-2 bg-green-600 rounded-full"></span>
-                    <span>{user.reputation.positive} Positive</span>
+                    <span>{profile.reputation.positive} Positive</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="inline-block w-2 h-2 bg-gray-400 rounded-full"></span>
-                    <span>{user.reputation.neutral} Neutral</span>
+                    <span>{profile.reputation.neutral} Neutral</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="inline-block w-2 h-2 bg-red-600 rounded-full"></span>
-                    <span>{user.reputation.negative} Negative</span>
+                    <span>{profile.reputation.negative} Negative</span>
                   </div>
                 </div>
               </Card>
@@ -191,3 +180,38 @@ export default function ProfilePage() {
     </div>
   )
 }
+
+const ratings = [
+  {
+    id: 1,
+    rating: 5,
+    reviewer: "buyer_123",
+    date: "Oct 25, 2025",
+    comment: "Excellent condition, fast shipping!",
+    type: "positive",
+  },
+  {
+    id: 2,
+    rating: 5,
+    reviewer: "jane_smith",
+    date: "Oct 20, 2025",
+    comment: "Perfect item, great communication",
+    type: "positive",
+  },
+  {
+    id: 3,
+    rating: 4,
+    reviewer: "collector_mike",
+    date: "Oct 15, 2025",
+    comment: "Good quality but took longer than expected",
+    type: "positive",
+  },
+  {
+    id: 4,
+    rating: 1,
+    reviewer: "user_789",
+    date: "Oct 10, 2025",
+    comment: "Item not as described",
+    type: "negative",
+  },
+]
