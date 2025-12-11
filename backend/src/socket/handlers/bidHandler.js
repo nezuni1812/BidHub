@@ -166,26 +166,106 @@ module.exports = (io, socket) => {
       }
 
       // STEP 7: Validate max price
-      if (maxPrice <= product.current_price) {
+      const minMaxPrice = parseFloat(product.current_price) + parseFloat(product.bid_step);
+      if (maxPrice < minMaxPrice) {
         await releaseLock(lock);
         return socket.emit(EVENTS.BID_ERROR, { 
-          message: `Giá tối đa phải lớn hơn giá hiện tại ${product.current_price.toLocaleString('vi-VN')} VND`,
+          message: `Giá tối đa phải lớn hơn hoặc bằng ${minMaxPrice.toLocaleString('vi-VN')} VND`,
           code: 'MAX_PRICE_TOO_LOW',
-          currentPrice: product.current_price
+          currentPrice: product.current_price,
+          minMaxPrice
         });
       }
 
-      // STEP 8: Save/Update auto-bid configuration
-      const existingAutoBid = await AutoBid.getActive(userId, productId);
-      const isCurrentWinner = product.winner_id === userId;
-      
+      // STEP 7.5: Validate max price is a valid increment (multiple of bidStep from currentPrice)
+      const currentPrice = parseFloat(product.current_price);
+      const bidStep = parseFloat(product.bid_step);
+      const priceIncrement = maxPrice - currentPrice;
+      const remainder = priceIncrement % bidStep;
+
+      if (Math.abs(remainder) > 0.01) { // Allow small floating point errors
+        await releaseLock(lock);
+        
+        // Calculate the nearest valid prices
+        const roundedDown = currentPrice + (Math.floor(priceIncrement / bidStep) * bidStep);
+        const roundedUp = currentPrice + (Math.ceil(priceIncrement / bidStep) * bidStep);
+        
+        return socket.emit(EVENTS.BID_ERROR, { 
+          message: `Giá tối đa phải là bội số của bước nhảy ${bidStep.toLocaleString('vi-VN')} VND từ giá hiện tại. Giá hợp lệ gần nhất: ${roundedDown.toLocaleString('vi-VN')} VND hoặc ${roundedUp.toLocaleString('vi-VN')} VND`,
+          code: 'INVALID_BID_INCREMENT',
+          currentPrice: product.current_price,
+          bidStep: product.bid_step,
+          suggestedPrices: [roundedDown, roundedUp]
+        });
+      }
+
+      // STEP 8: Save/Update auto-bid configuration for current user
       await AutoBid.createOrUpdate(userId, productId, maxPrice);
       console.log(`[AUTO-BID] Config saved: User ${userId} max ${maxPrice}`);
 
-      // SPECIAL CASE: If user is already winning and just updating their max price
-      // Only update the auto-bid config, don't place a new bid
-      if (isCurrentWinner && existingAutoBid) {
-        console.log(`[AUTO-BID] User ${userId} is current winner, just updating max price to ${maxPrice}`);
+      // STEP 9: Calculate optimal bid price – PHIÊN BẢN CUỐI CÙNG, ĐÚNG TUYỆT ĐỐI
+      // Reuse currentPrice and bidStep from STEP 7.5
+      let previousWinnerId = product.winner_id;
+
+      // Lấy tất cả auto-bid hiện có
+      const allAutoBids = await AutoBid.getAllActiveForProduct(productId);
+
+      if (allAutoBids.length === 0) {
+        await releaseLock(lock);
+        return socket.emit(EVENTS.BID_ERROR, { message: 'Không tìm thấy auto-bid', code: 'NO_AUTO_BID' });
+      }
+
+      // Sort: max cao nhất trước, nếu bằng thì người đến trước thắng
+      allAutoBids.sort((a, b) => {
+        const diff = parseFloat(b.max_price) - parseFloat(a.max_price);
+        if (diff !== 0) return diff;
+        return new Date(a.created_at) - new Date(b.created_at);
+      });
+
+      const winner = allAutoBids[0];
+      const winnerId = winner.user_id;
+      const winnerMaxPrice = parseFloat(winner.max_price);
+
+      let actualBidPrice = currentPrice;
+      let bidPlacedByUserId = winnerId;
+
+      // TRƯỜNG HỢP DUY NHẤT: CHỈ CÓ 1 NGƯỜI ĐẶT AUTO-BID
+      if (allAutoBids.length === 1) {
+        // Người đầu tiên → KHÔNG TĂNG GIÁ, giữ nguyên current_price
+        // (Chỉ tăng khi có đối thủ)
+        actualBidPrice = currentPrice;
+
+      } else {
+        // CÓ TỪ 2 NGƯỜI TRỞ LÊN → mới tính proxy bidding
+        const secondHighest = allAutoBids[1];
+        const secondMaxPrice = parseFloat(secondHighest.max_price);
+        const secondTimestamp = new Date(secondHighest.created_at);
+        const firstTimestamp = new Date(winner.created_at);
+
+        if (winnerMaxPrice === secondMaxPrice) {
+          // Bằng giá → người đến trước thắng, giá = max đó
+          actualBidPrice = winnerMaxPrice;
+        } else {
+          if (firstTimestamp < secondTimestamp) {
+            // Người thắng đến trước
+            bidPlacedByUserId = winnerId;
+            actualBidPrice = secondMaxPrice;
+
+          } else {
+            // Người thắng đến sau
+            bidPlacedByUserId = winnerId;
+            actualBidPrice = secondMaxPrice + bidStep;
+          }
+        }
+      }
+
+      // So sánh thay đổi
+      const priceChanged = Math.abs(actualBidPrice - currentPrice) > 0.0001;
+      const winnerChanged = winnerId !== previousWinnerId;
+
+      if (!priceChanged && !winnerChanged) {
+        // No change needed
+        console.log(`[AUTO-BID] No change: Winner ${winnerId} still winning at ${actualBidPrice}`);
         await releaseLock(lock);
         
         return socket.emit(EVENTS.BID_SUCCESS, {
@@ -194,82 +274,18 @@ module.exports = (io, socket) => {
             userId,
             productId,
             maxPrice,
-            isCurrentWinner: true
+            isCurrentWinner: winnerId === userId
           },
           currentPrice: product.current_price,
-          actualBidPlaced: false // No new bid placed
+          actualBidPlaced: false
         });
       }
 
-      // STEP 9: Calculate minimal winning bid
-      // Get all active auto-bids for this product (excluding current user)
-      const allAutoBids = await AutoBid.getAllActiveForProduct(productId);
-      const otherAutoBids = allAutoBids.filter(ab => ab.user_id !== userId);
-      
-      let actualBidPrice;
-      let previousWinnerId = null;
+      // STEP 10: Create bid in database (placed by the winner)
+      const bid = await Bid.create(productId, bidPlacedByUserId, actualBidPrice, true); // is_auto = true
+      console.log(`[AUTO-BID] Bid placed: ${bid.id} by User ${bidPlacedByUserId} at ${actualBidPrice}`);
 
-      if (otherAutoBids.length === 0) {
-        // No competition: bid current_price + step
-        actualBidPrice = parseFloat(product.current_price) + parseFloat(product.bid_step);
-      } else {
-        // Sort by max_price DESC, created_at ASC (higher max wins, earlier timestamp breaks ties)
-        otherAutoBids.sort((a, b) => {
-          const priceDiff = parseFloat(b.max_price) - parseFloat(a.max_price);
-          if (priceDiff !== 0) return priceDiff;
-          return new Date(a.created_at) - new Date(b.created_at);
-        });
-
-        const highestCompetitor = otherAutoBids[0];
-        const highestCompetitorMax = parseFloat(highestCompetitor.max_price);
-
-        if (maxPrice > highestCompetitorMax) {
-          // Current user wins: bid competitor's max + step
-          actualBidPrice = highestCompetitorMax + parseFloat(product.bid_step);
-          previousWinnerId = highestCompetitor.user_id;
-        } else if (maxPrice === highestCompetitorMax) {
-          // Tie: check timestamps
-          const currentUserConfig = allAutoBids.find(ab => ab.user_id === userId);
-          if (new Date(currentUserConfig.created_at) < new Date(highestCompetitor.created_at)) {
-            // Current user was first: wins at max_price
-            actualBidPrice = maxPrice;
-            previousWinnerId = highestCompetitor.user_id;
-          } else {
-            // Competitor was first: current user cannot outbid
-            await releaseLock(lock);
-            return socket.emit(EVENTS.BID_ERROR, { 
-              message: `Giá tối đa của bạn bằng người khác nhưng bạn đặt sau. Hãy tăng giá tối đa để thắng.`,
-              code: 'MAX_PRICE_TIE_LOST',
-              currentPrice: product.current_price
-            });
-          }
-        } else {
-          // Current user's max is lower: cannot win
-          await releaseLock(lock);
-          return socket.emit(EVENTS.BID_ERROR, { 
-            message: `Giá tối đa của bạn thấp hơn người khác. Giá hiện tại: ${product.current_price.toLocaleString('vi-VN')} VND`,
-            code: 'MAX_PRICE_TOO_LOW_COMPETITION',
-            currentPrice: product.current_price
-          });
-        }
-      }
-
-      // Ensure actualBidPrice doesn't exceed user's maxPrice
-      if (actualBidPrice > maxPrice) {
-        actualBidPrice = maxPrice;
-      }
-
-      // Ensure actualBidPrice meets minimum requirement
-      const minValidBid = parseFloat(product.current_price) + parseFloat(product.bid_step);
-      if (actualBidPrice < minValidBid) {
-        actualBidPrice = minValidBid;
-      }
-
-      // STEP 10: Create bid in database
-      const bid = await Bid.create(productId, userId, actualBidPrice, true); // is_auto = true
-      console.log(`[AUTO-BID] Bid placed: ${bid.id} at ${actualBidPrice}`);
-
-      // STEP 11: Update product
+      // STEP 11: Update product with winner
       await db.query(
         `UPDATE products 
          SET current_price = $1, 
@@ -277,7 +293,7 @@ module.exports = (io, socket) => {
              winner_id = $2,
              updated_at = CURRENT_TIMESTAMP
          WHERE id = $3`,
-        [actualBidPrice, userId, productId]
+        [actualBidPrice, winnerId, productId]
       );
 
       // STEP 12: Check auto-extend (if bid placed within 5 minutes of end time)
@@ -305,6 +321,7 @@ module.exports = (io, socket) => {
       }
 
       // STEP 13: Send email notifications
+      /*
       try {
         // Get seller info
         const seller = await User.findById(product.seller_id);
@@ -350,6 +367,7 @@ module.exports = (io, socket) => {
         console.error('[AUTO-BID] Email notification error:', emailError);
         // Don't fail the bid if email fails
       }
+      */
 
       // STEP 14: Release lock (ASAP)
       await releaseLock(lock);
@@ -357,14 +375,15 @@ module.exports = (io, socket) => {
       console.log(`[AUTO-BID] Lock released for product ${productId}`);
 
       // STEP 15: Broadcast to all watchers
+      const winnerUser = await User.findById(winnerId);
       io.to(`product-${productId}`).emit(EVENTS.NEW_BID, {
         productId,
         currentPrice: actualBidPrice,
         totalBids: parseInt(product.total_bids) + 1,
         bidder: {
-          id: userId,
+          id: winnerId,
           // Mask name: "Nguyen Van A" → "N***"
-          name: `${socket.userName.charAt(0)}${'*'.repeat(socket.userName.length - 1)}`
+          name: winnerUser ? `${winnerUser.full_name.charAt(0)}${'*'.repeat(winnerUser.full_name.length - 1)}` : 'Anonymous'
         },
         timestamp: new Date(),
         wasExtended,
@@ -372,24 +391,46 @@ module.exports = (io, socket) => {
       });
 
       // STEP 16: Notify previous winner (they've been outbid)
-      if (previousWinnerId) {
+      if (previousWinnerId && previousWinnerId !== winnerId) {
+        const outbidUser = allAutoBids.find(ab => ab.user_id === previousWinnerId);
         io.to(`user-${previousWinnerId}`).emit(EVENTS.OUTBID, {
           productId,
           productTitle: product.title,
           productImage: product.main_image,
           newPrice: actualBidPrice,
-          yourMaxPrice: otherAutoBids.find(ab => ab.user_id === previousWinnerId)?.max_price,
+          yourMaxPrice: outbidUser ? parseFloat(outbidUser.max_price) : null,
           timestamp: new Date()
         });
       }
 
-      // STEP 17: Send success response to user
+      // STEP 17: Notify losers (users with lower max_price than winner)
+      const losers = allAutoBids.filter(ab => 
+        ab.user_id !== winnerId && 
+        ab.user_id === userId && // Only notify the user who just placed bid
+        parseFloat(ab.max_price) < winnerMaxPrice
+      );
+      
+      for (const loser of losers) {
+        io.to(`user-${loser.user_id}`).emit(EVENTS.OUTBID, {
+          productId,
+          productTitle: product.title,
+          productImage: product.main_image,
+          newPrice: actualBidPrice,
+          yourMaxPrice: parseFloat(loser.max_price),
+          timestamp: new Date()
+        });
+      }
+
+      // STEP 18: Send success response to user who triggered this
+      const isWinner = winnerId === userId;
       socket.emit(EVENTS.BID_SUCCESS, {
         autoBid: {
           productId,
           maxPrice,
-          actualBidPlaced: actualBidPrice,
-          savings: maxPrice - actualBidPrice // how much they saved
+          actualBidPlaced: isWinner ? actualBidPrice : null,
+          isWinner,
+          currentWinner: winnerId,
+          savings: isWinner ? (winnerMaxPrice - actualBidPrice) : 0
         },
         bid: {
           id: bid.id,
@@ -406,7 +447,7 @@ module.exports = (io, socket) => {
         wasExtended
       });
 
-      console.log(`[AUTO-BID] Success: User ${userId} max ${maxPrice} → bid ${actualBidPrice} (saved ${maxPrice - actualBidPrice})`);
+      console.log(`[AUTO-BID] Success: Winner ${winnerId} bid ${actualBidPrice} | Triggered by User ${userId} max ${maxPrice} | Winner saved ${winnerMaxPrice - actualBidPrice}`);
 
     } catch (error) {
       console.error('[AUTO-BID] Error:', error);

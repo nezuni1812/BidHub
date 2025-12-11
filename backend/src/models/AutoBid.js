@@ -27,6 +27,22 @@ class AutoBid {
     return result.rows[0];
   }
 
+  // Get max price history for user on product
+  static async getMaxPriceHistory(userId, productId) {
+    const query = `
+      SELECT 
+        max_price,
+        created_at as set_at,
+        updated_at as last_updated
+      FROM auto_bid_configs
+      WHERE user_id = $1 AND product_id = $2
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `;
+    const result = await db.query(query, [userId, productId]);
+    return result.rows[0];
+  }
+
   // Get all active auto-bids for a product (for auto-bidding logic)
   static async getAllActiveForProduct(productId) {
     const query = `

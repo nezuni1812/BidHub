@@ -408,6 +408,22 @@ const cancelAutoBid = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * @desc    Get user's max price history for a product
+ * @route   GET /api/v1/bidder/auto-bid/:productId/history
+ * @access  Private (Bidder)
+ */
+const getAutoBidHistory = asyncHandler(async (req, res) => {
+  const { productId } = req.params;
+  
+  const history = await AutoBid.getMaxPriceHistory(req.user.id, productId);
+  
+  res.status(200).json({
+    success: true,
+    data: history || null
+  });
+});
+
 module.exports = {
   addToWatchlist,
   removeFromWatchlist,
@@ -423,5 +439,6 @@ module.exports = {
   changePassword,
   setAutoBid,
   getAutoBids,
-  cancelAutoBid
+  cancelAutoBid,
+  getAutoBidHistory
 };

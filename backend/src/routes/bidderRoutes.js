@@ -15,7 +15,8 @@ const {
   changePassword,
   setAutoBid,
   getAutoBids,
-  cancelAutoBid
+  cancelAutoBid,
+  getAutoBidHistory
 } = require('../controllers/bidderController');
 const {
   addToWatchlistValidation,
@@ -449,5 +450,25 @@ router.get('/auto-bid', paginationValidation, validate, getAutoBids);
  *         description: Auto-bid not found
  */
 router.delete('/auto-bid/:productId', cancelAutoBidValidation, validate, cancelAutoBid);
+
+/**
+ * @swagger
+ * /bidder/auto-bid/{productId}/history:
+ *   get:
+ *     tags: [Bidder]
+ *     summary: Get user's max price history for a product
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Max price history retrieved successfully
+ */
+router.get('/auto-bid/:productId/history', getAutoBidHistory);
 
 module.exports = router;

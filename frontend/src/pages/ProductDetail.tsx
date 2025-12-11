@@ -31,6 +31,7 @@ export default function ProductDetail() {
     const [showBidDialog, setShowBidDialog] = useState(false)
     const [showQuestionDialog, setShowQuestionDialog] = useState(false)
     const [socket, setSocket] = useState<Socket | null>(null)
+    const [myMaxPrice, setMyMaxPrice] = useState<number | null>(null)
     
     // Check if current user is winning
     const isWinning = user && product && product.winner_id && parseInt(product.winner_id as any) === parseInt(user.id as any);
@@ -69,11 +70,29 @@ export default function ProductDetail() {
                 console.log('✅ Bids data:', bidsData);
                 setBids(bidsData.data);
                 
-                // Check watchlist status
+                // Check watchlist status and get max price history
                 const token = localStorage.getItem('access_token');
                 if (token) {
                     const inWatchlist = await checkWatchlist(parseInt(id));
                     setIsFavorited(inWatchlist);
+                    
+                    // Fetch user's max price for this product
+                    try {
+                        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+                        const response = await fetch(`${API_URL}/bidder/auto-bid/${id}/history`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                        if (response.ok) {
+                            const result = await response.json();
+                            if (result.data && result.data.max_price) {
+                                setMyMaxPrice(parseFloat(result.data.max_price));
+                            }
+                        }
+                    } catch (err) {
+                        console.log('No max price history found');
+                    }
                 }
                 
             } catch (err) {
@@ -266,6 +285,12 @@ export default function ProductDetail() {
                 console.log('✅ Bid success:', data);
                 socket.off('bid-success', onSuccess);
                 socket.off('bid-error', onError);
+                
+                // Update myMaxPrice if this was an auto-bid
+                if (isAutoBid && data.autoBid) {
+                    setMyMaxPrice(data.autoBid.maxPrice);
+                }
+                
                 resolve();
             };
             
@@ -407,6 +432,14 @@ export default function ProductDetail() {
                                     <p className="text-3xl font-bold text-primary">{formatPrice(currentPrice)}</p>
                                     <p className="text-sm text-muted-foreground">{product.total_bids} bids</p>
                                 </div>
+
+                                {myMaxPrice && (
+                                    <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
+                                        <p className="text-sm font-semibold text-blue-700 dark:text-blue-400 mb-1">Giá tối đa của bạn</p>
+                                        <p className="text-lg font-bold text-blue-900 dark:text-blue-300">{formatPrice(myMaxPrice)}</p>
+                                        <p className="text-xs text-blue-600 dark:text-blue-500 mt-1">Auto-bid đang hoạt động</p>
+                                    </div>
+                                )}
 
                                 <div className="bg-accent/10 rounded-lg p-4 border border-accent/20">
                                     <p className="text-sm font-semibold text-accent mb-1">Time remaining</p>
