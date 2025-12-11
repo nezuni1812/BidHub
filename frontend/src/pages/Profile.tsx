@@ -4,41 +4,151 @@ import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Button } from "@/components/ui/button"
 import { EditProfileDialog } from "@/components/edit-profile-dialog"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useParams } from "react-router-dom"
+import { useAuth } from "@/contexts/AuthContext"
+
+interface Rating {
+  id: number
+  score: number
+  comment: string
+  created_at: string
+  rater_name: string
+  product_title: string | null
+}
+
+interface RatingStats {
+  total_ratings: string
+  positive_ratings: string
+  negative_ratings: string
+  positive_percentage: string
+}
+
+interface UserProfile {
+  id: number
+  full_name: string
+  email: string
+  address: string | null
+  date_of_birth: string | null
+  role: string
+  rating: number | null
+  created_at: string
+}
 
 export default function ProfilePage() {
   const { username } = useParams<{ username: string }>();
-  const [profile, setProfile] = useState({
-    username,
-    name: "John Doe",
-    joinDate: "Jan 15, 2024",
-    avatar: "/placeholder.svg?key=avtr",
-    reputation: {
-      positive: 156,
-      neutral: 3,
-      negative: 2,
-      score: 4.85,
-    },
-    stats: {
-      itemsSold: 48,
-      itemsBought: 23,
-      responseTime: "2 hours",
-    },
-  })
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [ratings, setRatings] = useState<Rating[]>([])
+  const [ratingStats, setRatingStats] = useState<RatingStats | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleProfileUpdate = (data: { name: string; username: string; avatar: string }) => {
-    setProfile({
-      ...profile,
-      name: data.name,
-      username: data.username,
-      avatar: data.avatar,
-    })
+  const isOwnProfile = true // Viewing own profile
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setLoading(true)
+        const token = localStorage.getItem('access_token')
+        if (!token) {
+          setError('Please login to view profile')
+          return
+        }
+
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'
+        const response = await fetch(`${API_URL}/bidder/profile`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch profile')
+        }
+
+        const result = await response.json()
+        setProfile(result.data.user)
+        setRatings(result.data.ratings)
+        setRatingStats(result.data.rating_stats)
+      } catch (err) {
+        console.error('Error fetching profile:', err)
+        setError(err instanceof Error ? err.message : 'Failed to load profile')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchProfile()
+  }, [username])
+
+  const handleProfileUpdate = async (data: { name: string; address: string }) => {
+    try {
+      const token = localStorage.getItem('access_token')
+      if (!token) return
+
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'
+      const response = await fetch(`${API_URL}/bidder/profile`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          full_name: data.name,
+          address: data.address
+        })
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        // Backend returns data directly, not data.user
+        setProfile(result.data)
+        console.log('Profile updated successfully:', result.data)
+      } else {
+        throw new Error('Failed to update profile')
+      }
+    } catch (err) {
+      console.error('Error updating profile:', err)
+      alert('Failed to update profile. Please try again.')
+    }
   }
 
-  const isOwnProfile = true // This should be determined by checking if current user matches the profile username
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <p className="text-center">Loading profile...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !profile) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <p className="text-center text-destructive">{error || 'Profile not found'}</p>
+        </div>
+      </div>
+    )
+  }
+
+  const totalRatings = parseInt(ratingStats?.total_ratings || '0')
+  const positiveRatings = parseInt(ratingStats?.positive_ratings || '0')
+  const negativeRatings = parseInt(ratingStats?.negative_ratings || '0')
+  const positivePercentage = parseFloat(ratingStats?.positive_percentage || '0')
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    })
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -49,71 +159,55 @@ export default function ProfilePage() {
         <div className="mb-8">
           <Card className="p-8">
             <div className="flex flex-col sm:flex-row gap-6 items-start">
-              <img
-                src={profile.avatar || "/placeholder.svg"}
-                alt={profile.username}
-                className="w-24 h-24 rounded-full bg-muted object-cover"
-              />
               <div className="flex-1">
                 <div className="mb-4">
                   <div className="flex items-center gap-3 mb-1">
-                    <h1 className="text-3xl font-bold">{profile.name}</h1>
+                    <h1 className="text-3xl font-bold">{profile.full_name}</h1>
                     {isOwnProfile && (
                       <EditProfileDialog
-                        currentName={profile.name}
-                        currentUsername={profile.username}
-                        currentAvatar={profile.avatar}
+                        currentName={profile.full_name}
+                        currentAddress={profile.address || ''}
                         onSave={handleProfileUpdate}
                       />
                     )}
                   </div>
-                  <p className="text-muted-foreground">@{profile.username}</p>
-                  <p className="text-sm text-muted-foreground mt-1">Member since {profile.joinDate}</p>
+                  <p className="text-muted-foreground">{profile.email}</p>
+                  <p className="text-sm text-muted-foreground mt-1">Member since {formatDate(profile.created_at)}</p>
+                  <p className="text-sm text-muted-foreground">Role: <span className="capitalize">{profile.role}</span></p>
+                  {profile.address && (
+                    <p className="text-sm text-muted-foreground mt-1">📍 {profile.address}</p>
+                  )}
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-4">
+                <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <p className="text-2xl font-bold">{profile.stats.itemsSold}</p>
-                    <p className="text-xs text-muted-foreground">Items Sold</p>
+                    <p className="text-2xl font-bold">{totalRatings}</p>
+                    <p className="text-xs text-muted-foreground">Total Ratings</p>
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{profile.stats.itemsBought}</p>
-                    <p className="text-xs text-muted-foreground">Items Bought</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">{profile.stats.responseTime}</p>
-                    <p className="text-xs text-muted-foreground">Avg Response</p>
+                    <p className="text-2xl font-bold">{positivePercentage.toFixed(1)}%</p>
+                    <p className="text-xs text-muted-foreground">Positive Rate</p>
                   </div>
                 </div>
-
-                <Button>Contact User</Button>
               </div>
 
               {/* Reputation Score */}
               <Card className="p-6 min-w-fit">
                 <h3 className="font-semibold mb-4 text-center">Reputation</h3>
                 <div className="text-center mb-4">
-                  <div className="text-4xl font-bold text-primary">{profile.reputation.score}</div>
-                  <div className="flex text-yellow-500 justify-center my-2">
-                    {"★".repeat(Math.floor(profile.reputation.score))}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    based on {profile.reputation.positive + profile.reputation.neutral + profile.reputation.negative}{" "}
-                    ratings
+                  <div className="text-4xl font-bold text-primary">{positivePercentage.toFixed(1)}%</div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    based on {totalRatings} ratings
                   </p>
                 </div>
                 <div className="space-y-1 text-sm">
                   <div className="flex items-center gap-2">
                     <span className="inline-block w-2 h-2 bg-green-600 rounded-full"></span>
-                    <span>{profile.reputation.positive} Positive</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="inline-block w-2 h-2 bg-gray-400 rounded-full"></span>
-                    <span>{profile.reputation.neutral} Neutral</span>
+                    <span>{positiveRatings} Positive</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="inline-block w-2 h-2 bg-red-600 rounded-full"></span>
-                    <span>{profile.reputation.negative} Negative</span>
+                    <span>{negativeRatings} Negative</span>
                   </div>
                 </div>
               </Card>
@@ -129,49 +223,73 @@ export default function ProfilePage() {
           </TabsList>
 
           <TabsContent value="feedback" className="mt-6 space-y-4">
-            {ratings.map((rating) => (
-              <Card key={rating.id} className="p-6">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <p className="font-semibold">{rating.reviewer}</p>
-                    <p className="text-xs text-muted-foreground">{rating.date}</p>
-                  </div>
-                  <Badge
-                    className={
-                      rating.type === "positive"
-                        ? "bg-green-100 text-green-800"
-                        : rating.type === "neutral"
-                          ? "bg-gray-100 text-gray-800"
-                          : "bg-red-100 text-red-800"
-                    }
-                  >
-                    {rating.rating === 5 ? "Positive" : rating.rating < 3 ? "Negative" : "Neutral"}
-                  </Badge>
-                </div>
-                <div className="flex text-yellow-500 mb-2">{"★".repeat(rating.rating)}</div>
-                <p className="text-muted-foreground">{rating.comment}</p>
+            {ratings.length === 0 ? (
+              <Card className="p-6">
+                <p className="text-center text-muted-foreground">No ratings yet</p>
               </Card>
-            ))}
+            ) : (
+              ratings.map((rating) => (
+                <Card key={rating.id} className="p-6">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="font-semibold">{rating.rater_name}</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(rating.created_at)}</p>
+                      {rating.product_title && (
+                        <p className="text-xs text-muted-foreground mt-1">Product: {rating.product_title}</p>
+                      )}
+                    </div>
+                    <Badge
+                      className={
+                        rating.score > 0
+                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                          : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                      }
+                    >
+                      {rating.score > 0 ? "Positive" : "Negative"}
+                    </Badge>
+                  </div>
+                  <p className="text-muted-foreground">{rating.comment || 'No comment provided'}</p>
+                </Card>
+              ))
+            )}
           </TabsContent>
 
           <TabsContent value="details" className="mt-6">
             <Card className="p-6">
               <h3 className="font-semibold mb-6">Rating Breakdown</h3>
               <div className="space-y-4">
-                {[5, 4, 3, 2, 1].map((stars) => {
-                  const count = stars === 5 ? 140 : stars === 4 ? 10 : stars === 3 ? 5 : stars === 2 ? 3 : 2
-                  const total = 160
-                  const percentage = (count / total) * 100
-                  return (
-                    <div key={stars} className="flex items-center gap-3">
-                      <span className="text-sm font-medium w-12">{stars} ★</span>
-                      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                        <div className="h-full bg-primary" style={{ width: `${percentage}%` }}></div>
-                      </div>
-                      <span className="text-sm text-muted-foreground w-8 text-right">{count}</span>
-                    </div>
-                  )
-                })}
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium w-24">Positive</span>
+                  <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-green-600" 
+                      style={{ width: `${totalRatings > 0 ? (positiveRatings / totalRatings) * 100 : 0}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-sm text-muted-foreground w-12 text-right">{positiveRatings}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium w-24">Negative</span>
+                  <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-red-600" 
+                      style={{ width: `${totalRatings > 0 ? (negativeRatings / totalRatings) * 100 : 0}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-sm text-muted-foreground w-12 text-right">{negativeRatings}</span>
+                </div>
+              </div>
+              <div className="mt-6 pt-6 border-t">
+                <div className="grid grid-cols-2 gap-4 text-center">
+                  <div>
+                    <p className="text-3xl font-bold text-green-600">{positivePercentage.toFixed(1)}%</p>
+                    <p className="text-sm text-muted-foreground mt-1">Positive Rate</p>
+                  </div>
+                  <div>
+                    <p className="text-3xl font-bold">{totalRatings}</p>
+                    <p className="text-sm text-muted-foreground mt-1">Total Ratings</p>
+                  </div>
+                </div>
               </div>
             </Card>
           </TabsContent>
@@ -180,38 +298,3 @@ export default function ProfilePage() {
     </div>
   )
 }
-
-const ratings = [
-  {
-    id: 1,
-    rating: 5,
-    reviewer: "buyer_123",
-    date: "Oct 25, 2025",
-    comment: "Excellent condition, fast shipping!",
-    type: "positive",
-  },
-  {
-    id: 2,
-    rating: 5,
-    reviewer: "jane_smith",
-    date: "Oct 20, 2025",
-    comment: "Perfect item, great communication",
-    type: "positive",
-  },
-  {
-    id: 3,
-    rating: 4,
-    reviewer: "collector_mike",
-    date: "Oct 15, 2025",
-    comment: "Good quality but took longer than expected",
-    type: "positive",
-  },
-  {
-    id: 4,
-    rating: 1,
-    reviewer: "user_789",
-    date: "Oct 10, 2025",
-    comment: "Item not as described",
-    type: "negative",
-  },
-]
