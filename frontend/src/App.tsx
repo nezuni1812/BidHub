@@ -12,6 +12,9 @@ import ChatPage from "./pages/ChatPage";
 import ProfilePage from "./pages/Profile";
 import PostItemPage from "./pages/PostItem";
 import SellerDashboardPage from "./pages/SellerDashboard";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import CategoriesPage from "./pages/admin/CategoriesPage";
+
 import "./globals.css";
 
 export default function App() {
@@ -33,6 +36,8 @@ export default function App() {
           <Route path="/auth/login" element={<LoginPage />} />
           <Route path="/auth/register" element={<RegisterPage />} />
           <Route path="/auth/google/success" element={<GoogleCallbackPage />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/categories" element={<CategoriesPage />} />
         </Routes>
       </BrowserRouter>
     </ChatProvider>
