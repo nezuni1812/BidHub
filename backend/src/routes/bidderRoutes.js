@@ -34,6 +34,7 @@ const { authenticate, authorize } = require('../middleware/auth');
 
 // All routes require authentication and bidder/seller role
 router.use(authenticate);
+router.use(authorize('bidder', 'seller', 'admin'));
 
 /**
  * @swagger

@@ -72,7 +72,10 @@ export function Navigation() {
           </form>
 
           <div className="flex items-center gap-2">
-            <Link to="/selling" className="px-3 py-2 text-sm font-medium hover:bg-muted rounded-md transition">
+            <Link 
+              to={user?.role === 'seller' ? '/seller/post-item' : '/selling'} 
+              className="px-3 py-2 text-sm font-medium hover:bg-muted rounded-md transition"
+            >
               Sell
             </Link>
             <Link to="/dashboard">

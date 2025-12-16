@@ -447,15 +447,23 @@ exports.approveUpgradeRequest = asyncHandler(async (req, res) => {
     throw new BadRequestError(`Request is already ${request.status}`);
   }
 
-  // Update user role to seller
-  await User.updateRole(request.user_id, 'seller');
+  // Calculate expiration: 7 days from now
+  const sellerUntil = new Date();
+  sellerUntil.setDate(sellerUntil.getDate() + 7);
+
+  // Update user role to seller with expiration
+  await User.updateRoleWithExpiration(request.user_id, 'seller', sellerUntil);
 
   // Update request status
   await UpgradeRequest.updateStatus(id, 'approved', req.user.id);
 
   res.json({
     success: true,
-    message: 'Upgrade request approved successfully. User is now a seller.'
+    message: 'Upgrade request approved successfully. User is now a seller for 7 days.',
+    data: {
+      userId: request.user_id,
+      expiresAt: sellerUntil
+    }
   });
 });
 

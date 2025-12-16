@@ -283,6 +283,17 @@ class User {
     return result.rows[0];
   }
 
+  static async updateRoleWithExpiration(userId, newRole, expiresAt) {
+    const query = `
+      UPDATE users
+      SET role = $1, seller_until = $2, updated_at = CURRENT_TIMESTAMP
+      WHERE id = $3
+      RETURNING id, role, full_name, email, seller_until
+    `;
+    const result = await db.query(query, [newRole, expiresAt, userId]);
+    return result.rows[0];
+  }
+
   static async countByRole() {
     const query = `
       SELECT 

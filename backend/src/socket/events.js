@@ -34,6 +34,9 @@ module.exports = {
   RATING_RECEIVED: 'rating-received',
   ORDER_CANCELLED: 'order-cancelled',
   
+  // User Role Events
+  ROLE_CHANGED: 'role-changed',
+  
   // Connection Events
   CONNECT: 'connection',
   DISCONNECT: 'disconnect',

@@ -44,6 +44,7 @@ function initScheduler(socketIo) {
   startEndingSoonJob();
   startEndAuctionsJob();
   startCleanupJob();
+  startSellerDegradationJob();
 }
 
 /**
@@ -316,6 +317,52 @@ function startCleanupJob() {
   });
 
   console.log('✓ Cleanup job started (runs every 10 minutes)');
+}
+
+/**
+ * JOB 4: Degrade expired sellers back to bidders (every 1 hour)
+ * Automatically downgrades temporary sellers after their 7-day period
+ */
+function startSellerDegradationJob() {
+  cron.schedule('0 * * * *', async () => {
+    try {
+      // Find sellers whose seller_until has expired
+      const query = `
+        UPDATE users
+        SET role = 'bidder', seller_until = NULL, updated_at = CURRENT_TIMESTAMP
+        WHERE role = 'seller' 
+          AND seller_until IS NOT NULL
+          AND seller_until < CURRENT_TIMESTAMP
+        RETURNING id, full_name, email
+      `;
+      
+      const result = await db.query(query);
+      
+      if (result.rows.length > 0) {
+        console.log(`[SCHEDULER] Degraded ${result.rows.length} expired sellers back to bidders:`);
+        result.rows.forEach(user => {
+          console.log(`  - User ${user.id}: ${user.full_name} (${user.email})`);
+          
+          // Notify user about role change
+          if (io) {
+            io.to(`user-${user.id}`).emit(EVENTS.ROLE_CHANGED, {
+              userId: user.id,
+              oldRole: 'seller',
+              newRole: 'bidder',
+              reason: 'temporary_seller_expired',
+              message: 'Your temporary seller status has expired. Please submit a new upgrade request to become a seller again.'
+            });
+          }
+        });
+      } else {
+        console.log('[SCHEDULER] No expired sellers to degrade');
+      }
+    } catch (error) {
+      console.error('[SCHEDULER] Error in seller degradation job:', error);
+    }
+  });
+
+  console.log('✓ Seller degradation job started (runs every hour)');
 }
 
 /**

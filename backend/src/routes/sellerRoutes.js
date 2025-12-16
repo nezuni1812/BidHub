@@ -21,6 +21,47 @@ router.use(authorize('seller', 'admin'));
 
 /**
  * @swagger
+ * /seller/available-bidders:
+ *   get:
+ *     summary: Get list of all users who can bid (except current seller)
+ *     description: Returns all users (bidders and sellers) excluding the current user for manual selection
+ *     tags: [Seller]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of available bidders
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: integer
+ *                       full_name:
+ *                         type: string
+ *                       email:
+ *                         type: string
+ *                       role:
+ *                         type: string
+ *                       rating:
+ *                         type: number
+ */
+router.get(
+  '/available-bidders',
+  sellerController.getAvailableBidders
+);
+
+/**
+ * @swagger
  * /seller/products:
  *   post:
  *     summary: Create a new product with image upload to Cloudflare R2 (Seller only)

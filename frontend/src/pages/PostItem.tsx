@@ -8,45 +8,147 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { useState } from "react"
-import { Upload, X } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Checkbox } from "@/components/ui/checkbox"
+import { useState, useEffect } from "react"
+import { Upload, X, Users } from "lucide-react"
+import { Link, useNavigate } from "react-router-dom"
+import { api } from "@/lib/api"
+import { useToast } from "@/components/ui/use-toast"
+
+interface AvailableBidder {
+  id: string;
+  full_name: string;
+  email: string;
+  role: string;
+  rating: string;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  parent_id: string | null;
+  parent_name: string | null;
+  product_count: string;
+}
 
 export default function PostItemPage() {
   const [formData, setFormData] = useState({
-    name: "",
-    category: "Electronics",
-    condition: "Excellent",
+    title: "",
+    category_id: "",
     description: "",
     startingBid: "",
     biddingIncrement: "",
     buyNowPrice: "",
     duration: "7",
     autoExtend: false,
-    images: [] as string[],
+    images: [] as File[],
   })
 
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loadingCategories, setLoadingCategories] = useState(false)
+  const [availableBidders, setAvailableBidders] = useState<AvailableBidder[]>([])
+  const [selectedBidders, setSelectedBidders] = useState<string[]>([])
+  const [loadingBidders, setLoadingBidders] = useState(false)
+  const navigate = useNavigate()
+  const { toast } = useToast()
 
-  const categories = ["Electronics", "Fashion", "Home", "Sports", "Art", "Collectibles", "Jewelry", "Vehicles"]
+  // Fetch categories on mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setLoadingCategories(true)
+      try {
+        const response = await api.get('/categories')
+        console.log('📦 Categories response:', response)
+        console.log('📊 Categories data:', response.data)
+        
+        if (response.data?.success && response.data?.data) {
+          console.log('✅ Setting categories:', response.data.data)
+          setCategories(response.data.data)
+          // Set first category as default if available
+          if (response.data.data.length > 0) {
+            setFormData(prev => ({ ...prev, category_id: response.data.data[0].id }))
+          }
+        } else if (response.success && response.data) {
+          console.log('✅ Setting categories (alt):', response.data)
+          setCategories(response.data)
+          if (response.data.length > 0) {
+            setFormData(prev => ({ ...prev, category_id: response.data[0].id }))
+          }
+        } else {
+          console.warn('⚠️ Unexpected categories response structure')
+        }
+      } catch (error) {
+        console.error('❌ Failed to fetch categories:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load categories",
+          variant: "destructive"
+        })
+      } finally {
+        setLoadingCategories(false)
+      }
+    }
+    fetchCategories()
+  }, [])
 
-  const conditions = ["Excellent", "Like New", "Good", "Fair", "Poor"]
+  // Fetch available bidders on mount
+  useEffect(() => {
+    const fetchBidders = async () => {
+      setLoadingBidders(true)
+      try {
+        const response = await api.get('/seller/available-bidders')
+        console.log('📦 Full response:', response)
+        console.log('📊 Response data:', response.data)
+        
+        // Check if response has nested data structure
+        if (response.data?.success && response.data?.data) {
+          console.log('✅ Setting bidders:', response.data.data)
+          setAvailableBidders(response.data.data)
+        } else if (response.success && response.data) {
+          // Alternative structure: response might already be unwrapped
+          console.log('✅ Setting bidders (alt):', response.data)
+          setAvailableBidders(response.data)
+        } else {
+          console.warn('⚠️ Unexpected response structure:', response)
+        }
+      } catch (error) {
+        console.error('❌ Failed to fetch bidders:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load available bidders",
+          variant: "destructive"
+        })
+      } finally {
+        setLoadingBidders(false)
+      }
+    }
+    fetchBidders()
+  }, [])
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files) {
-      Array.from(files).forEach((file) => {
-        const reader = new FileReader()
-        reader.onload = (event) => {
-          if (event.target?.result) {
-            setFormData((prev) => ({
-              ...prev,
-              images: [...prev.images, event.target?.result as string],
-            }))
-          }
-        }
-        reader.readAsDataURL(file)
-      })
+      setFormData((prev) => ({
+        ...prev,
+        images: [...prev.images, ...Array.from(files)],
+      }))
+    }
+  }
+
+  const toggleBidder = (bidderId: string) => {
+    setSelectedBidders(prev => 
+      prev.includes(bidderId) 
+        ? prev.filter(id => id !== bidderId)
+        : [...prev, bidderId]
+    )
+  }
+
+  const toggleAllBidders = () => {
+    if (selectedBidders.length === availableBidders.length) {
+      setSelectedBidders([])
+    } else {
+      setSelectedBidders(availableBidders.map(b => b.id))
     }
   }
 
@@ -60,10 +162,147 @@ export default function PostItemPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
-    setTimeout(() => {
+
+    try {
+      // Validate required fields
+      if (!formData.title.trim()) {
+        toast({
+          title: "Missing Title",
+          description: "Please enter a product title",
+          variant: "destructive"
+        })
+        setIsSubmitting(false)
+        return
+      }
+
+      if (!formData.description.trim()) {
+        toast({
+          title: "Missing Description",
+          description: "Please enter a product description",
+          variant: "destructive"
+        })
+        setIsSubmitting(false)
+        return
+      }
+
+      if (!formData.category_id) {
+        toast({
+          title: "Missing Category",
+          description: "Please select a category",
+          variant: "destructive"
+        })
+        setIsSubmitting(false)
+        return
+      }
+
+      if (!formData.startingBid || parseFloat(formData.startingBid) <= 0) {
+        toast({
+          title: "Invalid Starting Price",
+          description: "Please enter a valid starting price",
+          variant: "destructive"
+        })
+        setIsSubmitting(false)
+        return
+      }
+
+      if (!formData.biddingIncrement || parseFloat(formData.biddingIncrement) <= 0) {
+        toast({
+          title: "Invalid Bid Step",
+          description: "Please enter a valid bid increment",
+          variant: "destructive"
+        })
+        setIsSubmitting(false)
+        return
+      }
+
+      if (formData.images.length < 3) {
+        toast({
+          title: "Missing Images",
+          description: "Please upload 1 main image and at least 2 additional images",
+          variant: "destructive"
+        })
+        setIsSubmitting(false)
+        return
+      }
+
+      // Create FormData for multipart upload
+      const formDataObj = new FormData()
+      
+      // Add product details
+      formDataObj.append('title', formData.title)
+      formDataObj.append('description', formData.description)
+      formDataObj.append('category_id', formData.category_id)
+      formDataObj.append('start_price', formData.startingBid)
+      formDataObj.append('bid_step', formData.biddingIncrement)
+      if (formData.buyNowPrice) {
+        formDataObj.append('buy_now_price', formData.buyNowPrice)
+      }
+      formDataObj.append('auto_extend', formData.autoExtend.toString())
+      
+      // Calculate end_time
+      const endTime = new Date()
+      endTime.setDate(endTime.getDate() + parseInt(formData.duration))
+      formDataObj.append('end_time', endTime.toISOString())
+
+      // Add images (first image is main, rest are additional)
+      formDataObj.append('main_image', formData.images[0])
+      for (let i = 1; i < formData.images.length; i++) {
+        formDataObj.append('additional_images', formData.images[i])
+      }
+
+      // Create product (DO NOT set Content-Type header - browser sets it automatically with boundary)
+      const response = await api.post('/seller/products', formDataObj)
+
+      if (response.data?.success) {
+        const productId = response.data.data.id
+
+        // Allow selected bidders to bid
+        if (selectedBidders.length > 0) {
+          toast({
+            title: "Product Created",
+            description: `Adding ${selectedBidders.length} allowed bidders...`
+          })
+
+          const allowPromises = selectedBidders.map(bidderId =>
+            api.post(`/seller/products/${productId}/allow-unrated-bidder/${bidderId}`)
+          )
+
+          try {
+            await Promise.all(allowPromises)
+            toast({
+              title: "Success",
+              description: "Product created and bidders allowed successfully!",
+            })
+          } catch (error) {
+            console.error('Failed to allow some bidders:', error)
+            toast({
+              title: "Partial Success",
+              description: "Product created but some bidders could not be added",
+              variant: "destructive"
+            })
+          }
+        } else {
+          toast({
+            title: "Success",
+            description: "Product created successfully!",
+          })
+        }
+
+        // Redirect to seller dashboard
+        setTimeout(() => {
+          navigate('/seller/dashboard')
+        }, 1500)
+      }
+    } catch (error: any) {
+      console.error('Failed to create product:', error)
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to create product",
+        variant: "destructive"
+      })
+    } finally {
       setIsSubmitting(false)
-      alert("Item posted successfully!")
-    }, 1500)
+    }
   }
 
   return (
@@ -82,48 +321,37 @@ export default function PostItemPage() {
             <h2 className="text-xl font-bold mb-6">Item Details</h2>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="name">Item Name *</Label>
+                <Label htmlFor="title">Item Title *</Label>
                 <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter item name"
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  placeholder="Enter item title"
                   className="mt-2"
                   required
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="category">Category *</Label>
+              <div>
+                <Label htmlFor="category">Category *</Label>
+                {loadingCategories ? (
+                  <div className="w-full mt-2 px-3 py-2 text-muted-foreground">Loading categories...</div>
+                ) : (
                   <select
                     id="category"
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    value={formData.category_id}
+                    onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
                     className="w-full mt-2 px-3 py-2 rounded-lg border border-border bg-background"
+                    required
                   >
+                    <option value="">-- Select Category --</option>
                     {categories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
                       </option>
                     ))}
                   </select>
-                </div>
-                <div>
-                  <Label htmlFor="condition">Condition *</Label>
-                  <select
-                    id="condition"
-                    value={formData.condition}
-                    onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
-                    className="w-full mt-2 px-3 py-2 rounded-lg border border-border bg-background"
-                  >
-                    {conditions.map((cond) => (
-                      <option key={cond} value={cond}>
-                        {cond}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                )}
               </div>
 
               <div>
@@ -142,7 +370,7 @@ export default function PostItemPage() {
 
           {/* Images */}
           <Card className="p-6">
-            <h2 className="text-xl font-bold mb-6">Photos (Minimum 3)</h2>
+            <h2 className="text-xl font-bold mb-6">Photos (1 Main + 2 Additional)</h2>
             <div className="space-y-4">
               <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition cursor-pointer">
                 <label className="cursor-pointer">
@@ -155,10 +383,10 @@ export default function PostItemPage() {
 
               {formData.images.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {formData.images.map((img, idx) => (
+                  {formData.images.map((file, idx) => (
                     <div key={idx} className="relative group rounded-lg overflow-hidden bg-muted">
                       <img
-                        src={img || "/placeholder.svg"}
+                        src={URL.createObjectURL(file)}
                         alt={`Preview ${idx}`}
                         className="w-full h-32 object-cover"
                       />
@@ -169,16 +397,90 @@ export default function PostItemPage() {
                       >
                         <X className="w-4 h-4" />
                       </button>
-                      {idx === 0 && (
-                        <div className="absolute top-1 left-1 bg-primary text-primary-foreground text-xs px-2 py-1 rounded">
-                          Main
-                        </div>
-                      )}
+                      <div className="absolute top-1 left-1 text-xs px-2 py-1 rounded font-semibold" style={{
+                        backgroundColor: idx === 0 ? 'hsl(var(--primary))' : 'hsl(var(--secondary))',
+                        color: idx === 0 ? 'hsl(var(--primary-foreground))' : 'hsl(var(--secondary-foreground))'
+                      }}>
+                        {idx === 0 ? '✓ Main Image' : `Additional ${idx}`}
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
+          </Card>
+
+          {/* Allowed Bidders Selection */}
+          <Card className="p-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Users className="w-5 h-5" />
+              <h2 className="text-xl font-bold">Allowed Bidders (Optional)</h2>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Select specific users who are allowed to bid on this product. Leave empty to allow all users.
+            </p>
+
+            {loadingBidders ? (
+              <div className="text-center py-8 text-muted-foreground">Loading bidders...</div>
+            ) : availableBidders.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">No other users available</div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b">
+                  <div className="flex items-center gap-2">
+                    <Checkbox 
+                      id="select-all"
+                      checked={selectedBidders.length === availableBidders.length}
+                      onCheckedChange={toggleAllBidders}
+                    />
+                    <Label htmlFor="select-all" className="font-semibold cursor-pointer">
+                      Select All ({availableBidders.length} users)
+                    </Label>
+                  </div>
+                  {selectedBidders.length > 0 && (
+                    <span className="text-sm text-muted-foreground">
+                      {selectedBidders.length} selected
+                    </span>
+                  )}
+                </div>
+
+                <div className="max-h-80 overflow-y-auto space-y-2 pr-2">
+                  {availableBidders.map(bidder => (
+                    <div 
+                      key={bidder.id}
+                      className="flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition"
+                    >
+                      <Checkbox 
+                        id={`bidder-${bidder.id}`}
+                        checked={selectedBidders.includes(bidder.id)}
+                        onCheckedChange={() => toggleBidder(bidder.id)}
+                      />
+                      <Label 
+                        htmlFor={`bidder-${bidder.id}`}
+                        className="flex-1 cursor-pointer"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{bidder.full_name}</p>
+                            <p className="text-xs text-muted-foreground">{bidder.email}</p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
+                              {bidder.role}
+                            </span>
+                            {parseFloat(bidder.rating) > 0 && (
+                              <span className="text-xs text-muted-foreground">
+                                ⭐ {parseFloat(bidder.rating).toFixed(1)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </Card>
 
           {/* Pricing & Duration */}
@@ -276,6 +578,11 @@ export default function PostItemPage() {
               </Button>
             </Link>
           </div>
+          {formData.images.length < 3 && formData.images.length > 0 && (
+            <p className="text-sm text-destructive">
+              Please upload at least 3 images (1 main + 2 additional)
+            </p>
+          )}
         </form>
       </div>
     </div>

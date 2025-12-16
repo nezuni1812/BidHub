@@ -11,6 +11,25 @@ const { sendQuestionAnsweredEmail, sendBidderDeniedEmail } = require('../utils/e
 const db = require('../config/database');
 const { BadRequestError, NotFoundError, ForbiddenError } = require('../utils/errors');
 
+// Get available bidders (all users except current seller and admins)
+exports.getAvailableBidders = asyncHandler(async (req, res) => {
+  const currentUserId = req.user.id;
+  
+  const query = `
+    SELECT id, full_name, email, role, rating
+    FROM users
+    WHERE id != $1 AND is_active = true AND role != 'admin'
+    ORDER BY full_name ASC
+  `;
+  
+  const result = await db.query(query, [currentUserId]);
+  
+  res.json({
+    success: true,
+    data: result.rows
+  });
+});
+
 // 3.1 Đăng sản phẩm đấu giá
 exports.createProduct = asyncHandler(async (req, res) => {
   const userId = req.user.id;
@@ -27,15 +46,15 @@ exports.createProduct = asyncHandler(async (req, res) => {
 
   // Check if files were uploaded
   if (!req.files || !req.files.main_image || !req.files.additional_images) {
-    throw new BadRequestError('Vui lòng upload ảnh đại diện và ít nhất 3 ảnh phụ');
+    throw new BadRequestError('Vui lòng upload ảnh đại diện và ít nhất 2 ảnh phụ');
   }
 
   const mainImage = req.files.main_image[0];
   const additionalImages = req.files.additional_images;
 
-  // Validate minimum 3 additional images
-  if (additionalImages.length < 3) {
-    throw new BadRequestError('Sản phẩm cần có ít nhất 3 ảnh phụ');
+  // Validate minimum 2 additional images
+  if (additionalImages.length < 2) {
+    throw new BadRequestError('Sản phẩm cần có ít nhất 2 ảnh phụ');
   }
 
   // Upload main image to R2

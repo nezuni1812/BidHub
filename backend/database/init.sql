@@ -39,6 +39,8 @@ CREATE TABLE users (
     auth_provider VARCHAR(20) DEFAULT 'email' CHECK (
         auth_provider IN ('email', 'google')
     ),
+    -- Seller expiration: NULL = permanent, TIMESTAMP = expires at this time
+    seller_until TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
