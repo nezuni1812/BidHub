@@ -83,22 +83,26 @@ export default function ProfilePage() {
     fetchProfile()
   }, [username])
 
-  const handleProfileUpdate = async (data: { name: string; address: string }) => {
+  const handleProfileUpdate = async (data: { name: string; address: string; date_of_birth?: string }) => {
     try {
       const token = localStorage.getItem('access_token')
       if (!token) return
 
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'
+      const requestBody: any = {
+        full_name: data.name,
+        address: data.address
+      }
+      if (data.date_of_birth) {
+        requestBody.date_of_birth = data.date_of_birth
+      }
       const response = await fetch(`${API_URL}/bidder/profile`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          full_name: data.name,
-          address: data.address
-        })
+        body: JSON.stringify(requestBody)
       })
 
       if (response.ok) {
@@ -167,6 +171,7 @@ export default function ProfilePage() {
                       <EditProfileDialog
                         currentName={profile.full_name}
                         currentAddress={profile.address || ''}
+                        currentDateOfBirth={profile.date_of_birth || undefined}
                         onSave={handleProfileUpdate}
                       />
                     )}
@@ -176,6 +181,9 @@ export default function ProfilePage() {
                   <p className="text-sm text-muted-foreground">Role: <span className="capitalize">{profile.role}</span></p>
                   {profile.address && (
                     <p className="text-sm text-muted-foreground mt-1">📍 {profile.address}</p>
+                  )}
+                  {profile.date_of_birth && (
+                    <p className="text-sm text-muted-foreground mt-1">🎂 {formatDate(profile.date_of_birth)}</p>
                   )}
                 </div>
 

@@ -288,6 +288,20 @@ export default function PostItemPage() {
           })
         }
 
+        // Clear form after successful creation
+        setFormData({
+          title: "",
+          category_id: categories.length > 0 ? categories[0].id : "",
+          description: "",
+          startingBid: "",
+          biddingIncrement: "",
+          buyNowPrice: "",
+          duration: "7",
+          autoExtend: false,
+          images: [],
+        })
+        setSelectedBidders([])
+
         // Redirect to seller dashboard
         setTimeout(() => {
           navigate('/seller/dashboard')

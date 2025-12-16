@@ -16,15 +16,17 @@ import { Edit2 } from "lucide-react"
 interface EditProfileDialogProps {
   currentName: string
   currentAddress: string
-  onSave: (data: { name: string; address: string }) => void
+  currentDateOfBirth?: string
+  onSave: (data: { name: string; address: string; date_of_birth?: string }) => void
 }
 
-export function EditProfileDialog({ currentName, currentAddress, onSave }: EditProfileDialogProps) {
+export function EditProfileDialog({ currentName, currentAddress, currentDateOfBirth, onSave }: EditProfileDialogProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: currentName,
     address: currentAddress,
+    date_of_birth: currentDateOfBirth ? currentDateOfBirth.split('T')[0] : '',
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -83,6 +85,19 @@ export function EditProfileDialog({ currentName, currentAddress, onSave }: EditP
             />
             <p className="text-xs text-muted-foreground mt-1">
               Your delivery address (optional)
+            </p>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium">Date of Birth</label>
+            <Input
+              type="date"
+              value={formData.date_of_birth}
+              onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+              className="mt-2"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Your date of birth (optional)
             </p>
           </div>
 

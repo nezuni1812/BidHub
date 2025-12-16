@@ -73,9 +73,13 @@ class ApiClient {
     // Get token from localStorage
     const token = localStorage.getItem('access_token');
     
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
+    const headers: Record<string, string> = {};
+
+    // Only set Content-Type for non-FormData requests
+    // FormData automatically sets correct Content-Type with boundary
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
 
     // Add authorization header if token exists
     if (token && !endpoint.includes('/auth/')) {
@@ -153,7 +157,8 @@ class ApiClient {
     return this.request<T>(endpoint, {
       ...options,
       method: 'POST',
-      body: body ? JSON.stringify(body) : undefined,
+      // Don't stringify FormData - send it directly
+      body: body instanceof FormData ? body : (body ? JSON.stringify(body) : undefined),
     }, false);
   }
 
@@ -161,7 +166,8 @@ class ApiClient {
     return this.request<T>(endpoint, {
       ...options,
       method: 'PUT',
-      body: body ? JSON.stringify(body) : undefined,
+      // Don't stringify FormData - send it directly
+      body: body instanceof FormData ? body : (body ? JSON.stringify(body) : undefined),
     }, false);
   }
 
