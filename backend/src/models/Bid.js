@@ -115,10 +115,13 @@ class Bid {
         (SELECT url FROM product_images WHERE product_id = p.id AND is_main = true LIMIT 1) as main_image,
         u.full_name as seller_name,
         u.email as seller_email,
-        o.status as order_status
+        o.id as order_id,
+        o.order_status as order_status,
+        o.payment_status as payment_status,
+        o.shipping_status as shipping_status
       FROM products p
       JOIN users u ON p.seller_id = u.id
-      LEFT JOIN orders o ON o.product_id = p.id
+      LEFT JOIN orders o ON o.product_id = p.id AND o.buyer_id = $1
       WHERE p.winner_id = $1 AND p.status = 'completed'
       ORDER BY p.end_time DESC
       LIMIT $2 OFFSET $3

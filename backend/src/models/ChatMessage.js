@@ -93,7 +93,7 @@ class ChatMessage {
         cm.order_id,
         o.product_id,
         p.title as product_title,
-        p.main_image as product_image,
+        (SELECT url FROM product_images WHERE product_id = p.id AND is_main = true LIMIT 1) as product_image,
         CASE 
           WHEN o.buyer_id = $1 THEN o.seller_id
           ELSE o.buyer_id

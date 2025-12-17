@@ -285,24 +285,50 @@ module.exports = (io, socket) => {
       const bid = await Bid.create(productId, bidPlacedByUserId, actualBidPrice, true); // is_auto = true
       console.log(`[AUTO-BID] Bid placed: ${bid.id} by User ${bidPlacedByUserId} at ${actualBidPrice}`);
 
-      // STEP 11: Update product with winner
-      await db.query(
-        `UPDATE products 
-         SET current_price = $1, 
-             total_bids = total_bids + 1,
-             winner_id = $2,
-             updated_at = CURRENT_TIMESTAMP
-         WHERE id = $3`,
-        [actualBidPrice, winnerId, productId]
-      );
+      // STEP 11: Check if Buy Now price is reached or exceeded
+      const buyNowPrice = product.buy_now_price ? parseFloat(product.buy_now_price) : null;
+      const isBuyNow = buyNowPrice && actualBidPrice >= buyNowPrice;
+
+      // STEP 11.5: Update product with winner
+      if (isBuyNow) {
+        // Buy Now triggered - end auction immediately
+        await db.query(
+          `UPDATE products 
+           SET current_price = $1, 
+               total_bids = total_bids + 1,
+               winner_id = $2,
+               status = 'completed',
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = $3`,
+          [actualBidPrice, winnerId, productId]
+        );
+        console.log(`[BUY NOW] Product ${productId} sold via Buy Now to user ${winnerId} at ${actualBidPrice}`);
+        
+        // Create order immediately
+        const Order = require('../../models/Order');
+        await Order.create(productId, winnerId, product.seller_id, actualBidPrice);
+        console.log(`[BUY NOW] Order created for product ${productId}`);
+      } else {
+        // Normal bid - auction continues
+        await db.query(
+          `UPDATE products 
+           SET current_price = $1, 
+               total_bids = total_bids + 1,
+               winner_id = $2,
+               updated_at = CURRENT_TIMESTAMP
+           WHERE id = $3`,
+          [actualBidPrice, winnerId, productId]
+        );
+      }
 
       // STEP 12: Check auto-extend (if bid placed within 5 minutes of end time)
+      // Skip auto-extend if Buy Now was triggered
       const timeLeft = new Date(product.end_time) - now;
       const autoExtendThreshold = 5 * 60 * 1000; // 5 minutes
       const autoExtendDuration = 10 * 60 * 1000; // 10 minutes
       let wasExtended = false;
 
-      if (product.auto_extend && timeLeft < autoExtendThreshold) {
+      if (!isBuyNow && product.auto_extend && timeLeft < autoExtendThreshold) {
         const newEndTime = new Date(Date.now() + autoExtendDuration);
         await db.query(
           'UPDATE products SET end_time = $1 WHERE id = $2',
@@ -376,27 +402,57 @@ module.exports = (io, socket) => {
 
       // STEP 15: Broadcast to all watchers
       const winnerUser = await User.findById(winnerId);
-      io.to(`product-${productId}`).emit(EVENTS.NEW_BID, {
-        productId,
-        currentPrice: actualBidPrice,
-        totalBids: parseInt(product.total_bids) + 1,
-        bidder: {
-          id: winnerId,
-          // Mask name: "Nguyen Van A" → "N***"
-          name: winnerUser ? `${winnerUser.full_name.charAt(0)}${'*'.repeat(winnerUser.full_name.length - 1)}` : 'Anonymous'
-        },
-        timestamp: new Date(),
-        wasExtended,
-        isAutoBid: true
-      });
+      
+      if (isBuyNow) {
+        // Broadcast AUCTION_ENDED for Buy Now
+        io.to(`product-${productId}`).emit(EVENTS.AUCTION_ENDED, {
+          productId,
+          productTitle: product.title,
+          finalPrice: actualBidPrice,
+          totalBids: parseInt(product.total_bids) + 1,
+          hasWinner: true,
+          winnerId,
+          winnerName: winnerUser ? winnerUser.full_name : 'Anonymous',
+          reason: 'Buy Now',
+          endTime: new Date()
+        });
+        
+        // Notify winner
+        io.to(`user-${winnerId}`).emit(EVENTS.AUCTION_ENDED, {
+          productId,
+          productTitle: product.title,
+          finalPrice: actualBidPrice,
+          type: 'winner',
+          reason: 'Buy Now',
+          message: 'Chúc mừng! Bạn đã mua sản phẩm với giá Buy Now'
+        });
+        
+        console.log(`[BUY NOW] Broadcast auction ended for product ${productId}`);
+      } else {
+        // Normal bid broadcast
+        io.to(`product-${productId}`).emit(EVENTS.NEW_BID, {
+          productId,
+          currentPrice: actualBidPrice,
+          totalBids: parseInt(product.total_bids) + 1,
+          bidder: {
+            id: winnerId,
+            // Mask name: "Nguyen Van A" → "N***"
+            name: winnerUser ? `${winnerUser.full_name.charAt(0)}${'*'.repeat(winnerUser.full_name.length - 1)}` : 'Anonymous'
+          },
+          timestamp: new Date(),
+          wasExtended,
+          isAutoBid: true
+        });
+      }
 
-      // STEP 16: Notify previous winner (they've been outbid)
-      if (previousWinnerId && previousWinnerId !== winnerId) {
+      // STEP 16: Notify previous winner (they've been outbid) - Skip if Buy Now
+      if (!isBuyNow && previousWinnerId && previousWinnerId !== winnerId) {
         const outbidUser = allAutoBids.find(ab => ab.user_id === previousWinnerId);
+        const mainImage = product.images?.find(img => img.is_main)?.url || null;
         io.to(`user-${previousWinnerId}`).emit(EVENTS.OUTBID, {
           productId,
           productTitle: product.title,
-          productImage: product.main_image,
+          productImage: mainImage,
           newPrice: actualBidPrice,
           yourMaxPrice: outbidUser ? parseFloat(outbidUser.max_price) : null,
           timestamp: new Date()
@@ -410,11 +466,12 @@ module.exports = (io, socket) => {
         parseFloat(ab.max_price) < winnerMaxPrice
       );
       
+      const mainImage = product.images?.find(img => img.is_main)?.url || null;
       for (const loser of losers) {
         io.to(`user-${loser.user_id}`).emit(EVENTS.OUTBID, {
           productId,
           productTitle: product.title,
-          productImage: product.main_image,
+          productImage: mainImage,
           newPrice: actualBidPrice,
           yourMaxPrice: parseFloat(loser.max_price),
           timestamp: new Date()
@@ -430,7 +487,8 @@ module.exports = (io, socket) => {
           actualBidPlaced: isWinner ? actualBidPrice : null,
           isWinner,
           currentWinner: winnerId,
-          savings: isWinner ? (winnerMaxPrice - actualBidPrice) : 0
+          savings: isWinner ? (winnerMaxPrice - actualBidPrice) : 0,
+          isBuyNow
         },
         bid: {
           id: bid.id,
@@ -442,12 +500,14 @@ module.exports = (io, socket) => {
           id: productId,
           title: product.title,
           currentPrice: actualBidPrice,
-          totalBids: parseInt(product.total_bids) + 1
+          totalBids: parseInt(product.total_bids) + 1,
+          status: isBuyNow ? 'completed' : 'active'
         },
-        wasExtended
+        wasExtended,
+        isBuyNow
       });
 
-      console.log(`[AUTO-BID] Success: Winner ${winnerId} bid ${actualBidPrice} | Triggered by User ${userId} max ${maxPrice} | Winner saved ${winnerMaxPrice - actualBidPrice}`);
+      console.log(`[AUTO-BID] Success: Winner ${winnerId} bid ${actualBidPrice} | Triggered by User ${userId} max ${maxPrice} | Winner saved ${winnerMaxPrice - actualBidPrice} | Buy Now: ${isBuyNow}`);
 
     } catch (error) {
       console.error('[AUTO-BID] Error:', error);

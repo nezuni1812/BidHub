@@ -21,6 +21,7 @@ export interface BiddingProduct {
 export interface WonProduct {
   id: number;
   product_id: number;
+  order_id?: number;
   title: string;
   final_price: string;
   seller_name: string;

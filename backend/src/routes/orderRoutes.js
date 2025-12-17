@@ -10,7 +10,9 @@ const {
   rateTransaction,
   cancelOrder,
   getBuyerOrders,
-  getSellerOrders
+  getSellerOrders,
+  createPaymentIntent,
+  confirmPayment
 } = require('../controllers/orderController');
 const {
   updatePaymentValidation,
@@ -289,5 +291,54 @@ router.post('/:orderId/rate', rateTransactionValidation, validate, rateTransacti
  *         description: Order cancelled successfully
  */
 router.put('/:orderId/cancel', cancelOrderValidation, validate, cancelOrder);
+
+/**
+ * @swagger
+ * /orders/{orderId}/create-payment-intent:
+ *   post:
+ *     tags: [Orders]
+ *     summary: Create Stripe payment intent
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: orderId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Payment intent created successfully
+ */
+router.post('/:orderId/create-payment-intent', createPaymentIntent);
+
+/**
+ * @swagger
+ * /orders/{orderId}/confirm-payment:
+ *   post:
+ *     tags: [Orders]
+ *     summary: Confirm Stripe payment
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: orderId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               paymentIntentId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Payment confirmed successfully
+ */
+router.post('/:orderId/confirm-payment', confirmPayment);
 
 module.exports = router;

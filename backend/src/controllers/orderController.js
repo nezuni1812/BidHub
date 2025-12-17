@@ -5,6 +5,7 @@ const Product = require('../models/Product');
 const User = require('../models/User');
 const Rating = require('../models/Rating');
 const db = require('../config/database');
+const stripe = require('../config/stripe');
 
 /**
  * @desc    Get order details
@@ -380,6 +381,125 @@ const getSellerOrders = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * @desc    Create Stripe payment intent
+ * @route   POST /api/v1/orders/:orderId/create-payment-intent
+ * @access  Private (Buyer only)
+ */
+const createPaymentIntent = asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+  const userId = req.user.id;
+
+  const order = await Order.getById(orderId);
+
+  if (!order) {
+    throw new NotFoundError('Order not found');
+  }
+
+  if (order.buyer_id !== userId) {
+    throw new ForbiddenError('Only buyer can create payment intent');
+  }
+
+  if (order.order_status !== 'pending_payment') {
+    throw new BadRequestError('Order already paid or cancelled');
+  }
+
+  if (!stripe) {
+    throw new BadRequestError('Stripe is not configured');
+  }
+
+  try {
+    // Create payment intent
+    // Note: VND doesn't use cents, amount is already in smallest unit
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(parseFloat(order.total_price)), // VND doesn't have decimal places
+      currency: 'vnd',
+      metadata: {
+        order_id: order.id,
+        product_id: order.product_id,
+        buyer_id: order.buyer_id,
+        seller_id: order.seller_id
+      },
+      description: `Payment for ${order.product_title}`
+    });
+
+    res.json({
+      success: true,
+      data: {
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id
+      }
+    });
+  } catch (stripeError) {
+    console.error('Stripe error:', stripeError);
+    throw new BadRequestError(`Failed to create payment intent: ${stripeError.message || stripeError}`);
+  }
+});
+
+/**
+ * @desc    Confirm Stripe payment
+ * @route   POST /api/v1/orders/:orderId/confirm-payment
+ * @access  Private (Buyer only)
+ */
+const confirmPayment = asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+  const { paymentIntentId } = req.body;
+  const userId = req.user.id;
+
+  const order = await Order.getById(orderId);
+
+  if (!order) {
+    throw new NotFoundError('Order not found');
+  }
+
+  if (order.buyer_id !== userId) {
+    throw new ForbiddenError('Only buyer can confirm payment');
+  }
+
+  if (!stripe) {
+    throw new BadRequestError('Stripe is not configured');
+  }
+  
+  try {
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+
+    if (paymentIntent.status !== 'succeeded') {
+      throw new BadRequestError('Payment not successful');
+    }
+
+    // Update order payment info
+    await Order.updatePayment(orderId, {
+      payment_method: 'stripe',
+      payment_status: 'completed',
+      payment_transaction_id: paymentIntentId
+    });
+
+    // Update order status to paid
+    await Order.updateStatus(orderId, 'paid');
+
+    // Notify seller
+    const io = req.app.get('io');
+    if (io) {
+      io.to(`user-${order.seller_id}`).emit('payment-received', {
+        orderId: order.id,
+        productId: order.product_id,
+        productTitle: order.product_title,
+        buyerName: order.buyer_name,
+        amount: order.total_price
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Payment confirmed successfully',
+      data: await Order.getById(orderId)
+    });
+  } catch (stripeError) {
+    console.error('Stripe verification error:', stripeError);
+    throw new BadRequestError('Failed to verify payment');
+  }
+});
+
 module.exports = {
   getOrderDetails,
   getOrderByProduct,
@@ -390,5 +510,7 @@ module.exports = {
   rateTransaction,
   cancelOrder,
   getBuyerOrders,
-  getSellerOrders
+  getSellerOrders,
+  createPaymentIntent,
+  confirmPayment
 };

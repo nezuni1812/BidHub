@@ -26,7 +26,7 @@ class Order {
       SELECT 
         o.*,
         p.title as product_title,
-        p.main_image as product_image,
+        (SELECT url FROM product_images WHERE product_id = p.id AND is_main = true LIMIT 1) as product_image,
         buyer.full_name as buyer_name,
         buyer.email as buyer_email,
         seller.full_name as seller_name,
@@ -50,7 +50,7 @@ class Order {
       SELECT 
         o.*,
         p.title as product_title,
-        p.main_image as product_image,
+        (SELECT url FROM product_images WHERE product_id = p.id AND is_main = true LIMIT 1) as product_image,
         buyer.full_name as buyer_name,
         buyer.email as buyer_email,
         seller.full_name as seller_name,
@@ -225,7 +225,7 @@ class Order {
       SELECT 
         o.*,
         p.title as product_title,
-        p.main_image as product_image,
+        (SELECT url FROM product_images WHERE product_id = p.id AND is_main = true LIMIT 1) as product_image,
         seller.full_name as seller_name
       FROM orders o
       JOIN products p ON o.product_id = p.id
@@ -263,7 +263,7 @@ class Order {
       SELECT 
         o.*,
         p.title as product_title,
-        p.main_image as product_image,
+        (SELECT url FROM product_images WHERE product_id = p.id AND is_main = true LIMIT 1) as product_image,
         buyer.full_name as buyer_name
       FROM orders o
       JOIN products p ON o.product_id = p.id

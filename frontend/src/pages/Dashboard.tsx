@@ -200,7 +200,7 @@ export default function DashboardPage() {
             ) : (
               wonItems.map((item) => (
                 <Card key={item.id} className="p-4 sm:p-6">
-                  <div className="flex gap-4">
+                  <div className="flex flex-col sm:flex-row gap-4">
                     <img 
                       src={getImageUrl(item.main_image)} 
                       alt={item.title}
@@ -209,19 +209,41 @@ export default function DashboardPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="font-semibold text-lg">{item.title}</h3>
-                        {item.order_status && (
-                          <Badge variant="outline">
-                            {item.order_status}
-                          </Badge>
+                        {item.order_status === 'pending_payment' && (
+                          <Badge variant="destructive">Pending Payment</Badge>
+                        )}
+                        {item.order_status === 'paid' && (
+                          <Badge className="bg-green-600">Paid</Badge>
+                        )}
+                        {item.order_status === 'shipping' && (
+                          <Badge className="bg-blue-600">Shipping</Badge>
+                        )}
+                        {item.order_status === 'delivered' && (
+                          <Badge className="bg-green-700">Delivered</Badge>
+                        )}
+                        {item.order_status === 'completed' && (
+                          <Badge className="bg-green-800">Completed</Badge>
                         )}
                       </div>
-                      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-3">
                         <span>Won for: {formatPrice(parseFloat(item.final_price))}</span>
                         <span>•</span>
                         <span>Seller: {item.seller_name}</span>
                         <span>•</span>
                         <span>{new Date(item.won_date).toLocaleDateString('vi-VN')}</span>
                       </div>
+                      {item.order_status === 'pending_payment' && item.order_id && (
+                        <Link to={`/checkout/${item.order_id}`}>
+                          <Button size="sm" className="bg-primary">
+                            Proceed to Payment
+                          </Button>
+                        </Link>
+                      )}
+                      {item.order_status === 'paid' && (
+                        <Button size="sm" variant="outline" disabled>
+                          Waiting for Shipment
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </Card>

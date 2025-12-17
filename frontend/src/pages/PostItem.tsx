@@ -163,6 +163,11 @@ export default function PostItemPage() {
     e.preventDefault()
     setIsSubmitting(true)
 
+    console.log('🚀 Starting form submission...')
+    console.log('📋 Form data:', formData)
+    console.log('👥 Selected bidders at submit:', selectedBidders)
+    console.log('📊 Selected bidders count:', selectedBidders.length)
+
     try {
       // Validate required fields
       if (!formData.title.trim()) {
@@ -253,28 +258,46 @@ export default function PostItemPage() {
       // Create product (DO NOT set Content-Type header - browser sets it automatically with boundary)
       const response = await api.post('/seller/products', formDataObj)
 
-      if (response.data?.success) {
-        const productId = response.data.data.id
+      console.log('🔍 Product creation response:', response)
+      console.log('📦 Response data:', response.data)
+      console.log('✅ Selected bidders:', selectedBidders)
 
+      // Handle different response structures
+      let productId = null
+      if (response.data?.success && response.data?.data?.id) {
+        productId = response.data.data.id
+      } else if (response.data?.id) {
+        productId = response.data.id
+      } else if (response.success && response.data?.id) {
+        productId = response.data.id
+      }
+
+      console.log('🆔 Product ID:', productId)
+
+      if (productId) {
         // Allow selected bidders to bid
         if (selectedBidders.length > 0) {
+          console.log(`🎯 Allowing ${selectedBidders.length} bidders:`, selectedBidders)
+          
           toast({
             title: "Product Created",
             description: `Adding ${selectedBidders.length} allowed bidders...`
           })
 
-          const allowPromises = selectedBidders.map(bidderId =>
-            api.post(`/seller/products/${productId}/allow-unrated-bidder/${bidderId}`)
-          )
+          const allowPromises = selectedBidders.map(bidderId => {
+            console.log(`📤 Calling allow API for bidder ${bidderId}`)
+            return api.post(`/seller/products/${productId}/allow-unrated-bidder/${bidderId}`)
+          })
 
           try {
-            await Promise.all(allowPromises)
+            const results = await Promise.all(allowPromises)
+            console.log('✅ All bidders allowed:', results)
             toast({
               title: "Success",
               description: "Product created and bidders allowed successfully!",
             })
           } catch (error) {
-            console.error('Failed to allow some bidders:', error)
+            console.error('❌ Failed to allow some bidders:', error)
             toast({
               title: "Partial Success",
               description: "Product created but some bidders could not be added",
@@ -282,6 +305,7 @@ export default function PostItemPage() {
             })
           }
         } else {
+          console.log('ℹ️ No bidders selected')
           toast({
             title: "Success",
             description: "Product created successfully!",
