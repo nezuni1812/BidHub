@@ -39,14 +39,21 @@ CREATE TABLE users (
     auth_provider VARCHAR(20) DEFAULT 'email' CHECK (
         auth_provider IN ('email', 'google')
     ),
-    -- Seller expiration: NULL = permanent, TIMESTAMP = expires at this time
+    avatar_url TEXT,
+    -- Seller expiration: NULL = permanent seller, TIMESTAMP = expires at this time
     seller_until TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Index for faster Google OAuth lookups
+-- Index for faster Google OAuth lookups and seller expiration queries
 CREATE INDEX idx_users_google_id ON users (google_id);
+
+CREATE INDEX idx_users_auth_provider ON users (auth_provider);
+
+CREATE INDEX idx_users_seller_expiration ON users (seller_until)
+WHERE
+    seller_until IS NOT NULL;
 
 -- Bảng Product
 CREATE TABLE products (
