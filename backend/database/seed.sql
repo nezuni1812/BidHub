@@ -84,7 +84,12 @@ VALUES (35, 'Sách hiếm', 8),
     (36, 'Văn phòng phẩm', 8);
 
 -- Reset sequence for categories
-SELECT setval( 'categories_id_seq', ( SELECT MAX(id) FROM categories ) );
+SELECT setval(
+        'categories_id_seq', (
+            SELECT MAX(id)
+            FROM categories
+        )
+    );
 
 -- ================================================
 -- 2. USERS (sellers and bidders)
