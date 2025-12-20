@@ -300,7 +300,7 @@ export default function Home() {
                   "Đang tải..."
                 ) : (
                   <>
-                    Hiển thị {products?.length || 0} kết quả{pagination.total > 0 && ` / ${pagination.total}`}
+                    Hiển thị {products?.length || 0} {pagination.total > 0 && ` trong số ${pagination.total} sản phẩm`}
                   </>
                 )}
               </p>

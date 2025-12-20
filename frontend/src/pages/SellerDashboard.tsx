@@ -5,10 +5,26 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { Plus, Edit, Eye, Trash2, Users, MessageCircle } from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
+import { useEffect } from "react"
 
 export default function SellerDashboardPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  // Protect route - only sellers can access
+  useEffect(() => {
+    if (user && user.role !== 'seller') {
+      navigate('/');
+    }
+  }, [user, navigate]);
+
+  if (!user || user.role !== 'seller') {
+    return null;
+  }
+
   const sellerStats = {
     activeListings: 12,
     revenue: 156000000,
