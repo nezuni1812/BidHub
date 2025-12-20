@@ -9,6 +9,7 @@ import { useState, useEffect } from "react"
 import { api } from "@/lib/api"
 import { useToast } from "@/components/ui/use-toast"
 import { useNavigate } from "react-router-dom"
+import { useAuth } from "@/contexts/AuthContext"
 
 interface Category {
   id: number
@@ -22,6 +23,7 @@ interface Category {
 }
 
 export default function CategoriesPage() {
+  const { user } = useAuth();
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [newCategory, setNewCategory] = useState({ name: "", parent_id: "" })
@@ -30,14 +32,23 @@ export default function CategoriesPage() {
   const { toast } = useToast()
   const navigate = useNavigate()
 
+  // Protect route - only admins can access
   useEffect(() => {
-    fetchCategories()
-  }, [])
+    if (user && user.role !== 'admin') {
+      navigate('/');
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      fetchCategories()
+    }
+  }, [user])
 
   const fetchCategories = async () => {
     try {
       setLoading(true)
-      const response = await api.get('/admin/categories?page=1&limit=100')
+      const response = await api.get<Category[]>('/admin/categories?page=1&limit=100')
       if (response.data) {
         setCategories(response.data)
       }
@@ -151,6 +162,10 @@ export default function CategoriesPage() {
   const parentCategories = categories.filter((c) => !c.parent_id)
   const getChildCategories = (parentId: number) => categories.filter((c) => c.parent_id === parentId)
 
+  if (!user || user.role !== 'admin') {
+    return null;
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -169,37 +184,42 @@ export default function CategoriesPage() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Category Management</h1>
-            <p className="text-muted-foreground">Manage auction categories and subcategories</p>
+            <h1 className="text-3xl font-bold">Quản lý danh mục</h1>
+            <p className="text-muted-foreground">Quản lý danh mục và danh mục con của sản phẩm đấu giá</p>
           </div>
-          <Button onClick={() => navigate('/admin')} variant="outline">
-            Back to Dashboard
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => navigate('/admin/products')} variant="outline">
+              Quản lý sản phẩm
+            </Button>
+            <Button onClick={() => navigate('/admin')} variant="outline">
+              Về Dashboard
+            </Button>
+          </div>
         </div>
 
         {/* Add New Category */}
         <Card className="p-6 mb-8">
-          <h3 className="font-semibold mb-4">Add New Category</h3>
+          <h3 className="font-semibold mb-4">Thêm danh mục mới</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="name">Category Name</Label>
+              <Label htmlFor="name">Tên danh mục</Label>
               <Input
                 id="name"
-                placeholder="e.g., Electronics"
+                placeholder="VD: Điện tử"
                 className="mt-2"
                 value={newCategory.name}
                 onChange={(e) => setNewCategory({ ...newCategory, name: e.target.value })}
               />
             </div>
             <div>
-              <Label htmlFor="parent">Parent Category (Optional)</Label>
+              <Label htmlFor="parent">Danh mục cha (Tùy chọn)</Label>
               <select
                 id="parent"
                 value={newCategory.parent_id}
                 onChange={(e) => setNewCategory({ ...newCategory, parent_id: e.target.value })}
                 className="w-full mt-2 px-3 py-2 rounded-lg border border-border bg-background"
               >
-                <option value="">None (Top Level)</option>
+                <option value="">Không (Cấp cao nhất)</option>
                 {parentCategories.map((cat) => (
                   <option key={cat.id} value={cat.id}>
                     {cat.name}
@@ -210,7 +230,7 @@ export default function CategoriesPage() {
           </div>
           <Button className="mt-4 gap-2" onClick={handleCreateCategory}>
             <Plus className="w-4 h-4" />
-            Create Category
+            Tạo danh mục
           </Button>
         </Card>
 
@@ -218,7 +238,7 @@ export default function CategoriesPage() {
         <div className="space-y-4">
           {parentCategories.length === 0 && (
             <Card className="p-6">
-              <p className="text-center text-muted-foreground">No categories found. Create your first category above.</p>
+              <p className="text-center text-muted-foreground">Chưa có danh mục nào. Tạo danh mục đầu tiên ở trên.</p>
             </Card>
           )}
           
@@ -249,12 +269,12 @@ export default function CategoriesPage() {
                       <div>
                         <div className="flex items-center gap-3">
                           <h3 className="text-lg font-semibold">{category.name}</h3>
-                          <Badge variant="secondary">Parent Category</Badge>
-                          <Badge variant="outline">{category.total_products} products</Badge>
+                          <Badge variant="secondary">Danh mục cha</Badge>
+                          <Badge variant="outline">{category.total_products} sản phẩm</Badge>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
-                          {category.direct_products} direct products
-                          {childCategories.length > 0 && ` • ${childCategories.length} subcategories`}
+                          {category.direct_products} sản phẩm trực tiếp
+                          {childCategories.length > 0 && ` • ${childCategories.length} danh mục con`}
                         </p>
                       </div>
                       <div className="flex gap-2">
@@ -300,9 +320,9 @@ export default function CategoriesPage() {
                               <div className="flex-1">
                                 <div className="flex items-center gap-2">
                                   <p className="font-medium">{subcat.name}</p>
-                                  <Badge variant="outline" className="text-xs">{subcat.total_products} products</Badge>
+                                  <Badge variant="outline" className="text-xs">{subcat.total_products} sản phẩm</Badge>
                                 </div>
-                                <p className="text-xs text-muted-foreground">Subcategory of {category.name}</p>
+                                <p className="text-xs text-muted-foreground">Danh mục con của {category.name}</p>
                               </div>
                               <div className="flex gap-2">
                                 <Button variant="ghost" size="sm" onClick={() => startEditing(subcat)}>
