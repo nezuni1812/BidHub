@@ -74,8 +74,12 @@ export function LoginForm() {
           description: `Welcome back, ${response.data.user.full_name}!`,
         })
         
-        // Redirect to home page
-        navigate('/')
+        // Redirect based on role
+        if (response.data.user.role === 'admin') {
+          navigate('/admin')
+        } else {
+          navigate('/')
+        }
       }
     } catch (error: any) {
       toast({

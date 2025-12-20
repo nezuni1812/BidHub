@@ -522,16 +522,16 @@ CREATE OR REPLACE FUNCTION update_user_rating()
 RETURNS TRIGGER AS $$
 DECLARE
     total_ratings INTEGER;
-    positive_ratings INTEGER;
+    sum_scores INTEGER;
     new_rating DECIMAL(3,2);
 BEGIN
-    SELECT COUNT(*), COUNT(*) FILTER (WHERE score > 0)
-    INTO total_ratings, positive_ratings
+    SELECT COUNT(*), COALESCE(SUM(score), 0)
+    INTO total_ratings, sum_scores
     FROM user_ratings
     WHERE rated_user_id = NEW.rated_user_id;
     
     IF total_ratings > 0 THEN
-        new_rating := (positive_ratings::DECIMAL / total_ratings::DECIMAL) * 5;
+        new_rating := sum_scores::DECIMAL / total_ratings::DECIMAL;
         UPDATE users 
         SET rating = new_rating,
             updated_at = CURRENT_TIMESTAMP

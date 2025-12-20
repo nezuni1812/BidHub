@@ -34,12 +34,11 @@ class Rating {
     const query = `
       SELECT 
         COUNT(*) as total_ratings,
-        COUNT(*) FILTER (WHERE score > 0) as positive_ratings,
-        COUNT(*) FILTER (WHERE score < 0) as negative_ratings,
+        COALESCE(SUM(score), 0) as total_score,
         ROUND(
-          (COUNT(*) FILTER (WHERE score > 0)::DECIMAL / NULLIF(COUNT(*), 0)) * 100, 
+          COALESCE(SUM(score)::DECIMAL / NULLIF(COUNT(*), 0), 0), 
           2
-        ) as positive_percentage
+        ) as average_rating
       FROM user_ratings
       WHERE rated_user_id = $1
     `;

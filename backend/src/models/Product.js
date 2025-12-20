@@ -322,7 +322,7 @@ class Product {
         p.id,
         p.title,
         p.status,
-        p.starting_price,
+        p.start_price,
         p.current_price,
         p.buy_now_price,
         p.bid_step,
@@ -527,7 +527,7 @@ class Product {
       FROM products
       WHERE status = 'ended'
       AND end_time > NOW() - INTERVAL '${days} days'
-      AND current_price > starting_price
+      AND current_price > start_price
     `;
     const result = await db.query(query);
     return result.rows[0].revenue;
@@ -566,7 +566,7 @@ class Product {
       SELECT 
         TO_CHAR(end_time, '${intervalFormat}') as period,
         COUNT(*) as total_sales,
-        COALESCE(SUM(CASE WHEN current_price > starting_price THEN current_price END), 0) as revenue
+        COALESCE(SUM(CASE WHEN current_price > start_price THEN current_price END), 0) as revenue
       FROM products
       WHERE status = 'ended'
       AND end_time > NOW() - INTERVAL '${days} days'
