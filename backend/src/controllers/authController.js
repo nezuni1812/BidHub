@@ -3,7 +3,7 @@ const RefreshToken = require('../models/RefreshToken');
 const asyncHandler = require('../middleware/asyncHandler');
 const { ConflictError, BadRequestError, UnauthorizedError } = require('../utils/errors');
 const { generateOTP, getOTPExpirationTime } = require('../utils/otp');
-const { sendOTPEmail } = require('../utils/email');
+const { sendOTPEmail, sendPasswordResetEmail } = require('../utils/email');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwt');
 const db = require('../config/database');
 const passport = require('../config/passport');
@@ -353,6 +353,74 @@ const googleCallback = (req, res, next) => {
   })(req, res, next);
 };
 
+/**
+ * @desc    Request password reset (send OTP to email)
+ * @route   POST /api/v1/auth/forgot-password
+ * @access  Public
+ */
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  // Check if user exists
+  const user = await User.findByEmail(email);
+  if (!user) {
+    throw new BadRequestError('Email not found');
+  }
+
+  // Generate OTP
+  const otp = generateOTP();
+  const otpExpires = getOTPExpirationTime();
+
+  // Save OTP to database
+  await User.updateOTP(user.id, otp, otpExpires);
+
+  // Send OTP email
+  try {
+    await sendPasswordResetEmail(email, otp, user.full_name);
+  } catch (error) {
+    console.error('Failed to send password reset email:', error);
+    throw new BadRequestError('Failed to send email. Please try again.');
+  }
+
+  res.json({
+    success: true,
+    message: 'OTP has been sent to your email',
+    data: {
+      email: email,
+      otp_expires_in_minutes: getOTPExpirationTime()
+    }
+  });
+});
+
+/**
+ * @desc    Reset password with OTP
+ * @route   POST /api/v1/auth/reset-password
+ * @access  Public
+ */
+const resetPassword = asyncHandler(async (req, res) => {
+  const { email, otp, new_password } = req.body;
+
+  // Verify OTP
+  const user = await User.verifyOTP(email, otp);
+  if (!user) {
+    throw new BadRequestError('Invalid or expired OTP');
+  }
+
+  // Update password
+  await User.updatePassword(user.id, new_password);
+
+  // Clear OTP
+  await User.updateOTP(user.id, null, null);
+
+  res.json({
+    success: true,
+    message: 'Password reset successfully. You can now login with your new password.',
+    data: {
+      email: user.email
+    }
+  });
+});
+
 module.exports = {
   register,
   verifyOTP,
@@ -363,5 +431,7 @@ module.exports = {
   logoutAll,
   getMe,
   googleAuth,
-  googleCallback
+  googleCallback,
+  forgotPassword,
+  resetPassword
 };
