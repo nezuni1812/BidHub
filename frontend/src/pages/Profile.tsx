@@ -53,7 +53,7 @@ export default function ProfilePage() {
         setLoading(true)
         const token = localStorage.getItem('access_token')
         if (!token) {
-          setError('Please login to view profile')
+          setError('Vui lòng đăng nhập để xem hồ sơ')
           return
         }
 
@@ -65,7 +65,7 @@ export default function ProfilePage() {
         })
 
         if (!response.ok) {
-          throw new Error('Failed to fetch profile')
+          throw new Error('Không thể tải hồ sơ')
         }
 
         const result = await response.json()
@@ -74,7 +74,7 @@ export default function ProfilePage() {
         setRatingStats(result.data.rating_stats)
       } catch (err) {
         console.error('Error fetching profile:', err)
-        setError(err instanceof Error ? err.message : 'Failed to load profile')
+        setError(err instanceof Error ? err.message : 'Không thể tải hồ sơ')
       } finally {
         setLoading(false)
       }
@@ -111,11 +111,11 @@ export default function ProfilePage() {
         setProfile(result.data)
         console.log('Profile updated successfully:', result.data)
       } else {
-        throw new Error('Failed to update profile')
+        throw new Error('Không thể cập nhật hồ sơ')
       }
     } catch (err) {
       console.error('Error updating profile:', err)
-      alert('Failed to update profile. Please try again.')
+      alert('Không thể cập nhật hồ sơ. Vui lòng thử lại.')
     }
   }
 
@@ -124,7 +124,7 @@ export default function ProfilePage() {
       <div className="min-h-screen bg-background">
         <Navigation />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <p className="text-center">Loading profile...</p>
+          <p className="text-center">Đang tải hồ sơ...</p>
         </div>
       </div>
     )
@@ -135,7 +135,7 @@ export default function ProfilePage() {
       <div className="min-h-screen bg-background">
         <Navigation />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <p className="text-center text-destructive">{error || 'Profile not found'}</p>
+          <p className="text-center text-destructive">{error || 'Không tìm thấy hồ sơ'}</p>
         </div>
       </div>
     )
@@ -177,8 +177,8 @@ export default function ProfilePage() {
                     )}
                   </div>
                   <p className="text-muted-foreground">{profile.email}</p>
-                  <p className="text-sm text-muted-foreground mt-1">Member since {formatDate(profile.created_at)}</p>
-                  <p className="text-sm text-muted-foreground">Role: <span className="capitalize">{profile.role}</span></p>
+                  <p className="text-sm text-muted-foreground mt-1">Thành viên từ {formatDate(profile.created_at)}</p>
+                  <p className="text-sm text-muted-foreground">Vai trò: <span className="capitalize">{profile.role}</span></p>
                   {profile.address && (
                     <p className="text-sm text-muted-foreground mt-1">📍 {profile.address}</p>
                   )}
@@ -190,32 +190,32 @@ export default function ProfilePage() {
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
                     <p className="text-2xl font-bold">{totalRatings}</p>
-                    <p className="text-xs text-muted-foreground">Total Ratings</p>
+                    <p className="text-xs text-muted-foreground">Tổng đánh giá</p>
                   </div>
                   <div>
                     <p className="text-2xl font-bold">{positivePercentage.toFixed(1)}%</p>
-                    <p className="text-xs text-muted-foreground">Positive Rate</p>
+                    <p className="text-xs text-muted-foreground">Tỷ lệ tích cực</p>
                   </div>
                 </div>
               </div>
 
               {/* Reputation Score */}
               <Card className="p-6 min-w-fit">
-                <h3 className="font-semibold mb-4 text-center">Reputation</h3>
+                <h3 className="font-semibold mb-4 text-center">Uy tín</h3>
                 <div className="text-center mb-4">
                   <div className="text-4xl font-bold text-primary">{positivePercentage.toFixed(1)}%</div>
                   <p className="text-xs text-muted-foreground mt-2">
-                    based on {totalRatings} ratings
+                    dựa trên {totalRatings} đánh giá
                   </p>
                 </div>
                 <div className="space-y-1 text-sm">
                   <div className="flex items-center gap-2">
                     <span className="inline-block w-2 h-2 bg-green-600 rounded-full"></span>
-                    <span>{positiveRatings} Positive</span>
+                    <span>{positiveRatings} Tích cực</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="inline-block w-2 h-2 bg-red-600 rounded-full"></span>
-                    <span>{negativeRatings} Negative</span>
+                    <span>{negativeRatings} Tiêu cực</span>
                   </div>
                 </div>
               </Card>
@@ -226,14 +226,14 @@ export default function ProfilePage() {
         {/* Feedback */}
         <Tabs defaultValue="feedback" className="w-full">
           <TabsList className="grid w-full max-w-xs grid-cols-2">
-            <TabsTrigger value="feedback">Feedback ({ratings.length})</TabsTrigger>
-            <TabsTrigger value="details">Ratings Details</TabsTrigger>
+            <TabsTrigger value="feedback">Đánh giá ({ratings.length})</TabsTrigger>
+            <TabsTrigger value="details">Chi tiết đánh giá</TabsTrigger>
           </TabsList>
 
           <TabsContent value="feedback" className="mt-6 space-y-4">
             {ratings.length === 0 ? (
               <Card className="p-6">
-                <p className="text-center text-muted-foreground">No ratings yet</p>
+                <p className="text-center text-muted-foreground">Chưa có đánh giá nào</p>
               </Card>
             ) : (
               ratings.map((rating) => (
@@ -243,7 +243,7 @@ export default function ProfilePage() {
                       <p className="font-semibold">{rating.rater_name}</p>
                       <p className="text-xs text-muted-foreground">{formatDate(rating.created_at)}</p>
                       {rating.product_title && (
-                        <p className="text-xs text-muted-foreground mt-1">Product: {rating.product_title}</p>
+                        <p className="text-xs text-muted-foreground mt-1">Sản phẩm: {rating.product_title}</p>
                       )}
                     </div>
                     <Badge
@@ -253,10 +253,10 @@ export default function ProfilePage() {
                           : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                       }
                     >
-                      {rating.score > 0 ? "Positive" : "Negative"}
+                      {rating.score > 0 ? "Tích cực" : "Tiêu cực"}
                     </Badge>
                   </div>
-                  <p className="text-muted-foreground">{rating.comment || 'No comment provided'}</p>
+                  <p className="text-muted-foreground">{rating.comment || 'Không có bình luận'}</p>
                 </Card>
               ))
             )}
@@ -264,10 +264,10 @@ export default function ProfilePage() {
 
           <TabsContent value="details" className="mt-6">
             <Card className="p-6">
-              <h3 className="font-semibold mb-6">Rating Breakdown</h3>
+              <h3 className="font-semibold mb-6">Phân tích đánh giá</h3>
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium w-24">Positive</span>
+                  <span className="text-sm font-medium w-24">Tích cực</span>
                   <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-green-600" 
@@ -277,7 +277,7 @@ export default function ProfilePage() {
                   <span className="text-sm text-muted-foreground w-12 text-right">{positiveRatings}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium w-24">Negative</span>
+                  <span className="text-sm font-medium w-24">Tiêu cực</span>
                   <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
                     <div 
                       className="h-full bg-red-600" 
@@ -291,11 +291,11 @@ export default function ProfilePage() {
                 <div className="grid grid-cols-2 gap-4 text-center">
                   <div>
                     <p className="text-3xl font-bold text-green-600">{positivePercentage.toFixed(1)}%</p>
-                    <p className="text-sm text-muted-foreground mt-1">Positive Rate</p>
+                    <p className="text-sm text-muted-foreground mt-1">Tỷ lệ tích cực</p>
                   </div>
                   <div>
                     <p className="text-3xl font-bold">{totalRatings}</p>
-                    <p className="text-sm text-muted-foreground mt-1">Total Ratings</p>
+                    <p className="text-sm text-muted-foreground mt-1">Tổng đánh giá</p>
                   </div>
                 </div>
               </div>

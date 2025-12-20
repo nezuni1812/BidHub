@@ -14,6 +14,7 @@ import PostItemPage from "./pages/PostItem";
 import SellerDashboardPage from "./pages/SellerDashboard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import CategoriesPage from "./pages/admin/CategoriesPage";
+import ForgotPasswordPage from "./pages/ForgotPassword";
 
 import "./globals.css";
 
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="/checkout/:id" element={<CheckoutPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/auth/login" element={<LoginPage />} />
           <Route path="/auth/register" element={<RegisterPage />} />
           <Route path="/auth/google/success" element={<GoogleCallbackPage />} />

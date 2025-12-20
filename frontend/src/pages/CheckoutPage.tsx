@@ -52,18 +52,18 @@ export default function CheckoutPage() {
   const [paymentIntentId, setPaymentIntentId] = useState("")
 
   const steps: OrderStep[] = [
-    { id: 1, title: "Payment", status: currentStep === 1 ? "current" : currentStep > 1 ? "completed" : "pending" },
+    { id: 1, title: "Thanh toán", status: currentStep === 1 ? "current" : currentStep > 1 ? "completed" : "pending" },
     {
       id: 2,
-      title: "Shipping Address",
+      title: "Địa chỉ giao hàng",
       status: currentStep === 2 ? "current" : currentStep > 2 ? "completed" : "pending",
     },
     {
       id: 3,
-      title: "Seller Confirmation",
+      title: "Xác nhận người bán",
       status: currentStep === 3 ? "current" : currentStep > 3 ? "completed" : "pending",
     },
-    { id: 4, title: "Delivery", status: currentStep === 4 ? "current" : currentStep > 4 ? "completed" : "pending" },
+    { id: 4, title: "Giao hàng", status: currentStep === 4 ? "current" : currentStep > 4 ? "completed" : "pending" },
   ]
 
   // Fetch order data
@@ -92,8 +92,8 @@ export default function CheckoutPage() {
       } catch (error: any) {
         console.error('Error fetching order:', error);
         toast({
-          title: "Error",
-          description: error.response?.data?.message || "Failed to load order",
+          title: "Lỗi",
+          description: error.response?.data?.message || "Không thể tải đơn hàng",
           variant: "destructive"
         });
       } finally {
@@ -116,15 +116,15 @@ export default function CheckoutPage() {
         setPaymentIntentId(response.data.paymentIntentId);
         
         toast({
-          title: "Payment Initiated",
-          description: "Please use test card: 4242 4242 4242 4242",
+          title: "Đã khởi tạo thanh toán",
+          description: "Vui lòng sử dụng thẻ test: 4242 4242 4242 4242",
         });
       }
     } catch (error: any) {
       console.error('Error creating payment intent:', error);
       toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to initiate payment",
+        title: "Lỗi",
+        description: error.response?.data?.message || "Không thể khởi tạo thanh toán",
         variant: "destructive"
       });
     } finally {
@@ -147,8 +147,8 @@ export default function CheckoutPage() {
       
       if (response.success || response.data?.success) {
         toast({
-          title: "Payment Successful",
-          description: "Your payment has been processed",
+          title: "Thanh toán thành công",
+          description: "Thanh toán của bạn đã được xử lý",
         });
         setCurrentStep(2);
         setClientSecret(""); // Reset for next time
@@ -156,8 +156,8 @@ export default function CheckoutPage() {
     } catch (error: any) {
       console.error('Error confirming payment:', error);
       toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to confirm payment",
+        title: "Lỗi",
+        description: error.response?.data?.message || "Không thể xác nhận thanh toán",
         variant: "destructive"
       });
     } finally {
@@ -169,8 +169,8 @@ export default function CheckoutPage() {
     if (!order) return;
     
     const newErrors: Record<string, string> = {};
-    if (!address.trim()) newErrors.address = "Address is required";
-    if (!phoneNumber.trim()) newErrors.phone = "Phone number is required";
+    if (!address.trim()) newErrors.address = "Vui lòng nhập địa chỉ";
+    if (!phoneNumber.trim()) newErrors.phone = "Vui lòng nhập số điện thoại";
     setErrors(newErrors);
     
     if (Object.keys(newErrors).length === 0) {
@@ -181,15 +181,15 @@ export default function CheckoutPage() {
         });
         
         toast({
-          title: "Address Saved",
-          description: "Shipping address has been updated",
+          title: "Đã lưu địa chỉ",
+          description: "Địa chỉ giao hàng đã được cập nhật",
         });
         setCurrentStep(3);
       } catch (error: any) {
         console.error('Error updating address:', error);
         toast({
-          title: "Error",
-          description: error.response?.data?.message || "Failed to update address",
+          title: "Lỗi",
+          description: error.response?.data?.message || "Không thể cập nhật địa chỉ",
           variant: "destructive"
         });
       } finally {
@@ -203,7 +203,7 @@ export default function CheckoutPage() {
       <div className="min-h-screen bg-background">
         <Navigation />
         <div className="max-w-6xl mx-auto px-4 py-12">
-          <p className="text-center text-muted-foreground">Loading order...</p>
+          <p className="text-center text-muted-foreground">Đang tải đơn hàng...</p>
         </div>
       </div>
     );
@@ -215,9 +215,9 @@ export default function CheckoutPage() {
         <Navigation />
         <div className="max-w-6xl mx-auto px-4 py-12">
           <Card className="p-8 text-center">
-            <p className="text-destructive">Order not found</p>
+            <p className="text-destructive">Không tìm thấy đơn hàng</p>
             <Button onClick={() => navigate('/dashboard')} className="mt-4">
-              Back to Dashboard
+              Quay lại Dashboard
             </Button>
           </Card>
         </div>
@@ -230,7 +230,7 @@ export default function CheckoutPage() {
       <Navigation />
 
       <div className="max-w-6xl mx-auto px-4 py-12">
-        <h1 className="text-3xl font-bold mb-8">Order Completion</h1>
+        <h1 className="text-3xl font-bold mb-8">Hoàn tất đơn hàng</h1>
 
         {/* Order Summary Card */}
         <Card className="p-6 mb-8">
@@ -242,10 +242,10 @@ export default function CheckoutPage() {
             />
             <div className="flex-1">
               <h2 className="text-xl font-bold">{order.product_title}</h2>
-              <p className="text-muted-foreground">Seller: {order.seller_name}</p>
+              <p className="text-muted-foreground">Người bán: {order.seller_name}</p>
             </div>
             <div className="text-right">
-              <p className="text-sm text-muted-foreground">Total Amount</p>
+              <p className="text-sm text-muted-foreground">Tổng tiền</p>
               <p className="text-2xl font-bold text-primary">
                 {parseInt(order.total_price).toLocaleString('vi-VN')} VND
               </p>
@@ -289,7 +289,7 @@ export default function CheckoutPage() {
               <Card className="p-8">
                 <div className="flex items-center gap-3 mb-6">
                   <CreditCard className="w-6 h-6 text-primary" />
-                  <h2 className="text-2xl font-bold">Payment</h2>
+                  <h2 className="text-2xl font-bold">Thanh toán</h2>
                 </div>
                 
                 {!clientSecret ? (
@@ -311,7 +311,7 @@ export default function CheckoutPage() {
                       className="w-full"
                       size="lg"
                     >
-                      {isLoading ? "Initializing Payment..." : "Continue to Payment"}
+                      {isLoading ? "Đang khởi tạo thanh toán..." : "Tiếp tục thanh toán"}
                     </Button>
                   </div>
                 ) : (
@@ -335,13 +335,13 @@ export default function CheckoutPage() {
               <Card className="p-8">
                 <div className="flex items-center gap-3 mb-6">
                   <MapPin className="w-6 h-6 text-primary" />
-                  <h2 className="text-2xl font-bold">Shipping Address</h2>
+                  <h2 className="text-2xl font-bold">Địa chỉ giao hàng</h2>
                 </div>
                 <div className="space-y-4">
                   <div>
-                    <label className="text-sm font-medium">Full Address</label>
+                    <label className="text-sm font-medium">Địa chỉ đầy đủ</label>
                     <textarea
-                      placeholder="Enter your shipping address"
+                      placeholder="Nhập địa chỉ giao hàng của bạn"
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
                       className="w-full mt-2 p-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none h-24"
@@ -349,10 +349,10 @@ export default function CheckoutPage() {
                     {errors.address && <p className="text-xs text-destructive mt-1">{errors.address}</p>}
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Phone Number</label>
+                    <label className="text-sm font-medium">Số điện thoại</label>
                     <Input
                       type="tel"
-                      placeholder="Your phone number"
+                      placeholder="Số điện thoại của bạn"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       className={errors.phone ? "border-destructive" : ""}
@@ -361,10 +361,10 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex gap-3 pt-4">
                     <Button variant="outline" onClick={() => setCurrentStep(1)} disabled={isLoading}>
-                      Back
+                      Quay lại
                     </Button>
                     <Button className="flex-1" onClick={handleAddressSubmit} disabled={isLoading}>
-                      {isLoading ? "Saving..." : "Submit Address"}
+                      {isLoading ? "Đang lưu..." : "Gửi địa chỉ"}
                     </Button>
                   </div>
                 </div>
@@ -375,12 +375,12 @@ export default function CheckoutPage() {
               <Card className="p-8">
                 <div className="text-center py-8">
                   <Package className="w-16 h-16 text-accent mx-auto mb-4" />
-                  <h2 className="text-2xl font-bold mb-2">Waiting for Seller Confirmation</h2>
+                  <h2 className="text-2xl font-bold mb-2">Đang chờ xác nhận từ người bán</h2>
                   <p className="text-muted-foreground mb-4">
-                    Your payment and shipping address have been received. The seller will confirm and ship your item within 24-48 hours.
+                    Thanh toán và địa chỉ giao hàng của bạn đã được tiếp nhận. Người bán sẽ xác nhận và gửi hàng trong vòng 24-48 giờ.
                   </p>
                   <Badge variant="outline" className="inline-block mb-4">
-                    Status: Pending Shipment
+                    Trạng thái: Chờ gửi hàng
                   </Badge>
                 </div>
               </Card>
@@ -390,12 +390,11 @@ export default function CheckoutPage() {
               <Card className="p-8">
                 <div className="text-center py-8">
                   <MapPin className="w-16 h-16 text-accent mx-auto mb-4" />
-                  <h2 className="text-2xl font-bold mb-2">Delivery in Progress</h2>
+                  <h2 className="text-2xl font-bold mb-2">Đang giao hàng</h2>
                   <p className="text-muted-foreground mb-4">
-                    Your item has been shipped and is on its way. You can track your delivery status using the tracking
-                    number provided by the seller.
+                    Sản phẩm của bạn đã được gửi đi và đang trên đường giao hàng. Bạn có thể theo dõi trạng thái giao hàng bằng mã vận đơn do người bán cung cấp.
                   </p>
-                  <Button className="mt-4">View Tracking</Button>
+                  <Button className="mt-4">Xem thông tin vận chuyển</Button>
                 </div>
               </Card>
             )}
@@ -405,47 +404,47 @@ export default function CheckoutPage() {
           <div className="lg:col-span-1 space-y-6">
             {/* Order Summary */}
             <Card className="p-6 sticky top-20">
-              <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
+              <h3 className="text-lg font-semibold mb-4">Tóm tắt đơn hàng</h3>
               <div className="space-y-4">
                 <div>
-                  <p className="text-xs text-muted-foreground">Product</p>
+                  <p className="text-xs text-muted-foreground">Sản phẩm</p>
                   <p className="font-semibold line-clamp-2">{order.product_title}</p>
                 </div>
                 <div className="pb-4 border-b border-border">
-                  <p className="text-xs text-muted-foreground">Final Price</p>
+                  <p className="text-xs text-muted-foreground">Giá cuối</p>
                   <p className="text-2xl font-bold text-primary">
                     {parseInt(order.total_price).toLocaleString('vi-VN')} VND
                   </p>
                 </div>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Seller</span>
+                    <span className="text-muted-foreground">Người bán</span>
                     <span className="font-medium">{order.seller_name}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Order Status</span>
+                    <span className="text-muted-foreground">Trạng thái đơn</span>
                     <Badge variant="outline">{order.order_status}</Badge>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Payment Status</span>
+                    <span className="text-muted-foreground">Trạng thái thanh toán</span>
                     <Badge variant={order.payment_status === 'completed' ? 'default' : 'outline'}>
                       {order.payment_status}
                     </Badge>
                   </div>
                   {order.shipping_address && (
                     <div className="pt-2 border-t">
-                      <p className="text-xs text-muted-foreground mb-1">Shipping Address</p>
+                      <p className="text-xs text-muted-foreground mb-1">Địa chỉ giao hàng</p>
                       <p className="text-sm">{order.shipping_address}</p>
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Shipping</span>
-                    <span className="font-medium">TBD</span>
+                    <span className="text-muted-foreground">Phí vận chuyển</span>
+                    <span className="font-medium">Chưa xác định</span>
                   </div>
                 </div>
                 <div className="pt-4 border-t border-border">
                   <div className="flex justify-between font-bold">
-                    <span>Total</span>
+                    <span>Tổng cộng</span>
                     <span className="text-primary">
                       {parseInt(order.total_price).toLocaleString('vi-VN')} VND
                     </span>
@@ -456,12 +455,12 @@ export default function CheckoutPage() {
 
             {/* Help Card */}
             <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-3">Need Help?</h3>
+              <h3 className="text-lg font-semibold mb-3">Cần trợ giúp?</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                Contact support if you have any questions about your order.
+                Liên hệ hỗ trợ nếu bạn có bất kỳ câu hỏi nào về đơn hàng.
               </p>
               <Button variant="outline" className="w-full">
-                Contact Support
+                Liên hệ hỗ trợ
               </Button>
             </Card>
           </div>

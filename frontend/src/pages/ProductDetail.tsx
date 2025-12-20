@@ -9,6 +9,7 @@ import { Heart, Share2, Flag } from "lucide-react"
 import { useState, useEffect } from "react"
 import { BidDialog } from "@/components/bid-dialog"
 import { AskQuestionDialog } from "@/components/ask-question-dialog"
+import { AppendDescriptionDialog } from "@/components/append-description-dialog"
 import { useParams, Link } from "react-router-dom"
 import { getProductById, getProductBids, formatPrice, formatTimeRemaining, getImageUrl, type Product, type Bid } from "@/lib/products"
 import { io, Socket } from "socket.io-client"
@@ -35,6 +36,9 @@ export default function ProductDetail() {
     
     // Check if current user is winning
     const isWinning = user && product && product.winner_id && parseInt(product.winner_id as any) === parseInt(user.id as any);
+    
+    // Check if current user is the seller
+    const isSeller = user && product && parseInt(product.seller_id as any) === parseInt(user.id as any);
 
     useEffect(() => {
         if (!id) return;
@@ -161,8 +165,8 @@ export default function ProductDetail() {
             
             // Show toast notification
             toast({
-                title: "New Bid!",
-                description: `${data.bidder.name} bid ${formatPrice(data.currentPrice)}${data.isAutoBid ? ' (Auto)' : ''}`,
+                title: "Có lượt đặt giá mới!",
+                description: `${data.bidder.name} đặt giá ${formatPrice(data.currentPrice)}${data.isAutoBid ? ' (Tự động)' : ''}`,
             });
         });
         
@@ -174,8 +178,8 @@ export default function ProductDetail() {
             });
             
             toast({
-                title: "⏰ Auction Extended",
-                description: `Extended by ${data.extendedMinutes} minutes due to last-minute bid`,
+                title: "⏰ Đấu giá được gia hạn",
+                description: `Gia hạn thêm ${data.extendedMinutes} phút do có lượt đặt giá phút cuối`,
             });
         });
         
@@ -187,16 +191,16 @@ export default function ProductDetail() {
             });
             
             toast({
-                title: "🏁 Auction Ended",
-                description: `Final price: ${formatPrice(data.finalPrice)}`,
+                title: "🏁 Đấu giá kết thúc",
+                description: `Giá cuối: ${formatPrice(data.finalPrice)}`,
             });
         });
         
         newSocket.on('outbid', (data: any) => {
             console.log('⚠️ You were outbid:', data);
             toast({
-                title: "⚠️ You were outbid!",
-                description: `New price: ${formatPrice(data.newPrice)}`,
+                title: "⚠️ Bạn đã bị vượt giá!",
+                description: `Giá mới: ${formatPrice(data.newPrice)}`,
                 variant: "destructive"
             });
         });
@@ -221,8 +225,8 @@ export default function ProductDetail() {
             });
             
             toast({
-                title: "New Question",
-                description: "Someone asked a question about this item"
+                title: "Câu hỏi mới",
+                description: "Có người đã hỏi về sản phẩm này"
             });
         });
         
@@ -238,7 +242,7 @@ export default function ProductDetail() {
     }, [id, product?.id]);
     
     if (!id) {
-        return <div>Product not found</div>;
+        return <div>Không tìm thấy sản phẩm</div>;
     }
     
     if (loading) {
@@ -246,7 +250,7 @@ export default function ProductDetail() {
             <div className="min-h-screen bg-background">
                 <Navigation />
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <div className="text-center">Loading...</div>
+                    <div className="text-center">Đang tải...</div>
                 </div>
             </div>
         );
@@ -257,7 +261,7 @@ export default function ProductDetail() {
             <div className="min-h-screen bg-background">
                 <Navigation />
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                    <div className="text-center text-red-500">{error || 'Product not found'}</div>
+                    <div className="text-center text-red-500">{error || 'Không tìm thấy sản phẩm'}</div>
                 </div>
             </div>
         );
@@ -332,11 +336,61 @@ export default function ProductDetail() {
             });
             
             toast({
-                title: "Question Sent!",
-                description: "Your question has been sent to the seller."
+                title: "Đã gửi câu hỏi!",
+                description: "Câu hỏi của bạn đã được gửi đến người bán."
             });
         } catch (err) {
             console.error('❌ Error asking question:', err);
+            throw err;
+        }
+    };
+    
+    const handleAppendDescription = async (newText: string): Promise<void> => {
+        if (!id) {
+            throw new Error('Product ID not found');
+        }
+        
+        try {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                throw new Error('Vui lòng đăng nhập');
+            }
+            
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+            const response = await fetch(`${API_URL}/seller/products/${id}/append-description`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ additional_description: newText })
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Không thể cập nhật mô tả');
+            }
+            
+            const result = await response.json();
+            
+            // Update product description with the new appended version
+            if (result.data) {
+                setProduct(prev => {
+                    if (!prev) return prev;
+                    return {
+                        ...prev,
+                        description: result.data.description,
+                        description_history: result.data.description_history
+                    };
+                });
+            }
+            
+            toast({
+                title: "Đã cập nhật mô tả",
+                description: "Thông tin bổ sung đã được thêm vào mô tả sản phẩm"
+            });
+        } catch (err) {
+            console.error('❌ Error appending description:', err);
             throw err;
         }
     };
@@ -345,8 +399,8 @@ export default function ProductDetail() {
         const token = localStorage.getItem('access_token');
         if (!token) {
             toast({
-                title: "Login Required",
-                description: "Please login to add items to watchlist",
+                title: "Yêu cầu đăng nhập",
+                description: "Vui lòng đăng nhập để thêm vào danh sách theo dõi",
                 variant: "destructive"
             });
             return;
@@ -359,21 +413,21 @@ export default function ProductDetail() {
                 await removeFromWatchlist(parseInt(id));
                 setIsFavorited(false);
                 toast({
-                    title: "Removed from watchlist",
-                    description: "Product removed from your watchlist"
+                    title: "Đã xóa khỏi danh sách theo dõi",
+                    description: "Sản phẩm đã được xóa khỏi danh sách theo dõi"
                 });
             } else {
                 await addToWatchlist(parseInt(id));
                 setIsFavorited(true);
                 toast({
-                    title: "Added to watchlist",
-                    description: "Product added to your watchlist"
+                    title: "Đã thêm vào danh sách theo dõi",
+                    description: "Sản phẩm đã được thêm vào danh sách theo dõi"
                 });
             }
         } catch (err) {
             toast({
-                title: "Error",
-                description: err instanceof Error ? err.message : "Failed to update watchlist",
+                title: "Lỗi",
+                description: err instanceof Error ? err.message : "Không thể cập nhật danh sách theo dõi",
                 variant: "destructive"
             });
         }
@@ -383,8 +437,8 @@ export default function ProductDetail() {
         const token = localStorage.getItem('access_token');
         if (!token) {
             toast({
-                title: "Login Required",
-                description: "Please login to buy now",
+                title: "Yêu cầu đăng nhập",
+                description: "Vui lòng đăng nhập để mua ngay",
                 variant: "destructive"
             });
             return;
@@ -484,15 +538,15 @@ export default function ProductDetail() {
                                     <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 flex items-center gap-2">
                                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                                         <span className="text-sm font-semibold text-green-600 dark:text-green-400">
-                                            🏆 You are currently the highest bidder!
+                                            🏆 Bạn đang đặt giá cao nhất!
                                         </span>
                                     </div>
                                 )}
 
                                 <div className="space-y-2 pb-4 border-b border-border">
-                                    <p className="text-sm text-muted-foreground">Current bid</p>
+                                    <p className="text-sm text-muted-foreground">Giá hiện tại</p>
                                     <p className="text-3xl font-bold text-primary">{formatPrice(currentPrice)}</p>
-                                    <p className="text-sm text-muted-foreground">{product.total_bids} bids</p>
+                                    <p className="text-sm text-muted-foreground">{product.total_bids} lượt đặt giá</p>
                                 </div>
 
                                 {myMaxPrice && (
@@ -504,12 +558,12 @@ export default function ProductDetail() {
                                 )}
 
                                 <div className="bg-accent/10 rounded-lg p-4 border border-accent/20">
-                                    <p className="text-sm font-semibold text-accent mb-1">Time remaining</p>
+                                    <p className="text-sm font-semibold text-accent mb-1">Thời gian còn lại</p>
                                     <p className="text-lg font-bold text-foreground">{formatTimeRemaining(secondsRemaining)}</p>
                                 </div>
 
                                 <Button className="w-full" size="lg" onClick={() => setShowBidDialog(true)}>
-                                    Place Bid
+                                    Đặt giá
                                 </Button>
 
                                 {buyNowPrice && (
@@ -518,7 +572,7 @@ export default function ProductDetail() {
                                         size="lg"
                                         onClick={handleBuyNow}
                                     >
-                                        Buy Now - {formatPrice(buyNowPrice)}
+                                        Mua ngay - {formatPrice(buyNowPrice)}
                                     </Button>
                                 )}
 
@@ -543,7 +597,7 @@ export default function ProductDetail() {
 
                         {/* Seller Info */}
                         <Card className="p-6">
-                            <h3 className="font-semibold mb-4">Seller Information</h3>
+                            <h3 className="font-semibold mb-4">Thông tin người bán</h3>
                             <div className="space-y-2">
                                 <p className="font-semibold">{product.seller_name}</p>
                                 <div className="flex items-center gap-2">
@@ -558,7 +612,7 @@ export default function ProductDetail() {
                                     size="sm"
                                     onClick={() => setShowQuestionDialog(true)}
                                 >
-                                    Contact Seller
+                                    Liên hệ người bán
                                 </Button>
                             </div>
                         </Card>
@@ -566,7 +620,7 @@ export default function ProductDetail() {
                         {/* Top Bidder */}
                         {product.winner_name && (
                             <Card className="p-6">
-                                <h3 className="font-semibold mb-4">Top Bidder</h3>
+                                <h3 className="font-semibold mb-4">Người đặt giá cao nhất</h3>
                                 <div className="space-y-2">
                                     <p className="font-semibold">{product.winner_name}</p>
                                     {product.winner_rating && (
@@ -587,30 +641,63 @@ export default function ProductDetail() {
                 <div className="mt-12">
                     <Tabs defaultValue="description" className="w-full">
                         <TabsList className="grid w-full max-w-md grid-cols-3">
-                            <TabsTrigger value="description">Description</TabsTrigger>
-                            <TabsTrigger value="bidding">Bid History</TabsTrigger>
-                            <TabsTrigger value="questions">Questions</TabsTrigger>
+                            <TabsTrigger value="description">Mô tả</TabsTrigger>
+                            <TabsTrigger value="bidding">Lịch sử đặt giá</TabsTrigger>
+                            <TabsTrigger value="questions">Câu hỏi</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="description" className="mt-6">
                             <Card className="p-6">
-                                <h3 className="font-semibold mb-4">Product Description</h3>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="font-semibold">Mô tả sản phẩm</h3>
+                                    {isSeller && (
+                                        <AppendDescriptionDialog
+                                            productId={parseInt(id!)}
+                                            onAppend={handleAppendDescription}
+                                            isSeller={isSeller}
+                                        />
+                                    )}
+                                </div>
                                 <p className="text-muted-foreground whitespace-pre-wrap">{product.description}</p>
+                                
+                                {product.description_history && product.description_history.length > 0 && (
+                                    <div className="mt-6 pt-6 border-t border-border">
+                                        <h4 className="font-semibold text-sm mb-3">Lịch sử chỉnh sửa</h4>
+                                        <div className="space-y-3">
+                                            {product.description_history.map((history: any, index: number) => (
+                                                <div key={index} className="bg-muted/50 rounded-lg p-3">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="text-xs font-medium text-primary">
+                                                            ✏️ {new Date(history.created_at).toLocaleDateString('vi-VN', {
+                                                                year: 'numeric',
+                                                                month: '2-digit',
+                                                                day: '2-digit'
+                                                            })}
+                                                        </span>
+                                                    </div>
+                                                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                                        {history.additional_description}
+                                                    </p>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="mt-6 pt-6 border-t border-border grid grid-cols-2 gap-4 text-sm">
                                     <div>
-                                        <p className="text-muted-foreground">Posted</p>
+                                        <p className="text-muted-foreground">Ngày đăng</p>
                                         <p className="font-semibold">{new Date(product.created_at).toLocaleDateString('vi-VN')}</p>
                                     </div>
                                     <div>
-                                        <p className="text-muted-foreground">Ends</p>
+                                        <p className="text-muted-foreground">Kết thúc</p>
                                         <p className="font-semibold">{new Date(product.end_time).toLocaleString('vi-VN')}</p>
                                     </div>
                                     <div>
-                                        <p className="text-muted-foreground">Category</p>
+                                        <p className="text-muted-foreground">Danh mục</p>
                                         <p className="font-semibold">{product.category_name}</p>
                                     </div>
                                     <div>
-                                        <p className="text-muted-foreground">Bid Step</p>
+                                        <p className="text-muted-foreground">Bước giá</p>
                                         <p className="font-semibold">{formatPrice(bidStep)}</p>
                                     </div>
                                 </div>
@@ -619,10 +706,10 @@ export default function ProductDetail() {
 
                         <TabsContent value="bidding" className="mt-6">
                             <Card className="p-6">
-                                <h3 className="font-semibold mb-4">Bidding History</h3>
+                                <h3 className="font-semibold mb-4">Lịch sử đặt giá</h3>
                                 <div className="space-y-3">
                                     {bids.length === 0 ? (
-                                        <p className="text-muted-foreground text-center py-4">No bids yet</p>
+                                        <p className="text-muted-foreground text-center py-4">Chưa có lượt đặt giá nào</p>
                                     ) : (
                                         bids.map((bid) => (
                                             <div key={bid.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
@@ -650,14 +737,14 @@ export default function ProductDetail() {
                         <TabsContent value="questions" className="mt-6">
                             <Card className="p-6">
                                 <div className="flex justify-between items-center mb-4">
-                                    <h3 className="font-semibold">Questions About This Item</h3>
+                                    <h3 className="font-semibold">Câu hỏi về sản phẩm</h3>
                                     <Button size="sm" onClick={() => setShowQuestionDialog(true)}>
-                                        Ask Question
+                                        Đặt câu hỏi
                                     </Button>
                                 </div>
                                 <div className="space-y-4">
                                     {!product.questions || product.questions.length === 0 ? (
-                                        <p className="text-muted-foreground text-center py-4">No questions yet</p>
+                                        <p className="text-muted-foreground text-center py-4">Chưa có câu hỏi nào</p>
                                     ) : (
                                         product.questions.map((q) => (
                                             <div key={q.id} className="border-b border-border pb-4 last:border-0">
@@ -687,7 +774,7 @@ export default function ProductDetail() {
                 {/* Related Products */}
                 {product.related_products && product.related_products.length > 0 && (
                     <div className="mt-12">
-                        <h2 className="text-2xl font-bold mb-6">Related Items</h2>
+                        <h2 className="text-2xl font-bold mb-6">Sản phẩm liên quan</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                             {product.related_products.map((item) => (
                                 <Link key={item.id} to={`/product/${item.id}`}>
