@@ -113,7 +113,6 @@ export default function ChatPage() {
     socket.on('connect_error', async (error) => {
       console.error('❌❌❌ Socket connection error:', error)
       console.error('❌ Error message:', error.message)
-      console.error('❌ Error type:', error.type)
       
       // If token expired, try to refresh and reconnect
       if (error.message.includes('expired') || error.message.includes('Authentication')) {
@@ -170,7 +169,13 @@ export default function ChatPage() {
       console.log('📨 Sender:', data.senderName)
       
       // Update messages if this is the active conversation
-      if (selectedConversationRef.current && selectedConversationRef.current.order_id === data.orderId) {
+      // Convert both to numbers for comparison
+      const currentOrderId = selectedConversationRef.current?.order_id ? parseInt(selectedConversationRef.current.order_id.toString()) : null
+      const messageOrderId = parseInt(data.orderId.toString())
+      
+      console.log('📨 Comparing:', currentOrderId, 'vs', messageOrderId)
+      
+      if (currentOrderId && currentOrderId === messageOrderId) {
         console.log('✅✅✅ ADDING MESSAGE TO ACTIVE CONVERSATION!')
         setMessages(prev => {
           const newMessages = [...prev, data.message]
@@ -179,21 +184,23 @@ export default function ChatPage() {
         })
       } else {
         console.log('⏭️ Message is for different conversation')
-        console.log('⏭️ Current:', selectedConversationRef.current?.order_id, 'vs Message:', data.orderId)
+        console.log('⏭️ Current:', currentOrderId, 'vs Message:', messageOrderId)
       }
 
       // Update conversation list with new last message
       setConversations(prev => {
-        const updated = prev.map(conv => 
-          conv.order_id === data.orderId 
-            ? { 
-                ...conv, 
-                last_message: data.message.message,
-                last_message_time: data.message.created_at,
-                unread_count: selectedConversationRef.current?.order_id === data.orderId ? conv.unread_count : conv.unread_count + 1
-              }
-            : conv
-        )
+        const updated = prev.map(conv => {
+          const convOrderId = parseInt(conv.order_id.toString())
+          if (convOrderId === messageOrderId) {
+            return { 
+              ...conv, 
+              last_message: data.message.message,
+              last_message_time: data.message.created_at,
+              unread_count: currentOrderId === messageOrderId ? conv.unread_count : conv.unread_count + 1
+            }
+          }
+          return conv
+        })
         console.log('✅ Updated conversations')
         return updated
       })
