@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Link } from "react-router-dom"
-import { Plus, Edit, Eye, Trash2, Users } from "lucide-react"
+import { Plus, Edit, Eye, Trash2, Users, MessageCircle } from "lucide-react"
 
 export default function SellerDashboardPage() {
   const sellerStats = {
@@ -193,10 +193,12 @@ export default function SellerDashboardPage() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="gap-2 bg-transparent">
-                      <Users className="w-4 h-4" />
-                      Liên hệ người mua
-                    </Button>
+                    <Link to={`/messages/${item.buyer || item.buyer_username}`}>
+                      <Button variant="outline" size="sm" className="gap-2 bg-transparent">
+                        <MessageCircle className="w-4 h-4" />
+                        Chat với người mua
+                      </Button>
+                    </Link>
                   </div>
                 </div>
               </Card>

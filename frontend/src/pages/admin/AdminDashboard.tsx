@@ -9,6 +9,7 @@ import { useState, useEffect } from "react"
 import { AdminChart } from "@/components/admin-chart"
 import { api } from "@/lib/api"
 import { useToast } from "@/components/ui/use-toast"
+import { useNavigate } from "react-router-dom"
 
 interface DashboardStats {
   period: string
@@ -54,7 +55,9 @@ export default function AdminDashboard() {
   const [products, setProducts] = useState<any[]>([])
   const [categories, setCategories] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [processingRequest, setProcessingRequest] = useState<string | null>(null)
   const { toast } = useToast()
+  const navigate = useNavigate()
 
   useEffect(() => {
     fetchDashboardData()
@@ -68,7 +71,7 @@ export default function AdminDashboard() {
         api.get('/admin/users?page=1&limit=10'),
         api.get('/admin/upgrade-requests?status=pending&page=1&limit=10'),
         api.get('/admin/products?page=1&limit=10'),
-        api.get('/categories')
+        api.get('/admin/categories?page=1&limit=100')
       ])
 
       if (statsRes.data) setStats(statsRes.data)
@@ -92,6 +95,96 @@ export default function AdminDashboard() {
       style: 'currency',
       currency: 'VND'
     }).format(price)
+  }
+
+  const handleApproveRequest = async (requestId: string) => {
+    setProcessingRequest(requestId)
+    try {
+      await api.post(`/admin/upgrade-requests/${requestId}/approve`)
+      toast({
+        title: "Đã phê duyệt",
+        description: "Yêu cầu nâng cấp đã được phê duyệt thành công.",
+      })
+      // Refresh data
+      fetchDashboardData()
+    } catch (error: any) {
+      toast({
+        title: "Lỗi",
+        description: error.message || "Không thể phê duyệt yêu cầu.",
+        variant: "destructive"
+      })
+    } finally {
+      setProcessingRequest(null)
+    }
+  }
+
+  const handleRejectRequest = async (requestId: string) => {
+    setProcessingRequest(requestId)
+    try {
+      await api.post(`/admin/upgrade-requests/${requestId}/reject`, {
+        reason: "Không đáp ứng yêu cầu"
+      })
+      toast({
+        title: "Đã từ chối",
+        description: "Yêu cầu nâng cấp đã bị từ chối.",
+      })
+      // Refresh data
+      fetchDashboardData()
+    } catch (error: any) {
+      toast({
+        title: "Lỗi",
+        description: error.message || "Không thể từ chối yêu cầu.",
+        variant: "destructive"
+      })
+    } finally {
+      setProcessingRequest(null)
+    }
+  }
+
+  const handleDeleteCategory = async (categoryId: number) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa danh mục này?')) return
+
+    try {
+      await api.delete(`/admin/categories/${categoryId}`)
+      toast({
+        title: "Thành công",
+        description: "Danh mục đã được xóa.",
+      })
+      fetchDashboardData()
+    } catch (error: any) {
+      toast({
+        title: "Lỗi",
+        description: error.message || "Không thể xóa danh mục có sản phẩm.",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleDeleteProduct = async (productId: number) => {
+    if (!confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) return
+
+    try {
+      await api.delete(`/admin/products/${productId}`)
+      toast({
+        title: "Thành công",
+        description: "Sản phẩm đã được xóa.",
+      })
+      fetchDashboardData()
+    } catch (error: any) {
+      toast({
+        title: "Lỗi",
+        description: error.message || "Không thể xóa sản phẩm có bid.",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleViewProduct = (productId: number) => {
+    navigate(`/product/${productId}`)
+  }
+
+  const handleViewUser = (username: string) => {
+    navigate(`/profile/${username}`)
   }
 
   if (loading) {
@@ -300,7 +393,7 @@ export default function AdminDashboard() {
                           {user.average_rating ? `${user.average_rating.toFixed(1)} ★` : "N/A"}
                         </td>
                         <td className="py-4 px-4">
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" onClick={() => handleViewUser(user.username)}>
                             <Eye className="w-4 h-4" />
                           </Button>
                         </td>
@@ -360,10 +453,16 @@ export default function AdminDashboard() {
                         </td>
                         <td className="py-4 px-4">
                           <div className="flex gap-2">
-                            <Button variant="ghost" size="sm">
+                            <Button variant="ghost" size="sm" onClick={() => handleViewProduct(product.id)}>
                               <Eye className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="sm" className="text-destructive">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-destructive"
+                              onClick={() => handleDeleteProduct(product.id)}
+                              disabled={product.total_bids > 0}
+                            >
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
@@ -398,12 +497,24 @@ export default function AdminDashboard() {
                       <Badge variant="outline">{request.status}</Badge>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => handleViewUser(request.username)}>
                         View Profile
                       </Button>
-                      <Button size="sm">Approve</Button>
-                      <Button variant="outline" size="sm" className="text-destructive bg-transparent">
-                        Reject
+                      <Button 
+                        size="sm" 
+                        onClick={() => handleApproveRequest(request.request_id)}
+                        disabled={processingRequest === request.request_id}
+                      >
+                        {processingRequest === request.request_id ? "Processing..." : "Approve"}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-destructive bg-transparent"
+                        onClick={() => handleRejectRequest(request.request_id)}
+                        disabled={processingRequest === request.request_id}
+                      >
+                        {processingRequest === request.request_id ? "Processing..." : "Reject"}
                       </Button>
                     </div>
                   </div>
@@ -417,7 +528,7 @@ export default function AdminDashboard() {
             <Card className="p-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="font-semibold">Category Management</h3>
-                <Button>Add Category</Button>
+                <Button onClick={() => navigate('/admin/categories')}>Manage Categories</Button>
               </div>
 
               {loading ? (
@@ -429,24 +540,38 @@ export default function AdminDashboard() {
                   {categories.map((cat) => (
                     <div key={cat.id} className="flex justify-between items-center p-4 border border-border rounded-lg">
                       <div>
-                        <p className="font-semibold">{cat.name}</p>
+                        <p className="font-semibold">
+                          {cat.parent_id && '↳ '}
+                          {cat.name}
+                        </p>
                         <p className="text-sm text-muted-foreground">
-                          {cat.description || 'No description'}
+                          {cat.total_products} sản phẩm
+                          {cat.parent_id && ` • Danh mục con của ${cat.parent_name}`}
                         </p>
                       </div>
                       <div className="flex items-center gap-3">
-                        <Badge>Active</Badge>
-                        <Button variant="outline" size="sm">
-                          Edit
-                        </Button>
-                        <Button variant="outline" size="sm" className="text-destructive bg-transparent">
-                          Delete
+                        <Badge>{cat.parent_id ? 'Subcategory' : 'Parent'}</Badge>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-destructive bg-transparent"
+                          onClick={() => handleDeleteCategory(cat.id)}
+                          disabled={cat.total_products > 0}
+                        >
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
+
+              <div className="mt-6 pt-6 border-t border-border">
+                <p className="text-sm text-muted-foreground mb-4">
+                  For advanced category management including create, edit, and parent-child organization, 
+                  click the "Manage Categories" button above.
+                </p>
+              </div>
             </Card>
           </TabsContent>
         </Tabs>

@@ -1,10 +1,95 @@
 import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { CheckCircle, Users, TrendingUp, DollarSign } from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
+import { useState, useEffect } from "react"
+import { api } from "@/lib/api"
+import { useToast } from "@/components/ui/use-toast"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export default function SellingPage() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const { toast } = useToast()
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false)
+  const [hasUpgradeRequest, setHasUpgradeRequest] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    if (user && user.role === 'bidder') {
+      checkUpgradeRequest()
+    }
+  }, [user])
+
+  const checkUpgradeRequest = async () => {
+    try {
+      const response = await api.get('/bidder/upgrade-request')
+      if (response.data) {
+        setHasUpgradeRequest(true)
+      }
+    } catch (error: any) {
+      // No request found
+      setHasUpgradeRequest(false)
+    }
+  }
+
+  const handlePostProduct = () => {
+    if (!user) {
+      navigate('/auth/login')
+      return
+    }
+
+    if (user.role === 'seller' || user.role === 'admin') {
+      navigate('/seller/post-item')
+      return
+    }
+
+    // Bidder role - check if already requested
+    if (hasUpgradeRequest) {
+      toast({
+        title: "Yêu cầu đang chờ xử lý",
+        description: "Yêu cầu nâng cấp lên Seller của bạn đang được admin xem xét.",
+        variant: "default"
+      })
+      return
+    }
+
+    // Show upgrade dialog
+    setShowUpgradeDialog(true)
+  }
+
+  const handleUpgradeRequest = async () => {
+    setIsLoading(true)
+    try {
+      await api.post('/bidder/upgrade-request')
+      toast({
+        title: "Yêu cầu thành công",
+        description: "Yêu cầu nâng cấp lên Seller đã được gửi. Admin sẽ xem xét trong thời gian sớm nhất.",
+      })
+      setHasUpgradeRequest(true)
+      setShowUpgradeDialog(false)
+    } catch (error: any) {
+      toast({
+        title: "Lỗi",
+        description: error.message || "Không thể gửi yêu cầu. Vui lòng thử lại.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const features = [
     {
       icon: Users,
@@ -38,9 +123,9 @@ export default function SellingPage() {
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
             Tham gia cùng hàng nghìn người bán kiếm tiền bằng cách đấu giá sản phẩm trên Bido
           </p>
-          <Link to="/seller/post-item">
-            <Button size="lg">Đăng sản phẩm đầu tiên</Button>
-          </Link>
+          <Button size="lg" onClick={handlePostProduct}>
+            {hasUpgradeRequest ? "Yêu cầu đang chờ xử lý" : "Đăng sản phẩm đầu tiên"}
+          </Button>
         </div>
 
         {/* Features Grid */}
@@ -89,6 +174,27 @@ export default function SellingPage() {
           </Link>
         </div>
       </div>
+
+      {/* Upgrade Request Dialog */}
+      <AlertDialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Nâng cấp lên Seller</AlertDialogTitle>
+            <AlertDialogDescription>
+              Để đăng sản phẩm, bạn cần nâng cấp tài khoản lên vai trò Seller.
+              Yêu cầu của bạn sẽ được gửi đến admin để xem xét và phê duyệt.
+              <br /><br />
+              Bạn có muốn gửi yêu cầu nâng cấp không?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isLoading}>Hủy</AlertDialogCancel>
+            <AlertDialogAction onClick={handleUpgradeRequest} disabled={isLoading}>
+              {isLoading ? "Đang gửi..." : "Gửi yêu cầu"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

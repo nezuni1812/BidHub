@@ -114,6 +114,7 @@ class Bid {
         p.status,
         (SELECT url FROM product_images WHERE product_id = p.id AND is_main = true LIMIT 1) as main_image,
         u.full_name as seller_name,
+        u.username as seller_username,
         u.email as seller_email,
         o.id as order_id,
         o.order_status as order_status,
@@ -157,6 +158,16 @@ class Bid {
     `;
     const result = await db.query(query, [productId]);
     return result.rows[0]?.highest_bid || null;
+  }
+
+  static async getProductBidCount(productId) {
+    const query = `
+      SELECT COUNT(*) as count
+      FROM bids
+      WHERE product_id = $1
+    `;
+    const result = await db.query(query, [productId]);
+    return parseInt(result.rows[0].count);
   }
 
   // ================================================

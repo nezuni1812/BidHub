@@ -65,7 +65,7 @@ exports.getCategoryById = asyncHandler(async (req, res) => {
  * @access  Private/Admin
  */
 exports.createCategory = asyncHandler(async (req, res) => {
-  const { name, description } = req.body;
+  const { name, parent_id } = req.body;
 
   // Check if category name already exists
   const existing = await Category.findByName(name);
@@ -73,7 +73,7 @@ exports.createCategory = asyncHandler(async (req, res) => {
     throw new BadRequestError('Category name already exists');
   }
 
-  const category = await Category.create({ name, description });
+  const category = await Category.create({ name, parent_id });
 
   res.status(201).json({
     success: true,
@@ -89,7 +89,7 @@ exports.createCategory = asyncHandler(async (req, res) => {
  */
 exports.updateCategory = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { name, description } = req.body;
+  const { name, parent_id } = req.body;
 
   const category = await Category.findById(id);
   if (!category) {
@@ -104,7 +104,7 @@ exports.updateCategory = asyncHandler(async (req, res) => {
     }
   }
 
-  const updated = await Category.update(id, { name, description });
+  const updated = await Category.update(id, { name, parent_id });
 
   res.json({
     success: true,
@@ -221,6 +221,12 @@ exports.removeProduct = asyncHandler(async (req, res) => {
   const product = await Product.findById(id);
   if (!product) {
     throw new NotFoundError('Product not found');
+  }
+
+  // Check if product has any bids
+  const bidCount = await Bid.getProductBidCount(id);
+  if (bidCount > 0) {
+    throw new BadRequestError(`Cannot delete product with ${bidCount} bid(s). Product has active bidders.`);
   }
 
   // Update product status to 'removed'

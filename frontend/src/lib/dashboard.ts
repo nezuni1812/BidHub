@@ -25,6 +25,7 @@ export interface WonProduct {
   title: string;
   final_price: string;
   seller_name: string;
+  seller_username?: string;
   won_date: string;
   order_status?: string;
   main_image: string;

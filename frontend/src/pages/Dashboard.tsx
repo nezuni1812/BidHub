@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Link } from "react-router-dom"
-import { Heart, ShoppingCart, Trophy } from "lucide-react"
+import { Heart, ShoppingCart, Trophy, MessageCircle } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
 import { getActiveBids, getWonProducts, type BiddingProduct, type WonProduct } from "@/lib/dashboard"
@@ -232,18 +232,28 @@ export default function DashboardPage() {
                         <span>•</span>
                         <span>{new Date(item.won_date).toLocaleDateString('vi-VN')}</span>
                       </div>
-                      {item.order_status === 'pending_payment' && item.order_id && (
-                        <Link to={`/checkout/${item.order_id}`}>
-                          <Button size="sm" className="bg-primary">
-                            Proceed to Payment
+                      <div className="flex gap-2 flex-wrap">
+                        {item.order_status === 'pending_payment' && item.order_id && (
+                          <Link to={`/checkout/${item.order_id}`}>
+                            <Button size="sm" className="bg-primary">
+                              Proceed to Payment
+                            </Button>
+                          </Link>
+                        )}
+                        {item.order_status === 'paid' && (
+                          <Button size="sm" variant="outline" disabled>
+                            Waiting for Shipment
                           </Button>
-                        </Link>
-                      )}
-                      {item.order_status === 'paid' && (
-                        <Button size="sm" variant="outline" disabled>
-                          Waiting for Shipment
-                        </Button>
-                      )}
+                        )}
+                        {item.order_id && (
+                          <Link to={`/messages/${item.seller_username || item.seller_name}`}>
+                            <Button size="sm" variant="outline" className="gap-2">
+                              <MessageCircle className="w-4 h-4" />
+                              Chat with Seller
+                            </Button>
+                          </Link>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </Card>

@@ -226,7 +226,8 @@ class Order {
         o.*,
         p.title as product_title,
         (SELECT url FROM product_images WHERE product_id = p.id AND is_main = true LIMIT 1) as product_image,
-        seller.full_name as seller_name
+        seller.full_name as seller_name,
+        seller.username as seller_username
       FROM orders o
       JOIN products p ON o.product_id = p.id
       JOIN users seller ON o.seller_id = seller.id
@@ -264,7 +265,8 @@ class Order {
         o.*,
         p.title as product_title,
         (SELECT url FROM product_images WHERE product_id = p.id AND is_main = true LIMIT 1) as product_image,
-        buyer.full_name as buyer_name
+        buyer.full_name as buyer_name,
+        buyer.username as buyer_username
       FROM orders o
       JOIN products p ON o.product_id = p.id
       JOIN users buyer ON o.buyer_id = buyer.id

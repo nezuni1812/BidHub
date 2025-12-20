@@ -84,15 +84,14 @@ class Category {
       SELECT 
         c.id,
         c.name,
-        c.description,
         c.parent_id,
         c.created_at,
         c.updated_at,
         pc.name as parent_name,
-        COUNT(DISTINCT p.id) as total_products,
+        COUNT(DISTINCT p.id) as direct_products,
         COUNT(DISTINCT CASE WHEN p.status = 'active' THEN p.id END) as active_products,
         COUNT(DISTINCT CASE WHEN p.status = 'ended' THEN p.id END) as ended_products,
-        COALESCE(SUM(CASE WHEN p.status = 'ended' AND p.current_price > p.starting_price THEN p.current_price END), 0) as total_revenue
+        COALESCE(SUM(CASE WHEN p.status = 'ended' AND p.current_price > p.start_price THEN p.current_price END), 0) as total_revenue
       FROM categories c
       LEFT JOIN categories pc ON c.parent_id = pc.id
       LEFT JOIN products p ON c.id = p.category_id
@@ -110,7 +109,7 @@ class Category {
     const validSorts = {
       'name': 'c.name',
       'created_at': 'c.created_at',
-      'total_products': 'total_products',
+      'total_products': 'direct_products',
       'total_revenue': 'total_revenue'
     };
     query += ` ORDER BY ${validSorts[sort] || 'c.name'} DESC`;
@@ -119,7 +118,32 @@ class Category {
     params.push(limit, offset);
 
     const result = await db.query(query, params);
-    return result.rows;
+    
+    // For each parent category, add child product counts
+    const categories = result.rows.map(cat => {
+      const directProducts = parseInt(cat.direct_products) || 0;
+      return {
+        ...cat,
+        direct_products: directProducts,
+        total_products: directProducts, // Will be updated for parent categories
+        active_products: parseInt(cat.active_products) || 0,
+        ended_products: parseInt(cat.ended_products) || 0,
+        total_revenue: parseFloat(cat.total_revenue) || 0
+      };
+    });
+
+    // Calculate total products for parent categories (including children)
+    for (let cat of categories) {
+      if (!cat.parent_id) {
+        // This is a parent category, sum up children products
+        const childProducts = categories
+          .filter(c => c.parent_id === cat.id)
+          .reduce((sum, c) => sum + c.direct_products, 0);
+        cat.total_products = cat.direct_products + childProducts;
+      }
+    }
+
+    return categories;
   }
 
   static async findByIdWithStats(id) {
@@ -127,7 +151,6 @@ class Category {
       SELECT 
         c.id,
         c.name,
-        c.description,
         c.parent_id,
         c.created_at,
         c.updated_at,
@@ -135,7 +158,7 @@ class Category {
         COUNT(DISTINCT p.id) as total_products,
         COUNT(DISTINCT CASE WHEN p.status = 'active' THEN p.id END) as active_products,
         COUNT(DISTINCT CASE WHEN p.status = 'ended' THEN p.id END) as ended_products,
-        COALESCE(SUM(CASE WHEN p.status = 'ended' AND p.current_price > p.starting_price THEN p.current_price END), 0) as total_revenue
+        COALESCE(SUM(CASE WHEN p.status = 'ended' AND p.current_price > p.start_price THEN p.current_price END), 0) as total_revenue
       FROM categories c
       LEFT JOIN categories pc ON c.parent_id = pc.id
       LEFT JOIN products p ON c.id = p.category_id
