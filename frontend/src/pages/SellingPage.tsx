@@ -1,10 +1,27 @@
 import { Navigation } from "@/components/navigation"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { CheckCircle, Users, TrendingUp, DollarSign } from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
+import { useEffect } from "react"
 
 export default function SellingPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Redirect sellers to their dashboard
+    if (user && user.role === 'seller') {
+      navigate('/seller/dashboard');
+    }
+  }, [user, navigate]);
+
+  // Don't render content if user is seller (while redirecting)
+  if (user && user.role === 'seller') {
+    return null;
+  }
+
   const features = [
     {
       icon: Users,

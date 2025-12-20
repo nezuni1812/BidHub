@@ -117,7 +117,7 @@ export function OTPVerificationDialog({
               value={otp}
               onChange={handleOTPChange}
               placeholder="000000"
-              className="text-center text-2xl tracking-widest font-mono"
+              className="text-center text-2xl tracking-widest"
               autoFocus
             />
             {error && (

@@ -14,6 +14,7 @@ import { Upload, X, Users } from "lucide-react"
 import { Link, useNavigate } from "react-router-dom"
 import { api } from "@/lib/api"
 import { useToast } from "@/components/ui/use-toast"
+import { useAuth } from "@/contexts/AuthContext"
 
 interface AvailableBidder {
   id: string;
@@ -31,7 +32,24 @@ interface Category {
   product_count: string;
 }
 
+// Format number with commas
+const formatNumber = (value: string): string => {
+  // Remove all non-digit characters
+  const number = value.replace(/\D/g, '');
+  // Add commas
+  return number.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+};
+
+// Parse formatted number back to plain number
+const parseNumber = (value: string): string => {
+  return value.replace(/,/g, '');
+};
+
 export default function PostItemPage() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  
   const [formData, setFormData] = useState({
     title: "",
     category_id: "",
@@ -41,8 +59,10 @@ export default function PostItemPage() {
     buyNowPrice: "",
     duration: "7",
     autoExtend: false,
-    images: [] as File[],
   })
+  
+  const [mainImage, setMainImage] = useState<File | null>(null)
+  const [additionalImages, setAdditionalImages] = useState<File[]>([])
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
@@ -50,8 +70,13 @@ export default function PostItemPage() {
   const [availableBidders, setAvailableBidders] = useState<AvailableBidder[]>([])
   const [selectedBidders, setSelectedBidders] = useState<string[]>([])
   const [loadingBidders, setLoadingBidders] = useState(false)
-  const navigate = useNavigate()
-  const { toast } = useToast()
+  
+  // Protect route - only sellers can access
+  useEffect(() => {
+    if (user && user.role !== 'seller') {
+      navigate('/');
+    }
+  }, [user, navigate]);
 
   // Fetch categories on mount
   useEffect(() => {
@@ -126,13 +151,17 @@ export default function PostItemPage() {
     fetchBidders()
   }, [])
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMainImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setMainImage(file)
+    }
+  }
+
+  const handleAdditionalImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files) {
-      setFormData((prev) => ({
-        ...prev,
-        images: [...prev.images, ...Array.from(files)],
-      }))
+      setAdditionalImages((prev) => [...prev, ...Array.from(files)])
     }
   }
 
@@ -152,11 +181,12 @@ export default function PostItemPage() {
     }
   }
 
-  const removeImage = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index),
-    }))
+  const removeMainImage = () => {
+    setMainImage(null)
+  }
+
+  const removeAdditionalImage = (index: number) => {
+    setAdditionalImages((prev) => prev.filter((_, i) => i !== index))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -172,8 +202,8 @@ export default function PostItemPage() {
       // Validate required fields
       if (!formData.title.trim()) {
         toast({
-          title: "Missing Title",
-          description: "Please enter a product title",
+          title: "Thiếu tên sản phẩm",
+          description: "Vui lòng nhập tên sản phẩm",
           variant: "destructive"
         })
         setIsSubmitting(false)
@@ -182,8 +212,8 @@ export default function PostItemPage() {
 
       if (!formData.description.trim()) {
         toast({
-          title: "Missing Description",
-          description: "Please enter a product description",
+          title: "Thiếu mô tả",
+          description: "Vui lòng nhập mô tả sản phẩm",
           variant: "destructive"
         })
         setIsSubmitting(false)
@@ -192,8 +222,8 @@ export default function PostItemPage() {
 
       if (!formData.category_id) {
         toast({
-          title: "Missing Category",
-          description: "Please select a category",
+          title: "Thiếu danh mục",
+          description: "Vui lòng chọn danh mục",
           variant: "destructive"
         })
         setIsSubmitting(false)
@@ -202,8 +232,8 @@ export default function PostItemPage() {
 
       if (!formData.startingBid || parseFloat(formData.startingBid) <= 0) {
         toast({
-          title: "Invalid Starting Price",
-          description: "Please enter a valid starting price",
+          title: "Giá khởi điểm không hợp lệ",
+          description: "Vui lòng nhập giá khởi điểm hợp lệ",
           variant: "destructive"
         })
         setIsSubmitting(false)
@@ -212,18 +242,28 @@ export default function PostItemPage() {
 
       if (!formData.biddingIncrement || parseFloat(formData.biddingIncrement) <= 0) {
         toast({
-          title: "Invalid Bid Step",
-          description: "Please enter a valid bid increment",
+          title: "Bước giá không hợp lệ",
+          description: "Vui lòng nhập bước giá hợp lệ",
           variant: "destructive"
         })
         setIsSubmitting(false)
         return
       }
 
-      if (formData.images.length < 3) {
+      if (!mainImage) {
         toast({
-          title: "Missing Images",
-          description: "Please upload 1 main image and at least 2 additional images",
+          title: "Thiếu ảnh chính",
+          description: "Vui lòng tải lên ảnh chính cho sản phẩm",
+          variant: "destructive"
+        })
+        setIsSubmitting(false)
+        return
+      }
+
+      if (additionalImages.length < 2) {
+        toast({
+          title: "Thiếu ảnh phụ",
+          description: "Vui lòng tải lên ít nhất 2 ảnh phụ",
           variant: "destructive"
         })
         setIsSubmitting(false)
@@ -249,10 +289,10 @@ export default function PostItemPage() {
       endTime.setDate(endTime.getDate() + parseInt(formData.duration))
       formDataObj.append('end_time', endTime.toISOString())
 
-      // Add images (first image is main, rest are additional)
-      formDataObj.append('main_image', formData.images[0])
-      for (let i = 1; i < formData.images.length; i++) {
-        formDataObj.append('additional_images', formData.images[i])
+      // Add images
+      formDataObj.append('main_image', mainImage)
+      for (let i = 0; i < additionalImages.length; i++) {
+        formDataObj.append('additional_images', additionalImages[i])
       }
 
       // Create product (DO NOT set Content-Type header - browser sets it automatically with boundary)
@@ -280,8 +320,8 @@ export default function PostItemPage() {
           console.log(`🎯 Allowing ${selectedBidders.length} bidders:`, selectedBidders)
           
           toast({
-            title: "Product Created",
-            description: `Adding ${selectedBidders.length} allowed bidders...`
+            title: "Đã tạo sản phẩm",
+            description: `Đang thêm ${selectedBidders.length} người đấu giá được phép...`
           })
 
           const allowPromises = selectedBidders.map(bidderId => {
@@ -293,22 +333,22 @@ export default function PostItemPage() {
             const results = await Promise.all(allowPromises)
             console.log('✅ All bidders allowed:', results)
             toast({
-              title: "Success",
-              description: "Product created and bidders allowed successfully!",
+              title: "Thành công",
+              description: "Đã tạo sản phẩm và thêm người đấu giá thành công!",
             })
           } catch (error) {
             console.error('❌ Failed to allow some bidders:', error)
             toast({
-              title: "Partial Success",
-              description: "Product created but some bidders could not be added",
+              title: "Thành công một phần",
+              description: "Đã tạo sản phẩm nhưng không thể thêm một số người đấu giá",
               variant: "destructive"
             })
           }
         } else {
           console.log('ℹ️ No bidders selected')
           toast({
-            title: "Success",
-            description: "Product created successfully!",
+            title: "Thành công",
+            description: "Sản phẩm đã được tạo thành công!",
           })
         }
 
@@ -322,8 +362,9 @@ export default function PostItemPage() {
           buyNowPrice: "",
           duration: "7",
           autoExtend: false,
-          images: [],
         })
+        setMainImage(null)
+        setAdditionalImages([])
         setSelectedBidders([])
 
         // Redirect to seller dashboard
@@ -334,13 +375,18 @@ export default function PostItemPage() {
     } catch (error: any) {
       console.error('Failed to create product:', error)
       toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to create product",
+        title: "Lỗi",
+        description: error.response?.data?.message || "Không thể tạo sản phẩm",
         variant: "destructive"
       })
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // Return null if not a seller
+  if (!user || user.role !== 'seller') {
+    return null;
   }
 
   return (
@@ -349,31 +395,31 @@ export default function PostItemPage() {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Post an Item for Auction</h1>
-          <p className="text-muted-foreground">Create a new listing and start selling</p>
+          <h1 className="text-3xl font-bold mb-2">Đăng sản phẩm đấu giá</h1>
+          <p className="text-muted-foreground">Tạo danh mục mới và bắt đầu bán hàng</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Basic Info */}
           <Card className="p-6">
-            <h2 className="text-xl font-bold mb-6">Item Details</h2>
+            <h2 className="text-xl font-bold mb-6">Thông tin sản phẩm</h2>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="title">Item Title *</Label>
+                <Label htmlFor="title">Tên sản phẩm *</Label>
                 <Input
                   id="title"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="Enter item title"
+                  placeholder="Nhập tên sản phẩm"
                   className="mt-2"
                   required
                 />
               </div>
 
               <div>
-                <Label htmlFor="category">Category *</Label>
+                <Label htmlFor="category">Danh mục *</Label>
                 {loadingCategories ? (
-                  <div className="w-full mt-2 px-3 py-2 text-muted-foreground">Loading categories...</div>
+                  <div className="w-full mt-2 px-3 py-2 text-muted-foreground">Đang tải danh mục...</div>
                 ) : (
                   <select
                     id="category"
@@ -382,7 +428,7 @@ export default function PostItemPage() {
                     className="w-full mt-2 px-3 py-2 rounded-lg border border-border bg-background"
                     required
                   >
-                    <option value="">-- Select Category --</option>
+                    <option value="">-- Chọn danh mục --</option>
                     {categories.map((cat) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.name}
@@ -393,12 +439,12 @@ export default function PostItemPage() {
               </div>
 
               <div>
-                <Label htmlFor="description">Description *</Label>
+                <Label htmlFor="description">Mô tả *</Label>
                 <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe your item in detail..."
+                  placeholder="Mô tả chi tiết sản phẩm của bạn..."
                   className="mt-2 min-h-32"
                   required
                 />
@@ -408,42 +454,93 @@ export default function PostItemPage() {
 
           {/* Images */}
           <Card className="p-6">
-            <h2 className="text-xl font-bold mb-6">Photos (1 Main + 2 Additional)</h2>
-            <div className="space-y-4">
-              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition cursor-pointer">
+            <h2 className="text-xl font-bold mb-6">Hình ảnh sản phẩm</h2>
+            
+            {/* Main Image */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="bg-primary text-primary-foreground px-3 py-1 rounded-md text-sm font-semibold">
+                  Ảnh chính *
+                </div>
+                <p className="text-sm text-muted-foreground">Ảnh đại diện cho sản phẩm</p>
+              </div>
+              
+              {!mainImage ? (
+                <div className="border-2 border-dashed border-primary/50 rounded-lg p-8 text-center hover:border-primary transition cursor-pointer bg-primary/5">
+                  <label className="cursor-pointer">
+                    <Upload className="w-10 h-10 text-primary mx-auto mb-2" />
+                    <p className="font-semibold text-primary mb-1">Tải lên ảnh chính</p>
+                    <p className="text-xs text-muted-foreground">PNG, JPG tối đa 10MB</p>
+                    <input type="file" accept="image/*" onChange={handleMainImageUpload} className="hidden" />
+                  </label>
+                </div>
+              ) : (
+                <div className="relative rounded-lg overflow-hidden border-2 border-primary">
+                  <img
+                    src={URL.createObjectURL(mainImage)}
+                    alt="Ảnh chính"
+                    className="w-full h-64 object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeMainImage}
+                    className="absolute top-2 right-2 bg-destructive hover:bg-destructive/90 text-white p-2 rounded-md shadow-lg"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                  <div className="absolute top-2 left-2 bg-primary text-primary-foreground px-3 py-1 rounded-md text-sm font-bold shadow-lg">
+                    ✓ Ảnh chính
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Additional Images */}
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <div className="bg-secondary text-secondary-foreground px-3 py-1 rounded-md text-sm font-semibold">
+                  Ảnh phụ *
+                </div>
+                <p className="text-sm text-muted-foreground">Tối thiểu 2 ảnh, tối đa 10 ảnh</p>
+              </div>
+              
+              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-secondary transition cursor-pointer mb-4">
                 <label className="cursor-pointer">
                   <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="font-semibold mb-1">Click to upload or drag and drop</p>
-                  <p className="text-xs text-muted-foreground">PNG, JPG up to 10MB</p>
-                  <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="hidden" />
+                  <p className="font-semibold mb-1">Tải lên ảnh phụ</p>
+                  <p className="text-xs text-muted-foreground">Có thể chọn nhiều ảnh cùng lúc</p>
+                  <input type="file" multiple accept="image/*" onChange={handleAdditionalImagesUpload} className="hidden" />
                 </label>
               </div>
 
-              {formData.images.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {formData.images.map((file, idx) => (
-                    <div key={idx} className="relative group rounded-lg overflow-hidden bg-muted">
+              {additionalImages.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {additionalImages.map((file, idx) => (
+                    <div key={idx} className="relative group rounded-lg overflow-hidden border border-border">
                       <img
                         src={URL.createObjectURL(file)}
-                        alt={`Preview ${idx}`}
+                        alt={`Ảnh phụ ${idx + 1}`}
                         className="w-full h-32 object-cover"
                       />
                       <button
                         type="button"
-                        onClick={() => removeImage(idx)}
-                        className="absolute top-1 right-1 bg-destructive/80 hover:bg-destructive text-white p-1 rounded opacity-0 group-hover:opacity-100 transition"
+                        onClick={() => removeAdditionalImage(idx)}
+                        className="absolute top-1 right-1 bg-destructive/80 hover:bg-destructive text-white p-1.5 rounded opacity-0 group-hover:opacity-100 transition"
                       >
                         <X className="w-4 h-4" />
                       </button>
-                      <div className="absolute top-1 left-1 text-xs px-2 py-1 rounded font-semibold" style={{
-                        backgroundColor: idx === 0 ? 'hsl(var(--primary))' : 'hsl(var(--secondary))',
-                        color: idx === 0 ? 'hsl(var(--primary-foreground))' : 'hsl(var(--secondary-foreground))'
-                      }}>
-                        {idx === 0 ? '✓ Main Image' : `Additional ${idx}`}
+                      <div className="absolute bottom-1 left-1 bg-secondary text-secondary-foreground px-2 py-0.5 rounded text-xs font-semibold">
+                        Ảnh {idx + 1}
                       </div>
                     </div>
                   ))}
                 </div>
+              )}
+              
+              {additionalImages.length > 0 && (
+                <p className="text-sm text-muted-foreground mt-3">
+                  Đã tải lên {additionalImages.length} ảnh phụ
+                </p>
               )}
             </div>
           </Card>
@@ -452,16 +549,16 @@ export default function PostItemPage() {
           <Card className="p-6">
             <div className="flex items-center gap-2 mb-4">
               <Users className="w-5 h-5" />
-              <h2 className="text-xl font-bold">Allowed Bidders (Optional)</h2>
+              <h2 className="text-xl font-bold">Người đấu giá được phép (Tùy chọn)</h2>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
-              Select specific users who are allowed to bid on this product. Leave empty to allow all users.
+              Chọn người dùng cụ thể được phép đấu giá sản phẩm này. Để trống để cho phép tất cả mọi người.
             </p>
 
             {loadingBidders ? (
-              <div className="text-center py-8 text-muted-foreground">Loading bidders...</div>
+              <div className="text-center py-8 text-muted-foreground">Đang tải danh sách người đấu giá...</div>
             ) : availableBidders.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">No other users available</div>
+              <div className="text-center py-8 text-muted-foreground">Không có người dùng khác</div>
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center justify-between pb-2 border-b">
@@ -472,12 +569,12 @@ export default function PostItemPage() {
                       onCheckedChange={toggleAllBidders}
                     />
                     <Label htmlFor="select-all" className="font-semibold cursor-pointer">
-                      Select All ({availableBidders.length} users)
+                      Chọn tất cả ({availableBidders.length} người dùng)
                     </Label>
                   </div>
                   {selectedBidders.length > 0 && (
                     <span className="text-sm text-muted-foreground">
-                      {selectedBidders.length} selected
+                      {selectedBidders.length} đã chọn
                     </span>
                   )}
                 </div>
@@ -523,34 +620,34 @@ export default function PostItemPage() {
 
           {/* Pricing & Duration */}
           <Card className="p-6">
-            <h2 className="text-xl font-bold mb-6">Pricing & Duration</h2>
+            <h2 className="text-xl font-bold mb-6">Giá & Thời gian</h2>
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="startBid">Starting Bid (VND) *</Label>
+                  <Label htmlFor="startBid">Giá khởi điểm (VND) *</Label>
                   <Input
                     id="startBid"
-                    type="number"
-                    value={formData.startingBid}
-                    onChange={(e) => setFormData({ ...formData, startingBid: e.target.value })}
-                    placeholder="e.g., 1000000"
+                    type="text"
+                    value={formatNumber(formData.startingBid)}
+                    onChange={(e) => setFormData({ ...formData, startingBid: parseNumber(e.target.value) })}
+                    placeholder="VD: 1,000,000"
                     className="mt-2"
                     required
                   />
                 </div>
                 <div>
-                  <Label htmlFor="increment">Bid Increment (VND) *</Label>
+                  <Label htmlFor="increment">Bước giá (VND) *</Label>
                   <Input
                     id="increment"
-                    type="number"
-                    value={formData.biddingIncrement}
+                    type="text"
+                    value={formatNumber(formData.biddingIncrement)}
                     onChange={(e) =>
                       setFormData({
                         ...formData,
-                        biddingIncrement: e.target.value,
+                        biddingIncrement: parseNumber(e.target.value),
                       })
                     }
-                    placeholder="e.g., 100000"
+                    placeholder="VD: 100,000"
                     className="mt-2"
                     required
                   />
@@ -558,20 +655,20 @@ export default function PostItemPage() {
               </div>
 
               <div>
-                <Label htmlFor="buyNow">Buy Now Price (VND)</Label>
+                <Label htmlFor="buyNow">Giá mua ngay (VND)</Label>
                 <Input
                   id="buyNow"
-                  type="number"
-                  value={formData.buyNowPrice}
-                  onChange={(e) => setFormData({ ...formData, buyNowPrice: e.target.value })}
-                  placeholder="Optional - leave empty if not available"
+                  type="text"
+                  value={formatNumber(formData.buyNowPrice)}
+                  onChange={(e) => setFormData({ ...formData, buyNowPrice: parseNumber(e.target.value) })}
+                  placeholder="Tùy chọn - để trống nếu không có"
                   className="mt-2"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="duration">Auction Duration (Days) *</Label>
+                  <Label htmlFor="duration">Thời hạn đấu giá (Ngày) *</Label>
                   <select
                     id="duration"
                     value={formData.duration}
@@ -580,7 +677,7 @@ export default function PostItemPage() {
                   >
                     {[1, 3, 5, 7, 10, 14, 21, 30].map((day) => (
                       <option key={day} value={day}>
-                        {day} day{day !== 1 ? "s" : ""}
+                        {day} ngày
                       </option>
                     ))}
                   </select>
@@ -598,7 +695,7 @@ export default function PostItemPage() {
                       }
                       className="w-4 h-4"
                     />
-                    <span className="text-sm">Auto-extend if bid within 5 min of end</span>
+                    <span className="text-sm">Tự động gia hạn nếu đấu giá trong 5 phút cuối</span>
                   </label>
                 </div>
               </div>
@@ -607,19 +704,24 @@ export default function PostItemPage() {
 
           {/* Actions */}
           <div className="flex gap-4">
-            <Button type="submit" size="lg" disabled={isSubmitting || formData.images.length < 3}>
-              {isSubmitting ? "Posting..." : "Post Item"}
+            <Button type="submit" size="lg" disabled={isSubmitting || !mainImage || additionalImages.length < 2}>
+              {isSubmitting ? "Đang đăng..." : "Đăng sản phẩm"}
             </Button>
             <Link to="/seller/dashboard">
               <Button type="button" variant="outline" size="lg">
-                Cancel
+                Hủy
               </Button>
             </Link>
           </div>
-          {formData.images.length < 3 && formData.images.length > 0 && (
-            <p className="text-sm text-destructive">
-              Please upload at least 3 images (1 main + 2 additional)
-            </p>
+          {(!mainImage || additionalImages.length < 2) && (
+            <div className="text-sm space-y-1">
+              {!mainImage && (
+                <p className="text-destructive">⚠ Vui lòng tải lên ảnh chính</p>
+              )}
+              {additionalImages.length < 2 && (
+                <p className="text-destructive">⚠ Vui lòng tải lên ít nhất 2 ảnh phụ ({additionalImages.length}/2)</p>
+              )}
+            </div>
           )}
         </form>
       </div>

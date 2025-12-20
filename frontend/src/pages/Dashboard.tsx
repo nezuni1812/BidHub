@@ -52,7 +52,7 @@ export default function DashboardPage() {
         <Navigation />
         <div className="max-w-6xl mx-auto px-4 py-8">
           <Card className="p-8 text-center">
-            <p className="text-muted-foreground">Please login to view your dashboard</p>
+            <p className="text-muted-foreground">Vui lòng đăng nhập để xem bảng điều khiển</p>
           </Card>
         </div>
       </div>
@@ -72,11 +72,11 @@ export default function DashboardPage() {
                 <h1 className="text-3xl font-bold mb-2">{user.full_name}</h1>
                 <p className="text-muted-foreground mb-3">{user.email}</p>
                 <div className="flex items-center gap-4">
-                  <span className="text-sm text-muted-foreground">Role: {user.role}</span>
+                  <span className="text-sm text-muted-foreground">Vai trò: {user.role}</span>
                 </div>
               </div>
               <Link to="/profile/settings">
-                <Button>Edit Profile</Button>
+                <Button>Chỉnh sửa hồ sơ</Button>
               </Link>
             </div>
           </Card>
@@ -87,15 +87,15 @@ export default function DashboardPage() {
           <TabsList className="grid w-full max-w-md grid-cols-3">
             <TabsTrigger value="active" className="gap-2">
               <ShoppingCart className="w-4 h-4" />
-              <span className="hidden sm:inline">Active Bids</span>
+              <span className="hidden sm:inline">Đang đấu giá</span>
             </TabsTrigger>
             <TabsTrigger value="watchlist" className="gap-2">
               <Heart className="w-4 h-4" />
-              <span className="hidden sm:inline">Watchlist</span>
+              <span className="hidden sm:inline">Theo dõi</span>
             </TabsTrigger>
             <TabsTrigger value="won" className="gap-2">
               <Trophy className="w-4 h-4" />
-              <span className="hidden sm:inline">Won</span>
+              <span className="hidden sm:inline">Đã thắng</span>
             </TabsTrigger>
           </TabsList>
 
@@ -103,12 +103,12 @@ export default function DashboardPage() {
           <TabsContent value="active" className="mt-6 space-y-4">
             {loading ? (
               <Card className="p-8 text-center">
-                <p className="text-muted-foreground">Loading...</p>
+                <p className="text-muted-foreground">Đang tải...</p>
               </Card>
             ) : activeBids.length === 0 ? (
               <Card className="p-8 text-center">
                 <ShoppingCart className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                <p className="text-muted-foreground">No active bids yet</p>
+                <p className="text-muted-foreground">Chưa có lượt đấu giá nào</p>
               </Card>
             ) : (
               activeBids.map((bid) => (
@@ -124,20 +124,20 @@ export default function DashboardPage() {
                         <div className="flex items-center gap-3 mb-2">
                           <h3 className="font-semibold text-lg line-clamp-1">{bid.title}</h3>
                           {bid.is_winning ? (
-                            <Badge className="bg-green-600">✓ Winning</Badge>
+                            <Badge className="bg-green-600">✓ Đang thắng</Badge>
                           ) : (
-                            <Badge variant="outline">Outbid</Badge>
+                            <Badge variant="outline">Bị vượt giá</Badge>
                           )}
                         </div>
                         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                          <span>Your bid: {formatPrice(parseFloat(bid.my_bid_price))}</span>
+                          <span>Giá của bạn: {formatPrice(parseFloat(bid.my_bid_price))}</span>
                           <span>•</span>
-                          <span>Current: {formatPrice(parseFloat(bid.current_price))}</span>
+                          <span>Hiện tại: {formatPrice(parseFloat(bid.current_price))}</span>
                           <span>•</span>
-                          <span>{bid.total_bids} bids</span>
+                          <span>{bid.total_bids} lượt đặt giá</span>
                           <span>•</span>
                           <span className="text-accent font-semibold">
-                            {formatTimeRemaining(bid.seconds_remaining)} left
+                            Còn {formatTimeRemaining(bid.seconds_remaining)}
                           </span>
                         </div>
                       </div>
@@ -152,12 +152,12 @@ export default function DashboardPage() {
           <TabsContent value="watchlist" className="mt-6 space-y-4">
             {loading ? (
               <Card className="p-8 text-center">
-                <p className="text-muted-foreground">Loading...</p>
+                <p className="text-muted-foreground">Đang tải...</p>
               </Card>
             ) : watchlist.length === 0 ? (
               <Card className="p-8 text-center">
                 <Heart className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                <p className="text-muted-foreground">No items in watchlist</p>
+                <p className="text-muted-foreground">Chưa có sản phẩm theo dõi</p>
               </Card>
             ) : (
               watchlist.map((item: any) => (
@@ -172,10 +172,10 @@ export default function DashboardPage() {
                       <div className="flex-1">
                         <h3 className="font-semibold text-lg mb-2">{item.title}</h3>
                         <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                          <span>Current bid: {formatPrice(parseFloat(item.current_price))}</span>
+                          <span>Giá hiện tại: {formatPrice(parseFloat(item.current_price))}</span>
                           <span>•</span>
                           <span className="text-accent font-semibold">
-                            {formatTimeRemaining(parseFloat(item.seconds_remaining))} left
+                            Còn {formatTimeRemaining(parseFloat(item.seconds_remaining))}
                           </span>
                         </div>
                       </div>
@@ -190,12 +190,12 @@ export default function DashboardPage() {
           <TabsContent value="won" className="mt-6 space-y-4">
             {loading ? (
               <Card className="p-8 text-center">
-                <p className="text-muted-foreground">Loading...</p>
+                <p className="text-muted-foreground">Đang tải...</p>
               </Card>
             ) : wonItems.length === 0 ? (
               <Card className="p-8 text-center">
                 <Trophy className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                <p className="text-muted-foreground">No won items yet</p>
+                <p className="text-muted-foreground">Chưa có sản phẩm thắng đấu giá</p>
               </Card>
             ) : (
               wonItems.map((item) => (
@@ -210,38 +210,38 @@ export default function DashboardPage() {
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="font-semibold text-lg">{item.title}</h3>
                         {item.order_status === 'pending_payment' && (
-                          <Badge variant="destructive">Pending Payment</Badge>
+                          <Badge variant="destructive">Chờ thanh toán</Badge>
                         )}
                         {item.order_status === 'paid' && (
-                          <Badge className="bg-green-600">Paid</Badge>
+                          <Badge className="bg-green-600">Đã thanh toán</Badge>
                         )}
                         {item.order_status === 'shipping' && (
-                          <Badge className="bg-blue-600">Shipping</Badge>
+                          <Badge className="bg-blue-600">Đang giao hàng</Badge>
                         )}
                         {item.order_status === 'delivered' && (
-                          <Badge className="bg-green-700">Delivered</Badge>
+                          <Badge className="bg-green-700">Đã giao hàng</Badge>
                         )}
                         {item.order_status === 'completed' && (
-                          <Badge className="bg-green-800">Completed</Badge>
+                          <Badge className="bg-green-800">Hoàn thành</Badge>
                         )}
                       </div>
                       <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-3">
-                        <span>Won for: {formatPrice(parseFloat(item.final_price))}</span>
+                        <span>Giá thắng: {formatPrice(parseFloat(item.final_price))}</span>
                         <span>•</span>
-                        <span>Seller: {item.seller_name}</span>
+                        <span>Người bán: {item.seller_name}</span>
                         <span>•</span>
                         <span>{new Date(item.won_date).toLocaleDateString('vi-VN')}</span>
                       </div>
                       {item.order_status === 'pending_payment' && item.order_id && (
                         <Link to={`/checkout/${item.order_id}`}>
                           <Button size="sm" className="bg-primary">
-                            Proceed to Payment
+                            Tiến hành thanh toán
                           </Button>
                         </Link>
                       )}
                       {item.order_status === 'paid' && (
                         <Button size="sm" variant="outline" disabled>
-                          Waiting for Shipment
+                          Chờ giao hàng
                         </Button>
                       )}
                     </div>
