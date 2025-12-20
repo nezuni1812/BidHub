@@ -30,6 +30,7 @@ interface Category {
   parent_id: string | null;
   parent_name: string | null;
   product_count: string;
+  children?: Category[];
 }
 
 // Format number with commas
@@ -83,25 +84,39 @@ export default function PostItemPage() {
     const fetchCategories = async () => {
       setLoadingCategories(true)
       try {
-        const response = await api.get('/categories')
-        console.log('📦 Categories response:', response)
+        const response = await api.get('/categories/tree')
+        console.log('📦 Categories tree response:', response)
         console.log('📊 Categories data:', response.data)
         
+        // Flatten tree to get only subcategories (children)
+        let categoryTree: Category[] = []
         if (response.data?.success && response.data?.data) {
-          console.log('✅ Setting categories:', response.data.data)
-          setCategories(response.data.data)
-          // Set first category as default if available
-          if (response.data.data.length > 0) {
-            setFormData(prev => ({ ...prev, category_id: response.data.data[0].id }))
-          }
+          categoryTree = response.data.data
         } else if (response.success && response.data) {
-          console.log('✅ Setting categories (alt):', response.data)
-          setCategories(response.data)
-          if (response.data.length > 0) {
-            setFormData(prev => ({ ...prev, category_id: response.data[0].id }))
+          categoryTree = response.data
+        } else if (Array.isArray(response.data)) {
+          categoryTree = response.data
+        }
+
+        // Extract only subcategories (children) from the tree
+        const subcategories: Category[] = []
+        categoryTree.forEach(parent => {
+          if (parent.children && parent.children.length > 0) {
+            parent.children.forEach(child => {
+              subcategories.push({
+                ...child,
+                parent_name: parent.name // Keep parent name for display
+              })
+            })
           }
-        } else {
-          console.warn('⚠️ Unexpected categories response structure')
+        })
+
+        console.log('✅ Setting subcategories:', subcategories)
+        setCategories(subcategories)
+        
+        // Set first subcategory as default if available
+        if (subcategories.length > 0) {
+          setFormData(prev => ({ ...prev, category_id: subcategories[0].id }))
         }
       } catch (error) {
         console.error('❌ Failed to fetch categories:', error)
@@ -419,23 +434,28 @@ export default function PostItemPage() {
               <div>
                 <Label htmlFor="category">Danh mục *</Label>
                 {loadingCategories ? (
-                  <div className="w-full mt-2 px-3 py-2 text-muted-foreground">Đang tải danh mục...</div>
+                  <div className="w-full mt-2 px-3 py-2 text-sm text-muted-foreground">Đang tải danh mục...</div>
+                ) : categories.length === 0 ? (
+                  <div className="w-full mt-2 px-3 py-2 text-sm text-destructive">
+                    Không có danh mục con nào. Vui lòng liên hệ admin để tạo danh mục.
+                  </div>
                 ) : (
                   <select
                     id="category"
                     value={formData.category_id}
                     onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                    className="w-full mt-2 px-3 py-2 rounded-lg border border-border bg-background"
+                    className="w-full mt-2 px-3 py-2 rounded-lg border border-border bg-background text-sm"
                     required
                   >
                     <option value="">-- Chọn danh mục --</option>
                     {categories.map((cat) => (
                       <option key={cat.id} value={cat.id}>
-                        {cat.name}
+                        {cat.parent_name ? `${cat.parent_name} → ${cat.name}` : cat.name}
                       </option>
                     ))}
                   </select>
                 )}
+                <p className="text-xs text-muted-foreground mt-1">Chỉ có thể chọn danh mục con</p>
               </div>
 
               <div>

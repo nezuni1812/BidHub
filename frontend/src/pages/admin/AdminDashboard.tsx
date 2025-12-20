@@ -10,6 +10,7 @@ import { AdminChart } from "@/components/admin-chart"
 import { api } from "@/lib/api"
 import { useToast } from "@/components/ui/use-toast"
 import { useNavigate } from "react-router-dom"
+import { useAuth } from "@/contexts/AuthContext"
 
 interface DashboardStats {
   period: string
@@ -49,6 +50,7 @@ interface DashboardStats {
 }
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [users, setUsers] = useState<any[]>([])
   const [upgradeRequests, setUpgradeRequests] = useState<any[]>([])
@@ -59,9 +61,18 @@ export default function AdminDashboard() {
   const { toast } = useToast()
   const navigate = useNavigate()
 
+  // Protect route - only admins can access
   useEffect(() => {
-    fetchDashboardData()
-  }, [])
+    if (user && user.role !== 'admin') {
+      navigate('/');
+    }
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      fetchDashboardData()
+    }
+  }, [user])
 
   const fetchDashboardData = async () => {
     try {
@@ -74,11 +85,11 @@ export default function AdminDashboard() {
         api.get('/admin/categories?page=1&limit=100')
       ])
 
-      if (statsRes.data) setStats(statsRes.data)
-      if (usersRes.data) setUsers(usersRes.data)
-      if (upgradesRes.data) setUpgradeRequests(upgradesRes.data)
-      if (productsRes.data) setProducts(productsRes.data)
-      if (categoriesRes.data) setCategories(categoriesRes.data)
+      if (statsRes.data) setStats(statsRes.data as DashboardStats)
+      if (usersRes.data) setUsers(usersRes.data as any[])
+      if (upgradesRes.data) setUpgradeRequests(upgradesRes.data as any[])
+      if (productsRes.data) setProducts(productsRes.data as any[])
+      if (categoriesRes.data) setCategories(categoriesRes.data as any[])
     } catch (error: any) {
       toast({
         title: "Error",
@@ -187,6 +198,10 @@ export default function AdminDashboard() {
     navigate(`/profile/${username}`)
   }
 
+  if (!user || user.role !== 'admin') {
+    return null;
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -203,9 +218,19 @@ export default function AdminDashboard() {
       <Navigation />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          <p className="text-muted-foreground">Manage platform, users, and listings</p>
+        <div className="mb-8 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+            <p className="text-muted-foreground">Manage platform, users, and listings</p>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={() => navigate('/admin/products')} variant="outline">
+              Quản lý sản phẩm
+            </Button>
+            <Button onClick={() => navigate('/admin/categories')} variant="outline">
+              Quản lý danh mục
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -407,9 +432,14 @@ export default function AdminDashboard() {
 
           {/* Listings Management */}
           <TabsContent value="listings" className="mt-6 space-y-4">
-            <div className="flex gap-2 mb-4">
-              <Input placeholder="Search listings..." className="max-w-xs" />
-              <Button variant="outline">Filter</Button>
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex gap-2">
+                <Input placeholder="Search listings..." className="max-w-xs" />
+                <Button variant="outline">Filter</Button>
+              </div>
+              <Button onClick={() => navigate('/admin/products')}>
+                Quản lý chi tiết
+              </Button>
             </div>
 
             <div className="overflow-x-auto">
@@ -527,50 +557,81 @@ export default function AdminDashboard() {
           <TabsContent value="categories" className="mt-6">
             <Card className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="font-semibold">Category Management</h3>
-                <Button onClick={() => navigate('/admin/categories')}>Manage Categories</Button>
+                <div>
+                  <h3 className="font-semibold text-lg mb-1">Quản lý danh mục</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Tạo, chỉnh sửa và tổ chức danh mục sản phẩm
+                  </p>
+                </div>
+                <Button onClick={() => navigate('/admin/categories')} size="lg">
+                  Quản lý danh mục
+                </Button>
               </div>
 
-              {loading ? (
-                <p className="text-center text-muted-foreground py-8">Loading categories...</p>
-              ) : categories.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">No categories found</p>
-              ) : (
-                <div className="space-y-3">
-                  {categories.map((cat) => (
-                    <div key={cat.id} className="flex justify-between items-center p-4 border border-border rounded-lg">
-                      <div>
-                        <p className="font-semibold">
-                          {cat.parent_id && '↳ '}
-                          {cat.name}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          {cat.total_products} sản phẩm
-                          {cat.parent_id && ` • Danh mục con của ${cat.parent_name}`}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Badge>{cat.parent_id ? 'Subcategory' : 'Parent'}</Badge>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-destructive bg-transparent"
-                          onClick={() => handleDeleteCategory(cat.id)}
-                          disabled={cat.total_products > 0}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+              {/* Category Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-1">Tổng danh mục</p>
+                  <p className="text-2xl font-bold">{categories.length}</p>
                 </div>
-              )}
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-1">Danh mục cha</p>
+                  <p className="text-2xl font-bold">
+                    {categories.filter(c => !c.parent_id).length}
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-1">Danh mục con</p>
+                  <p className="text-2xl font-bold">
+                    {categories.filter(c => c.parent_id).length}
+                  </p>
+                </div>
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-1">Tổng sản phẩm</p>
+                  <p className="text-2xl font-bold">
+                    {categories.reduce((sum, c) => sum + (c.total_products || 0), 0)}
+                  </p>
+                </div>
+              </div>
 
-              <div className="mt-6 pt-6 border-t border-border">
-                <p className="text-sm text-muted-foreground mb-4">
-                  For advanced category management including create, edit, and parent-child organization, 
-                  click the "Manage Categories" button above.
-                </p>
+              {/* Quick Overview */}
+              <div className="border-t border-border pt-6">
+                <h4 className="font-semibold mb-4">Danh mục hàng đầu</h4>
+                {loading ? (
+                  <p className="text-center text-muted-foreground py-4">Đang tải...</p>
+                ) : categories.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-4">Chưa có danh mục nào</p>
+                ) : (
+                  <div className="space-y-2">
+                    {categories
+                      .sort((a, b) => (b.total_products || 0) - (a.total_products || 0))
+                      .slice(0, 5)
+                      .map((cat) => (
+                        <div key={cat.id} className="flex justify-between items-center p-3 bg-muted/20 rounded">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">
+                              {cat.parent_id && '↳ '}
+                              {cat.name}
+                            </p>
+                            <Badge variant="outline" className="text-xs">
+                              {cat.parent_id ? 'Con' : 'Cha'}
+                            </Badge>
+                          </div>
+                          <Badge variant="secondary">{cat.total_products || 0} sản phẩm</Badge>
+                        </div>
+                      ))
+                    }
+                  </div>
+                )}
+                <div className="mt-4 text-center">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate('/admin/categories')}
+                    className="w-full sm:w-auto"
+                  >
+                    Xem tất cả và quản lý
+                  </Button>
+                </div>
               </div>
             </Card>
           </TabsContent>
