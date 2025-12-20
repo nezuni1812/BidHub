@@ -409,10 +409,20 @@ const createPaymentIntent = asyncHandler(async (req, res) => {
   }
 
   try {
+    const amount = Math.round(parseFloat(order.total_price));
+    
+    // Stripe VND limits: min 10,000 VND, max 99,999,999 VND
+    if (amount < 10000) {
+      throw new BadRequestError('Số tiền thanh toán tối thiểu là 10,000 VND');
+    }
+    
+    if (amount > 9999999999) {
+      throw new BadRequestError('Số tiền thanh toán vượt quá giới hạn Stripe (9,999,999,999 VND). Vui lòng liên hệ người bán để thanh toán trực tiếp.');
+    }
+
     // Create payment intent
-    // Note: VND doesn't use cents, amount is already in smallest unit
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(parseFloat(order.total_price)), // VND doesn't have decimal places
+      amount: amount,
       currency: 'vnd',
       metadata: {
         order_id: order.id,
@@ -432,7 +442,15 @@ const createPaymentIntent = asyncHandler(async (req, res) => {
     });
   } catch (stripeError) {
     console.error('Stripe error:', stripeError);
-    throw new BadRequestError(`Failed to create payment intent: ${stripeError.message || stripeError}`);
+    
+    // Handle specific Stripe errors
+    if (stripeError.type === 'StripeCardError') {
+      throw new BadRequestError(`Lỗi thẻ: ${stripeError.message}`);
+    } else if (stripeError.type === 'StripeInvalidRequestError') {
+      throw new BadRequestError(`Yêu cầu không hợp lệ: ${stripeError.message}`);
+    } else {
+      throw new BadRequestError(`Không thể tạo thanh toán: ${stripeError.message || stripeError}`);
+    }
   }
 });
 
