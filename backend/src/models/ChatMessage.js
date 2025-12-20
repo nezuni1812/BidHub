@@ -88,9 +88,10 @@ class ChatMessage {
   static async getUserConversations(userId, page = 1, pageSize = 20) {
     const offset = (page - 1) * pageSize;
     
+    // Get all orders where user is buyer or seller, with or without messages
     const query = `
-      SELECT DISTINCT ON (cm.order_id)
-        cm.order_id,
+      SELECT 
+        o.id as order_id,
         o.product_id,
         p.title as product_title,
         (SELECT url FROM product_images WHERE product_id = p.id AND is_main = true LIMIT 1) as product_image,
@@ -102,16 +103,46 @@ class ChatMessage {
           WHEN o.buyer_id = $1 THEN seller.full_name
           ELSE buyer.full_name
         END as other_user_name,
-        cm.message as last_message,
-        cm.created_at as last_message_time,
-        (SELECT COUNT(*) FROM chat_messages WHERE order_id = cm.order_id AND receiver_id = $1 AND is_read = FALSE) as unread_count
-      FROM chat_messages cm
-      JOIN orders o ON cm.order_id = o.id
+        CASE 
+          WHEN o.buyer_id = $1 THEN seller.email
+          ELSE buyer.email
+        END as other_user_username,
+        (
+          SELECT message 
+          FROM chat_messages 
+          WHERE order_id = o.id 
+          ORDER BY created_at DESC 
+          LIMIT 1
+        ) as last_message,
+        (
+          SELECT created_at 
+          FROM chat_messages 
+          WHERE order_id = o.id 
+          ORDER BY created_at DESC 
+          LIMIT 1
+        ) as last_message_time,
+        (
+          SELECT COUNT(*) 
+          FROM chat_messages 
+          WHERE order_id = o.id 
+          AND receiver_id = $1 
+          AND is_read = FALSE
+        ) as unread_count
+      FROM orders o
       JOIN products p ON o.product_id = p.id
       JOIN users buyer ON o.buyer_id = buyer.id
       JOIN users seller ON o.seller_id = seller.id
-      WHERE cm.sender_id = $1 OR cm.receiver_id = $1
-      ORDER BY cm.order_id, cm.created_at DESC
+      WHERE (o.buyer_id = $1 OR o.seller_id = $1)
+      ORDER BY COALESCE(
+        (
+          SELECT created_at 
+          FROM chat_messages 
+          WHERE order_id = o.id 
+          ORDER BY created_at DESC 
+          LIMIT 1
+        ), 
+        o.created_at
+      ) DESC
       LIMIT $2 OFFSET $3
     `;
     

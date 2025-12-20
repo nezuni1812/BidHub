@@ -27,17 +27,26 @@ const sendMessage = asyncHandler(async (req, res) => {
   // Determine receiver
   const receiverId = order.buyer_id === userId ? order.seller_id : order.buyer_id;
 
+  // Get sender name from user info
+  const User = require('../models/User');
+  const sender = await User.findById(userId);
+  const senderName = sender ? sender.full_name : 'Unknown User';
+
   // Create message
   const chatMessage = await ChatMessage.create(orderId, userId, receiverId, message);
 
   // Emit socket event
   const io = req.app.get('io');
   if (io) {
+    console.log(`📤 Emitting new-message to user-${receiverId}`);
+    console.log(`📤 Order ID: ${orderId}, Sender: ${senderName}`);
     io.to(`user-${receiverId}`).emit('new-message', {
-      orderId,
+      orderId: parseInt(orderId),
       message: chatMessage,
-      senderName: req.user.full_name
+      senderName: senderName
     });
+  } else {
+    console.log('⚠️ Socket.IO not available');
   }
 
   res.status(201).json({

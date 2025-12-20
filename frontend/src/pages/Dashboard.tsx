@@ -246,7 +246,7 @@ export default function DashboardPage() {
                           </Button>
                         )}
                         {item.order_id && (
-                          <Link to={`/messages/${item.seller_username || item.seller_name}`}>
+                          <Link to={`/chat`}>
                             <Button size="sm" variant="outline" className="gap-2">
                               <MessageCircle className="w-4 h-4" />
                               Chat with Seller

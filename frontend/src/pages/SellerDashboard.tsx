@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Link, useNavigate } from "react-router-dom"
-import { Plus, Edit, Eye, Trash2, Users, MessageCircle } from "lucide-react"
+import { Plus, Edit, Eye, Trash2, MessageCircle } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { useEffect } from "react"
 
@@ -67,6 +67,7 @@ export default function SellerDashboardPage() {
       id: 1,
       name: "MacBook Pro 16 2024",
       buyer: "John Doe",
+      buyer_username: "johndoe",
       finalBid: 45000000,
       saleDate: "Oct 25, 2025",
       status: "Payment Completed",
@@ -75,6 +76,7 @@ export default function SellerDashboardPage() {
       id: 2,
       name: "Sony PlayStation 5",
       buyer: "Jane Smith",
+      buyer_username: "janesmith",
       finalBid: 12000000,
       saleDate: "Oct 20, 2025",
       status: "Completed",
@@ -209,7 +211,7 @@ export default function SellerDashboardPage() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Link to={`/messages/${item.buyer || item.buyer_username}`}>
+                    <Link to={`/chat`}>
                       <Button variant="outline" size="sm" className="gap-2 bg-transparent">
                         <MessageCircle className="w-4 h-4" />
                         Chat với người mua

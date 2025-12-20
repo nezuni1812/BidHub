@@ -114,7 +114,6 @@ class Bid {
         p.status,
         (SELECT url FROM product_images WHERE product_id = p.id AND is_main = true LIMIT 1) as main_image,
         u.full_name as seller_name,
-        u.username as seller_username,
         u.email as seller_email,
         o.id as order_id,
         o.order_status as order_status,

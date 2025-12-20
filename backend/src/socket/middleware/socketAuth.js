@@ -49,7 +49,8 @@ async function socketAuth(socket, next) {
     // Join user's personal room for notifications
     socket.join(`user-${user.id}`);
     
-    console.log('[SOCKET AUTH] Success: User', user.id, 'authenticated');
+    console.log('[SOCKET AUTH] Success: User', user.id, 'authenticated and joined room: user-' + user.id);
+    console.log('[SOCKET AUTH] User rooms:', Array.from(socket.rooms));
 
     next();
   } catch (error) {
