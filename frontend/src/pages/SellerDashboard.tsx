@@ -73,19 +73,19 @@ export default function SellerDashboardPage() {
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Card className="p-6">
-            <p className="text-muted-foreground text-sm mb-1">Active Listings</p>
+            <p className="text-muted-foreground text-sm mb-1">Sản phẩm đang bán</p>
             <p className="text-3xl font-bold">{sellerStats.activeListings}</p>
           </Card>
           <Card className="p-6">
-            <p className="text-muted-foreground text-sm mb-1">Total Revenue</p>
+            <p className="text-muted-foreground text-sm mb-1">Tổng doanh thu</p>
             <p className="text-3xl font-bold text-primary">${(sellerStats.revenue / 1000000).toFixed(0)}M</p>
           </Card>
           <Card className="p-6">
-            <p className="text-muted-foreground text-sm mb-1">Items Sold</p>
+            <p className="text-muted-foreground text-sm mb-1">Đã bán</p>
             <p className="text-3xl font-bold">{sellerStats.itemsSold}</p>
           </Card>
           <Card className="p-6">
-            <p className="text-muted-foreground text-sm mb-1">Your Rating</p>
+            <p className="text-muted-foreground text-sm mb-1">Đánh giá</p>
             <div className="flex items-center gap-2">
               <span className="text-3xl font-bold">{sellerStats.rating}</span>
               <span className="text-yellow-500">★</span>
@@ -98,7 +98,7 @@ export default function SellerDashboardPage() {
           <Link to="/seller/post-item">
             <Button size="lg" className="gap-2">
               <Plus className="w-5 h-5" />
-              Post New Item
+              Đăng sản phẩm mới
             </Button>
           </Link>
         </div>
@@ -106,8 +106,8 @@ export default function SellerDashboardPage() {
         {/* Tabs */}
         <Tabs defaultValue="active" className="w-full">
           <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="active">Active Listings</TabsTrigger>
-            <TabsTrigger value="sold">Sold Items</TabsTrigger>
+            <TabsTrigger value="active">Đang bán</TabsTrigger>
+            <TabsTrigger value="sold">Đã bán</TabsTrigger>
           </TabsList>
 
           {/* Active Listings */}
@@ -122,19 +122,19 @@ export default function SellerDashboardPage() {
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm text-muted-foreground">
                       <div>
-                        <p className="text-xs">Current Bid</p>
+                        <p className="text-xs">Giá hiện tại</p>
                         <p className="font-semibold text-foreground">${(item.currentBid / 1000000).toFixed(1)}M</p>
                       </div>
                       <div>
-                        <p className="text-xs">Bids</p>
+                        <p className="text-xs">Lượt đặt giá</p>
                         <p className="font-semibold text-foreground">{item.bids}</p>
                       </div>
                       <div>
-                        <p className="text-xs">Views</p>
+                        <p className="text-xs">Lượt xem</p>
                         <p className="font-semibold text-foreground">{item.views}</p>
                       </div>
                       <div>
-                        <p className="text-xs">Time Left</p>
+                        <p className="text-xs">Thời gian còn lại</p>
                         <p className="font-semibold text-accent">{item.timeLeft}</p>
                       </div>
                     </div>
@@ -143,13 +143,13 @@ export default function SellerDashboardPage() {
                     <Link to={`/seller/edit/${item.id}`}>
                       <Button variant="outline" size="sm" className="gap-2 bg-transparent">
                         <Edit className="w-4 h-4" />
-                        Edit
+                        Sửa
                       </Button>
                     </Link>
                     <Link to={`/product/${item.id}`}>
                       <Button variant="outline" size="sm" className="gap-2 bg-transparent">
                         <Eye className="w-4 h-4" />
-                        View
+                        Xem
                       </Button>
                     </Link>
                     <Button
@@ -179,15 +179,15 @@ export default function SellerDashboardPage() {
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm text-muted-foreground">
                       <div>
-                        <p className="text-xs">Final Price</p>
+                        <p className="text-xs">Giá bán</p>
                         <p className="font-semibold text-foreground">${(item.finalBid / 1000000).toFixed(1)}M</p>
                       </div>
                       <div>
-                        <p className="text-xs">Buyer</p>
+                        <p className="text-xs">Người mua</p>
                         <p className="font-semibold text-foreground">{item.buyer}</p>
                       </div>
                       <div>
-                        <p className="text-xs">Sale Date</p>
+                        <p className="text-xs">Ngày bán</p>
                         <p className="font-semibold text-foreground">{item.saleDate}</p>
                       </div>
                     </div>
@@ -195,7 +195,7 @@ export default function SellerDashboardPage() {
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" className="gap-2 bg-transparent">
                       <Users className="w-4 h-4" />
-                      Contact Buyer
+                      Liên hệ người mua
                     </Button>
                   </div>
                 </div>

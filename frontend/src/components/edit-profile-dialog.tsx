@@ -34,7 +34,7 @@ export function EditProfileDialog({ currentName, currentAddress, currentDateOfBi
     e.preventDefault()
     const newErrors: Record<string, string> = {}
 
-    if (!formData.name.trim()) newErrors.name = "Name is required"
+    if (!formData.name.trim()) newErrors.name = "Vui lòng nhập họ tên"
 
     setErrors(newErrors)
     if (Object.keys(newErrors).length > 0) return
@@ -52,44 +52,44 @@ export function EditProfileDialog({ currentName, currentAddress, currentDateOfBi
       <DialogTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2 bg-transparent">
           <Edit2 className="w-4 h-4" />
-          Edit Profile
+          Chỉnh sửa hồ sơ
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Edit Profile</DialogTitle>
-          <DialogDescription>Update your profile information below.</DialogDescription>
+          <DialogTitle>Chỉnh sửa hồ sơ</DialogTitle>
+          <DialogDescription>Cập nhật thông tin hồ sơ của bạn bên dưới.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="text-sm font-medium">Full Name</label>
+            <label className="text-sm font-medium">Họ và tên</label>
             <Input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Enter your full name"
+              placeholder="Nhập họ và tên của bạn"
               className={errors.name ? "border-destructive mt-2" : "mt-2"}
             />
             {errors.name && <p className="text-xs text-destructive mt-1">{errors.name}</p>}
           </div>
 
           <div>
-            <label className="text-sm font-medium">Address</label>
+            <label className="text-sm font-medium">Địa chỉ</label>
             <Input
               type="text"
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              placeholder="Enter your address"
+              placeholder="Nhập địa chỉ của bạn"
               className="mt-2"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Your delivery address (optional)
+              Địa chỉ giao hàng của bạn (tùy chọn)
             </p>
           </div>
 
           <div>
-            <label className="text-sm font-medium">Date of Birth</label>
+            <label className="text-sm font-medium">Ngày sinh</label>
             <Input
               type="date"
               value={formData.date_of_birth}
@@ -97,7 +97,7 @@ export function EditProfileDialog({ currentName, currentAddress, currentDateOfBi
               className="mt-2"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Your date of birth (optional)
+              Ngày sinh của bạn (tùy chọn)
             </p>
           </div>
 
@@ -109,10 +109,10 @@ export function EditProfileDialog({ currentName, currentAddress, currentDateOfBi
               disabled={isLoading}
               className="flex-1"
             >
-              Cancel
+              Hủy
             </Button>
             <Button type="submit" disabled={isLoading} className="flex-1 bg-primary">
-              {isLoading ? "Saving..." : "Save Changes"}
+              {isLoading ? "Đang lưu..." : "Lưu thay đổi"}
             </Button>
           </div>
         </form>

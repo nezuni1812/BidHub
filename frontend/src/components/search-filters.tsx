@@ -20,22 +20,19 @@ interface SearchFiltersProps {
     categoryName: string | null
     priceRange: [number, number]
     sortBy: string
-    condition: string | null
     sellerRating: number
     showWatchlist: boolean
   }
   onChange: (filters: any) => void
 }
 
-const conditions = ["Excellent", "Like New", "Good", "Fair"]
-const ratings = [4, 3.5, 3, 2.5, 0]
+const ratings = [80, 60, 40, 20, 0]
 
 export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
   const [categories, setCategories] = useState<Category[]>([])
   const [expandedSections, setExpandedSections] = useState({
     category: true,
     price: true,
-    condition: true,
     rating: true,
   })
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
@@ -102,7 +99,7 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
   return (
     <div className="space-y-4">
       <Card className="p-6">
-        <h3 className="font-semibold mb-4">Filters</h3>
+        <h3 className="font-semibold mb-4">Bộ lọc</h3>
 
         {/* Watchlist */}
         <div className="mb-6 pb-6 border-b border-border">
@@ -112,7 +109,7 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
             onClick={() => onChange({ ...filters, showWatchlist: !filters.showWatchlist })}
           >
             <Heart className={`w-4 h-4 ${filters.showWatchlist ? 'fill-current' : ''}`} />
-            My Watchlist
+            Danh sách yêu thích
           </Button>
         </div>
 
@@ -122,13 +119,13 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
             onClick={() => toggleSection("category")}
             className="flex justify-between items-center w-full mb-3 font-medium text-sm"
           >
-            Category
+            Danh mục
             <ChevronDown className={`w-4 h-4 transition-transform ${expandedSections.category ? "" : "-rotate-90"}`} />
           </button>
           {expandedSections.category && (
             <div className="space-y-1 max-h-96 overflow-y-auto">
               {categories.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic">Loading categories...</p>
+                <p className="text-sm text-muted-foreground italic">Đang tải danh mục...</p>
               ) : (
                 categories.map((parent) => (
                 <div key={parent.id} className="space-y-1">
@@ -203,7 +200,7 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
             onClick={() => toggleSection("price")}
             className="flex justify-between items-center w-full mb-3 font-medium text-sm"
           >
-            Price Range
+            Khoảng giá
             <ChevronDown className={`w-4 h-4 transition-transform ${expandedSections.price ? "" : "-rotate-90"}`} />
           </button>
           {expandedSections.price && (
@@ -219,7 +216,7 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
                     })
                   }
                   className="w-full px-2 py-1 border border-border rounded text-sm"
-                  placeholder="Min"
+                  placeholder="Tối thiểu"
                 />
                 <input
                   type="number"
@@ -231,43 +228,12 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
                     })
                   }
                   className="w-full px-2 py-1 border border-border rounded text-sm"
-                  placeholder="Max"
+                  placeholder="Tối đa"
                 />
               </div>
               <div className="text-xs text-muted-foreground">
                 ${(filters.priceRange[0] / 1000000).toFixed(1)}M - ${(filters.priceRange[1] / 1000000).toFixed(1)}M
               </div>
-            </div>
-          )}
-        </div>
-
-        {/* Condition */}
-        <div className="mb-6 pb-6 border-b border-border">
-          <button
-            onClick={() => toggleSection("condition")}
-            className="flex justify-between items-center w-full mb-3 font-medium text-sm"
-          >
-            Condition
-            <ChevronDown className={`w-4 h-4 transition-transform ${expandedSections.condition ? "" : "-rotate-90"}`} />
-          </button>
-          {expandedSections.condition && (
-            <div className="space-y-2">
-              {conditions.map((cond) => (
-                <label key={cond} className="flex items-center gap-3 cursor-pointer hover:opacity-75 transition">
-                  <input
-                    type="checkbox"
-                    checked={filters.condition === cond}
-                    onChange={(e) =>
-                      onChange({
-                        ...filters,
-                        condition: e.target.checked ? cond : null,
-                      })
-                    }
-                    className="w-4 h-4 rounded border-border cursor-pointer"
-                  />
-                  <span className="text-sm">{cond}</span>
-                </label>
-              ))}
             </div>
           )}
         </div>
@@ -278,7 +244,7 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
             onClick={() => toggleSection("rating")}
             className="flex justify-between items-center w-full mb-3 font-medium text-sm"
           >
-            Seller Rating
+            Đánh giá người bán
             <ChevronDown className={`w-4 h-4 transition-transform ${expandedSections.rating ? "" : "-rotate-90"}`} />
           </button>
           {expandedSections.rating && (
@@ -297,7 +263,7 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
                     }
                     className="w-4 h-4 cursor-pointer"
                   />
-                  <span className="text-sm">{rating === 0 ? "Any" : `${rating}+ ★ (${Math.floor(rating * 10)}%)`}</span>
+                  <span className="text-sm">{rating === 0 ? "Tất cả" : `${rating}%+`}</span>
                 </label>
               ))}
             </div>

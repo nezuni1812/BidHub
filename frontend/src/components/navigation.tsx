@@ -52,10 +52,8 @@ export function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link to="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">AH</span>
-            </div>
-            <span className="font-bold text-xl hidden sm:inline">AuctionHub</span>
+            <img src="/bido_icon.png" alt="Bido" className="w-6 h-6" />
+            <span className="font-bold text-xl hidden sm:inline text-orange-500">Bido</span>
           </Link>
 
           <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-xs mx-4">
@@ -63,7 +61,7 @@ export function Navigation() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="Search items..."
+                placeholder="Tìm kiếm sản phẩm..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-muted/50 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -76,7 +74,7 @@ export function Navigation() {
               to={user?.role === 'seller' ? '/seller/post-item' : '/selling'} 
               className="px-3 py-2 text-sm font-medium hover:bg-muted rounded-md transition"
             >
-              Sell
+              Bán hàng
             </Link>
             <Link to="/dashboard">
               <Button variant="ghost" size="sm">
@@ -112,16 +110,16 @@ export function Navigation() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate(`/profile/${user.email}`)}>
                     <User className="mr-2 h-4 w-4" />
-                    <span>Profile</span>
+                    <span>Hồ sơ</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/profile/settings')}>
                     <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
+                    <span>Cài đặt</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>Logout</span>
+                    <span>Đăng xuất</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -130,11 +128,11 @@ export function Navigation() {
               <>
                 <Link to="/auth/login">
                   <Button variant="ghost" size="sm">
-                    Login
+                    Đăng nhập
                   </Button>
                 </Link>
                 <Link to="/auth/register">
-                  <Button size="sm">Sign up</Button>
+                  <Button size="sm">Đăng ký</Button>
                 </Link>
               </>
             )}

@@ -38,7 +38,7 @@ export default function LoginPage() {
       <div className="max-w-md mx-auto px-4 py-12">
         <Card className="p-8">
           <h1 className="text-2xl font-bold mb-2">Sign In</h1>
-          <p className="text-muted-foreground mb-6">Welcome back to AuctionHub</p>
+          <p className="text-muted-foreground mb-6">Welcome back to Bido</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

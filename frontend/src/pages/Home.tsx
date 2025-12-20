@@ -25,7 +25,6 @@ interface Filters {
   categoryName: string | null
   priceRange: [number, number]
   sortBy: string
-  condition: string | null
   sellerRating: number
   showWatchlist: boolean
 }
@@ -38,7 +37,6 @@ export default function Home() {
     categoryName: null,
     priceRange: [0, 50000000],
     sortBy: "newest",
-    condition: null,
     sellerRating: 0,
     showWatchlist: false,
   })
@@ -103,8 +101,8 @@ export default function Home() {
           const token = localStorage.getItem('access_token');
           if (!token) {
             toast({
-              title: "Login Required",
-              description: "Please login to view your watchlist",
+              title: "Yêu cầu đăng nhập",
+              description: "Vui lòng đăng nhập để xem danh sách yêu thích",
               variant: "destructive"
             });
             setProducts([]);
@@ -219,8 +217,8 @@ export default function Home() {
     const token = localStorage.getItem('access_token');
     if (!token) {
       toast({
-        title: "Login Required",
-        description: "Please login to add items to watchlist",
+        title: "Yêu cầu đăng nhập",
+        description: "Vui lòng đăng nhập để thêm vào danh sách yêu thích",
         variant: "destructive"
       });
       return;
@@ -237,8 +235,8 @@ export default function Home() {
           return next;
         });
         toast({
-          title: "Removed from watchlist",
-          description: "Product removed from your watchlist"
+          title: "Đã xóa khỏi danh sách yêu thích",
+          description: "Sản phẩm đã được xóa khỏi danh sách yêu thích của bạn"
         });
         
         // If currently viewing watchlist, remove from UI
@@ -249,20 +247,20 @@ export default function Home() {
         await addToWatchlist(productId);
         setWatchlistIds(prev => new Set([...prev, productId]));
         toast({
-          title: "Added to watchlist",
-          description: "Product added to your watchlist"
+          title: "Đã thêm vào danh sách yêu thích",
+          description: "Sản phẩm đã được thêm vào danh sách yêu thích của bạn"
         });
       }
     } catch (err) {
       toast({
-        title: "Error",
-        description: err instanceof Error ? err.message : "Failed to update watchlist",
+        title: "Lỗi",
+        description: err instanceof Error ? err.message : "Không thể cập nhật danh sách yêu thích",
         variant: "destructive"
       });
     }
   };
 
-  const hasActiveFilters = filters.search || filters.category || filters.condition || filters.sellerRating > 0 || filters.showWatchlist
+  const hasActiveFilters = filters.search || filters.category || filters.sellerRating > 0 || filters.showWatchlist
 
   return (
     <div className="min-h-screen bg-background">
@@ -284,7 +282,7 @@ export default function Home() {
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                 <Input
-                  placeholder="Search products..."
+                  placeholder="Tìm kiếm sản phẩm..."
                   className="pl-10"
                   value={filters.search}
                   onChange={(e) => setFilters({ ...filters, search: e.target.value })}
@@ -299,11 +297,10 @@ export default function Home() {
             <div className="flex justify-between items-center mb-6">
               <p className="text-sm text-muted-foreground">
                 {loading ? (
-                  "Loading..."
+                  "Đang tải..."
                 ) : (
                   <>
-                    Showing {products?.length || 0} result{products?.length !== 1 ? "s" : ""} 
-                    {pagination.total > 0 && ` of ${pagination.total}`}
+                    Hiển thị {products?.length || 0} kết quả{pagination.total > 0 && ` / ${pagination.total}`}
                   </>
                 )}
               </p>
@@ -313,11 +310,11 @@ export default function Home() {
                   onChange={(e) => setFilters({ ...filters, sortBy: e.target.value })}
                   className="px-3 py-2 rounded-lg border border-border bg-background text-sm"
                 >
-                  <option value="newest">Newest</option>
-                  <option value="ending-soon">Ending Soon</option>
-                  <option value="price-low">Price: Low to High</option>
-                  <option value="price-high">Price: High to Low</option>
-                  <option value="most-bids">Most Bids</option>
+                  <option value="newest">Mới nhất</option>
+                  <option value="ending-soon">Sắp kết thúc</option>
+                  <option value="price-low">Giá: Thấp đến Cao</option>
+                  <option value="price-high">Giá: Cao đến Thấp</option>
+                  <option value="most-bids">Nhiều lượt đấu giá nhất</option>
                 </select>
               </div>
             </div>
@@ -343,22 +340,13 @@ export default function Home() {
                     {filters.categoryName || 'Category'} <X className="w-3 h-3 ml-1" />
                   </Badge>
                 )}
-                {filters.condition && (
-                  <Badge
-                    variant="secondary"
-                    className="cursor-pointer"
-                    onClick={() => setFilters({ ...filters, condition: null })}
-                  >
-                    {filters.condition} <X className="w-3 h-3 ml-1" />
-                  </Badge>
-                )}
                 {filters.sellerRating > 0 && (
                   <Badge
                     variant="secondary"
                     className="cursor-pointer"
                     onClick={() => setFilters({ ...filters, sellerRating: 0 })}
                   >
-                    Rating {filters.sellerRating}+ <X className="w-3 h-3 ml-1" />
+                    Đánh giá {filters.sellerRating}%+ <X className="w-3 h-3 ml-1" />
                   </Badge>
                 )}
               </div>
@@ -373,14 +361,14 @@ export default function Home() {
               <Card className="p-12 text-center">
                 <p className="text-red-500 mb-4">{error}</p>
                 <Button onClick={() => window.location.reload()}>
-                  Retry
+                  Thử lại
                 </Button>
               </Card>
             ) : products.length === 0 ? (
               <Card className="p-12 text-center">
                 <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                <h3 className="text-lg font-semibold mb-2">No products found</h3>
-                <p className="text-muted-foreground mb-4">Try adjusting your filters or search terms</p>
+                <h3 className="text-lg font-semibold mb-2">Không tìm thấy sản phẩm</h3>
+                <p className="text-muted-foreground mb-4">Thử điều chỉnh bộ lọc hoặc từ khóa tìm kiếm của bạn</p>
                 <Button
                   variant="outline"
                   onClick={() =>
@@ -390,13 +378,12 @@ export default function Home() {
                       categoryName: null,
                       priceRange: [0, 50000000],
                       sortBy: "newest",
-                      condition: null,
                       sellerRating: 0,
                       showWatchlist: false,
                     })
                   }
                 >
-                  Clear Filters
+                  Xóa bộ lọc
                 </Button>
               </Card>
             ) : (
@@ -431,21 +418,21 @@ export default function Home() {
                         </Badge>
                         <h3 className="font-semibold line-clamp-2 mb-2">{product.title}</h3>
                         <p className="text-xs text-muted-foreground mb-3">
-                          by {product.seller_name} ⭐ {parseFloat(product.seller_rating as any).toFixed(1)}
+                          bởi {product.seller_name} ⭐ {parseFloat(product.seller_rating as any).toFixed(1)}
                         </p>
                         <div className="mt-auto space-y-2">
                           <div>
-                            <p className="text-xs text-muted-foreground">Current bid</p>
+                            <p className="text-xs text-muted-foreground">Giá hiện tại</p>
                             <p className="text-lg font-bold text-primary">
                               {formatPrice(parseFloat(product.current_price as any))}
                             </p>
                           </div>
                           <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>{typeof product.total_bids === 'string' ? parseInt(product.total_bids) : product.total_bids} bids</span>
+                            <span>{typeof product.total_bids === 'string' ? parseInt(product.total_bids) : product.total_bids} lượt đấu giá</span>
                             <span className="text-accent font-semibold">
                               {product.seconds_remaining 
                                 ? formatTimeRemaining(parseFloat(product.seconds_remaining as any))
-                                : 'Ended'
+                                : 'Đã kết thúc'
                               }
                             </span>
                           </div>
@@ -466,7 +453,7 @@ export default function Home() {
                   onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} 
                   disabled={currentPage === 1}
                 >
-                  Previous
+                  Trước
                 </Button>
                 {Array.from({length: pagination.total_pages}, (_, i) => i + 1).map(page => (
                   <Button 
@@ -482,7 +469,7 @@ export default function Home() {
                   onClick={() => setCurrentPage(prev => Math.min(pagination.total_pages, prev + 1))} 
                   disabled={currentPage === pagination.total_pages}
                 >
-                  Next
+                  Tiếp
                 </Button>
               </div>
             )}

@@ -52,7 +52,7 @@ export default function RegisterPage() {
       <div className="max-w-md mx-auto px-4 py-12">
         <Card className="p-8">
           <h1 className="text-2xl font-bold mb-2">Create Account</h1>
-          <p className="text-muted-foreground mb-6">Join AuctionHub to start bidding and selling</p>
+          <p className="text-muted-foreground mb-6">Join Bido to start bidding and selling</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

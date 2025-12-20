@@ -8,23 +8,23 @@ export default function SellingPage() {
   const features = [
     {
       icon: Users,
-      title: "Reach Millions of Buyers",
-      description: "Connect with thousands of active bidders looking for quality items",
+      title: "Tiếp cận hàng triệu người mua",
+      description: "Kết nối với hàng nghìn người đấu giá đang tìm kiếm sản phẩm chất lượng",
     },
     {
       icon: TrendingUp,
-      title: "Maximize Your Earnings",
-      description: "Competitive bidding drives prices up and increases your revenue",
+      title: "Tối đa hóa thu nhập",
+      description: "Đấu giá cạnh tranh giúp tăng giá và gia tăng doanh thu của bạn",
     },
     {
       icon: DollarSign,
-      title: "Easy Payments",
-      description: "Secure payments and fast withdrawal of your earnings",
+      title: "Thanh toán dễ dàng",
+      description: "Thanh toán an toàn và rút tiền nhanh chóng",
     },
     {
       icon: CheckCircle,
-      title: "Safe & Protected",
-      description: "Built-in buyer & seller protection for peace of mind",
+      title: "An toàn & Bảo vệ",
+      description: "Bảo vệ người mua & người bán tích hợp sẵn để an tâm",
     },
   ]
 
@@ -34,12 +34,12 @@ export default function SellingPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-16">
-          <h1 className="text-4xl font-bold mb-4">Start Selling Today</h1>
+          <h1 className="text-4xl font-bold mb-4">Bắt đầu bán hàng ngay hôm nay</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Join thousands of sellers earning money by auctioning their items on AuctionHub
+            Tham gia cùng hàng nghìn người bán kiếm tiền bằng cách đấu giá sản phẩm trên Bido
           </p>
           <Link to="/seller/post-item">
-            <Button size="lg">Post Your First Item</Button>
+            <Button size="lg">Đăng sản phẩm đầu tiên</Button>
           </Link>
         </div>
 
@@ -59,13 +59,13 @@ export default function SellingPage() {
 
         {/* How It Works */}
         <div className="bg-muted/50 rounded-lg p-8 sm:p-12 mb-16">
-          <h2 className="text-2xl font-bold mb-8 text-center">How to Sell</h2>
+          <h2 className="text-2xl font-bold mb-8 text-center">Cách thức bán hàng</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
-              { step: 1, title: "Create Account", desc: "Sign up and verify your email" },
-              { step: 2, title: "Post Item", desc: "Add photos, description & pricing" },
-              { step: 3, title: "Attract Bidders", desc: "Let buyers compete for your item" },
-              { step: 4, title: "Get Paid", desc: "Receive payment after auction ends" },
+              { step: 1, title: "Tạo tài khoản", desc: "Đăng ký và xác minh email" },
+              { step: 2, title: "Đăng sản phẩm", desc: "Thêm ảnh, mô tả và giá" },
+              { step: 3, title: "Thu hút người mua", desc: "Để người mua cạnh tranh cho sản phẩm" },
+              { step: 4, title: "Nhận tiền", desc: "Nhận thanh toán sau khi đấu giá kết thúc" },
             ].map((item) => (
               <div key={item.step} className="text-center">
                 <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary text-primary-foreground font-bold mb-4">
@@ -80,11 +80,11 @@ export default function SellingPage() {
 
         {/* CTA */}
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Ready to start selling?</h2>
-          <p className="text-muted-foreground mb-8">Get access to millions of potential buyers</p>
+          <h2 className="text-2xl font-bold mb-4">Sẵn sàng bắt đầu bán hàng?</h2>
+          <p className="text-muted-foreground mb-8">Tiếp cận hàng triệu người mua tiềm năng</p>
           <Link to="/register">
             <Button size="lg" className="gap-2">
-              Create Free Account
+              Tạo tài khoản miễn phí
             </Button>
           </Link>
         </div>
