@@ -23,8 +23,8 @@ class User {
   static async create(data) {
     const hashedPassword = await bcrypt.hash(data.password, 10);
     const query = `
-      INSERT INTO users (full_name, email, password_hash, address, date_of_birth, role)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO users (full_name, email, password_hash, address, date_of_birth, role, is_active)
+      VALUES ($1, $2, $3, $4, $5, $6, false)
       RETURNING id, full_name, email, role, created_at
     `;
     const result = await db.query(query, [

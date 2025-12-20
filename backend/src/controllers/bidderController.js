@@ -9,7 +9,9 @@ const Question = require('../models/Question');
 const Rating = require('../models/Rating');
 const UpgradeRequest = require('../models/UpgradeRequest');
 const AutoBid = require('../models/AutoBid');
+const Order = require('../models/Order');
 const db = require('../config/database');
+const EVENTS = require('../socket/events');
 
 /**
  * @desc    Add product to watchlist
@@ -424,6 +426,93 @@ const getAutoBidHistory = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * @desc    Buy Now - Instantly purchase product at buy_now_price
+ * @route   POST /api/v1/bidder/buy-now/:productId
+ * @access  Private (Bidder)
+ */
+const buyNow = asyncHandler(async (req, res) => {
+  const { productId } = req.params;
+  const buyerId = req.user.id;
+
+  console.log(`[BUY NOW] User ${buyerId} attempting to buy product ${productId}`);
+
+  // Execute buy now (ends auction, sets winner, updates product)
+  const product = await Product.buyNowInstant(productId, buyerId);
+  console.log(`[BUY NOW] Product ${productId} purchased successfully. Winner: ${buyerId}, Price: ${product.buy_now_price}`);
+
+  // Create order for the purchase
+  const order = await Order.create(
+    product.id,
+    buyerId,
+    product.seller_id,
+    product.buy_now_price
+  );
+  console.log(`[BUY NOW] Order created: ${order.id}, Status: ${order.order_status}, Payment: ${order.payment_status}`);
+
+  // Get socket.io instance from app
+  const io = req.app.get('io');
+
+  if (io) {
+    // Broadcast to all users watching this product
+    io.to(`product-${product.id}`).emit(EVENTS.AUCTION_ENDED, {
+      productId: product.id,
+      productTitle: product.title,
+      finalPrice: product.buy_now_price,
+      hasWinner: true,
+      winnerId: buyerId,
+      winnerName: product.buyer_name,
+      type: 'buy_now',
+      message: 'Sản phẩm đã được mua ngay'
+    });
+
+    // Notify buyer (winner)
+    io.to(`user-${buyerId}`).emit(EVENTS.AUCTION_ENDED, {
+      productId: product.id,
+      productTitle: product.title,
+      finalPrice: product.buy_now_price,
+      type: 'buy_now_winner',
+      message: `Bạn đã mua thành công "${product.title}" với giá ${product.buy_now_price.toLocaleString('vi-VN')} VND`,
+      orderId: order.id
+    });
+
+    // Notify seller
+    io.to(`user-${product.seller_id}`).emit(EVENTS.AUCTION_ENDED, {
+      productId: product.id,
+      productTitle: product.title,
+      finalPrice: product.buy_now_price,
+      type: 'buy_now_seller',
+      message: `Sản phẩm "${product.title}" đã được mua ngay với giá ${product.buy_now_price.toLocaleString('vi-VN')} VND`,
+      buyerName: product.buyer_name,
+      buyerEmail: product.buyer_email,
+      orderId: order.id
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    message: 'Product purchased successfully',
+    data: {
+      product: {
+        id: product.id,
+        title: product.title,
+        finalPrice: product.buy_now_price,
+        seller: {
+          id: product.seller_id,
+          name: product.seller_name
+        }
+      },
+      order: {
+        id: order.id,
+        total_price: order.total_price,
+        order_status: order.order_status,
+        payment_status: order.payment_status,
+        created_at: order.created_at
+      }
+    }
+  });
+});
+
 module.exports = {
   addToWatchlist,
   removeFromWatchlist,
@@ -440,5 +529,6 @@ module.exports = {
   setAutoBid,
   getAutoBids,
   cancelAutoBid,
-  getAutoBidHistory
+  getAutoBidHistory,
+  buyNow
 };

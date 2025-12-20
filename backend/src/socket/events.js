@@ -20,6 +20,7 @@ module.exports = {
   AUCTION_ENDING_SOON: 'auction-ending-soon',
   AUCTION_ENDED: 'auction-ended',
   PRICE_UPDATE: 'price-update',
+  BUY_NOW_SUCCESS: 'buy-now-success',
   
   // Question Events
   NEW_QUESTION: 'new-question',

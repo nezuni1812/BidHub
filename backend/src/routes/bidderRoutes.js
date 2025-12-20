@@ -16,7 +16,8 @@ const {
   setAutoBid,
   getAutoBids,
   cancelAutoBid,
-  getAutoBidHistory
+  getAutoBidHistory,
+  buyNow
 } = require('../controllers/bidderController');
 const {
   addToWatchlistValidation,
@@ -471,5 +472,81 @@ router.delete('/auto-bid/:productId', cancelAutoBidValidation, validate, cancelA
  *         description: Max price history retrieved successfully
  */
 router.get('/auto-bid/:productId/history', getAutoBidHistory);
+
+/**
+ * @swagger
+ * /bidder/buy-now/{productId}:
+ *   post:
+ *     tags: [Bidder]
+ *     summary: Buy product immediately at buy_now_price
+ *     description: Instantly purchase the product, ending the auction and creating an order. User will then be redirected to checkout page.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: ID of the product to purchase
+ *     responses:
+ *       200:
+ *         description: Product purchased successfully, order created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Product purchased successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     product:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                         title:
+ *                           type: string
+ *                         finalPrice:
+ *                           type: number
+ *                         seller:
+ *                           type: object
+ *                           properties:
+ *                             id:
+ *                               type: integer
+ *                             name:
+ *                               type: string
+ *                     order:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: integer
+ *                         total_price:
+ *                           type: number
+ *                         order_status:
+ *                           type: string
+ *                           example: pending_payment
+ *                         payment_status:
+ *                           type: string
+ *                           example: pending
+ *                         created_at:
+ *                           type: string
+ *                           format: date-time
+ *       400:
+ *         description: Bad request - product not available for buy now
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - seller cannot buy own product or bidder is denied
+ *       404:
+ *         description: Product not found
+ */
+router.post('/buy-now/:productId', buyNow);
 
 module.exports = router;

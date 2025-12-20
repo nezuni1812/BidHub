@@ -379,6 +379,68 @@ export default function ProductDetail() {
         }
     };
 
+    const handleBuyNow = async () => {
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            toast({
+                title: "Login Required",
+                description: "Please login to buy now",
+                variant: "destructive"
+            });
+            return;
+        }
+        
+        if (!id || !buyNowPrice) return;
+        
+        // Confirm purchase
+        const confirmPurchase = window.confirm(
+            `Xác nhận mua sản phẩm với giá ${formatPrice(buyNowPrice)}?\n\nSau khi mua, bạn sẽ được chuyển đến trang thanh toán.`
+        );
+        
+        if (!confirmPurchase) return;
+        
+        try {
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+            const response = await fetch(`${API_URL}/bidder/buy-now/${id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to buy now');
+            }
+            
+            const result = await response.json();
+            
+            toast({
+                title: "Mua thành công!",
+                description: `Đang chuyển đến trang thanh toán...`,
+                duration: 2000
+            });
+            
+            // Redirect to checkout page after 1.5 seconds
+            setTimeout(() => {
+                if (result.data?.order?.id) {
+                    window.location.href = `/checkout/${result.data.order.id}`;
+                } else {
+                    // Fallback to dashboard won tab
+                    window.location.href = '/dashboard?tab=won';
+                }
+            }, 1500);
+            
+        } catch (err) {
+            toast({
+                title: "Lỗi",
+                description: err instanceof Error ? err.message : "Không thể mua sản phẩm",
+                variant: "destructive"
+            });
+        }
+    };
+
 
     return (
         <div className="min-h-screen bg-background">
@@ -451,7 +513,11 @@ export default function ProductDetail() {
                                 </Button>
 
                                 {buyNowPrice && (
-                                    <Button className="w-full bg-transparent" variant="outline" size="lg">
+                                    <Button 
+                                        className="w-full bg-green-600 hover:bg-green-700 text-white" 
+                                        size="lg"
+                                        onClick={handleBuyNow}
+                                    >
                                         Buy Now - {formatPrice(buyNowPrice)}
                                     </Button>
                                 )}

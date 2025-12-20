@@ -576,6 +576,110 @@ class Product {
     const result = await db.query(query);
     return result.rows;
   }
+
+  /**
+   * Buy Now Instant - User clicks "Buy Now" button
+   * This will:
+   * 1. End the auction immediately
+   * 2. Set the buyer as winner
+   * 3. Update product status to 'completed'
+   * 4. Set final price to buy_now_price
+   * Returns: product data with winner info
+   */
+  static async buyNowInstant(productId, buyerId) {
+    const client = await db.getClient();
+    
+    try {
+      await client.query('BEGIN');
+
+      // Lock the product row for update
+      const productQuery = `
+        SELECT 
+          p.*,
+          u.full_name as seller_name,
+          u.email as seller_email,
+          c.name as category_name
+        FROM products p
+        INNER JOIN users u ON p.seller_id = u.id
+        INNER JOIN categories c ON p.category_id = c.id
+        WHERE p.id = $1
+        FOR UPDATE
+      `;
+      
+      const productResult = await client.query(productQuery, [productId]);
+      
+      if (productResult.rows.length === 0) {
+        throw new Error('Product not found');
+      }
+
+      const product = productResult.rows[0];
+
+      // Validations
+      if (product.status !== 'active') {
+        throw new Error('Product is not available for buy now');
+      }
+
+      if (new Date(product.end_time) <= new Date()) {
+        throw new Error('Auction has already ended');
+      }
+
+      if (!product.buy_now_price || product.buy_now_price <= 0) {
+        throw new Error('This product does not have a buy now price');
+      }
+
+      if (product.seller_id === buyerId) {
+        throw new Error('Seller cannot buy their own product');
+      }
+
+      // Check if buyer is denied
+      const deniedCheck = await client.query(
+        'SELECT id FROM denied_bidders WHERE product_id = $1 AND user_id = $2',
+        [productId, buyerId]
+      );
+
+      if (deniedCheck.rows.length > 0) {
+        throw new Error('You are denied from bidding on this product');
+      }
+
+      // Update product: set winner, end auction, set final price
+      const updateQuery = `
+        UPDATE products
+        SET 
+          winner_id = $1,
+          current_price = buy_now_price,
+          status = 'completed',
+          end_time = CURRENT_TIMESTAMP,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $2
+        RETURNING *
+      `;
+      
+      const updateResult = await client.query(updateQuery, [buyerId, productId]);
+      const updatedProduct = updateResult.rows[0];
+
+      // Get buyer info
+      const buyerQuery = 'SELECT id, full_name, email FROM users WHERE id = $1';
+      const buyerResult = await client.query(buyerQuery, [buyerId]);
+      const buyer = buyerResult.rows[0];
+
+      await client.query('COMMIT');
+
+      return {
+        ...updatedProduct,
+        seller_name: product.seller_name,
+        seller_email: product.seller_email,
+        category_name: product.category_name,
+        buyer_name: buyer.full_name,
+        buyer_email: buyer.email
+      };
+
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
 }
 
 module.exports = Product;
