@@ -266,7 +266,8 @@ class Order {
         p.title as product_title,
         (SELECT url FROM product_images WHERE product_id = p.id AND is_main = true LIMIT 1) as product_image,
         buyer.full_name as buyer_name,
-        buyer.email as buyer_email
+        buyer.email as buyer_email,
+        o.shipping_address as buyer_address
       FROM orders o
       JOIN products p ON o.product_id = p.id
       JOIN users buyer ON o.buyer_id = buyer.id

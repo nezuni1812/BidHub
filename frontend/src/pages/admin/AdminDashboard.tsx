@@ -517,34 +517,37 @@ export default function AdminDashboard() {
               </Card>
             ) : (
               upgradeRequests.map((request) => (
-                <Card key={request.request_id} className="p-6">
+                <Card key={request.id} className="p-6">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex-1">
-                      <h3 className="font-semibold mb-1">{request.username}</h3>
+                      <h3 className="font-semibold mb-1">{request.full_name}</h3>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        Email: {request.email}
+                      </p>
+                      <p className="text-sm text-muted-foreground mb-1">
+                        Total Bids: {request.total_bids} | Auctions Won: {request.auctions_won}
+                      </p>
                       <p className="text-sm text-muted-foreground mb-2">
                         Requested on {new Date(request.requested_at).toLocaleDateString()}
                       </p>
                       <Badge variant="outline">{request.status}</Badge>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleViewUser(request.username)}>
-                        View Profile
-                      </Button>
                       <Button 
                         size="sm" 
-                        onClick={() => handleApproveRequest(request.request_id)}
-                        disabled={processingRequest === request.request_id}
+                        onClick={() => handleApproveRequest(request.id)}
+                        disabled={processingRequest === request.id}
                       >
-                        {processingRequest === request.request_id ? "Processing..." : "Approve"}
+                        {processingRequest === request.id ? "Processing..." : "Approve"}
                       </Button>
                       <Button 
                         variant="outline" 
                         size="sm" 
                         className="text-destructive bg-transparent"
-                        onClick={() => handleRejectRequest(request.request_id)}
-                        disabled={processingRequest === request.request_id}
+                        onClick={() => handleRejectRequest(request.id)}
+                        disabled={processingRequest === request.id}
                       >
-                        {processingRequest === request.request_id ? "Processing..." : "Reject"}
+                        {processingRequest === request.id ? "Processing..." : "Reject"}
                       </Button>
                     </div>
                   </div>

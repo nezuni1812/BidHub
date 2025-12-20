@@ -253,7 +253,7 @@ export default function DashboardPage() {
                       <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-3">
                         <span>Giá thắng: {formatPrice(parseFloat(item.final_price))}</span>
                         <span>•</span>
-                        <span>Người bán: {item.seller_name}</span>
+                        <span>Người bán: {item.seller_name || item.seller_email}</span>
                         <span>•</span>
                         <span>{new Date(item.won_date).toLocaleDateString('vi-VN')}</span>
                       </div>
@@ -266,15 +266,13 @@ export default function DashboardPage() {
                           </Link>
                         )}
                         {item.order_status === 'paid' && (
-                          <Button size="sm" variant="outline" disabled>
-                            Chờ giao hàng
-                          </Button>
+                          <Badge className="bg-green-600">Đã thanh toán</Badge>
                         )}
                         {item.order_id && (
                           <Link to={`/chat`}>
                             <Button size="sm" variant="outline" className="gap-2">
                               <MessageCircle className="w-4 h-4" />
-                              Chat with Seller
+                              Nhắn tin với người bán
                             </Button>
                           </Link>
                         )}
