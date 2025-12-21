@@ -12,6 +12,10 @@ import { useEffect, useState } from "react"
 import { getSellerStats, getSellerProducts, getSellerOrders, markAsShipped, cancelOrder, rateBuyer, type SellerStats, type SellerProduct, type SellerOrder } from "@/lib/seller"
 import { formatPrice, formatTimeRemaining, getImageUrl } from "@/lib/products"
 import { useToast } from "@/components/ui/use-toast"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Textarea } from "@/components/ui/textarea"
 
 export default function SellerDashboardPage() {
   const { user } = useAuth();
@@ -23,6 +27,10 @@ export default function SellerDashboardPage() {
   const [orders, setOrders] = useState<SellerOrder[]>([]);
   const [shippingLoading, setShippingLoading] = useState<Record<number, boolean>>({});
   const [actionLoading, setActionLoading] = useState<Record<number, string>>({});
+  const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [ratingType, setRatingType] = useState<'1' | '-1'>('1');
+  const [ratingComment, setRatingComment] = useState('');
 
   // Protect route - only sellers can access
   useEffect(() => {
@@ -144,6 +152,44 @@ export default function SellerDashboardPage() {
       });
     } finally {
       setActionLoading(prev => ({ ...prev, [orderId]: '' }));
+    }
+  };
+
+  const openRatingDialog = (orderId: number) => {
+    setSelectedOrderId(orderId);
+    setRatingType('1');
+    setRatingComment('');
+    setRatingDialogOpen(true);
+  };
+
+  const submitRating = async () => {
+    if (!selectedOrderId) return;
+    
+    try {
+      setActionLoading(prev => ({ ...prev, [selectedOrderId]: 'rating' }));
+      
+      await rateBuyer(selectedOrderId, parseInt(ratingType) as 1 | -1, ratingComment);
+      
+      toast({
+        title: "Thành công",
+        description: ratingType === '1' ? "Đã gửi đánh giá tích cực" : "Đã gửi đánh giá tiêu cực",
+      });
+      
+      setRatingDialogOpen(false);
+      setSelectedOrderId(null);
+      setRatingComment('');
+      
+      // Refresh orders
+      await fetchDashboardData();
+    } catch (error: any) {
+      console.error('Error rating buyer:', error);
+      toast({
+        title: "Lỗi",
+        description: error.response?.data?.message || "Không thể gửi đánh giá",
+        variant: "destructive"
+      });
+    } finally {
+      setActionLoading(prev => ({ ...prev, [selectedOrderId]: '' }));
     }
   };
 
@@ -344,26 +390,15 @@ export default function SellerDashboardPage() {
                       {(order.order_status === 'delivered' || order.order_status === 'completed') && (
                         <>
                           {!order.seller_rating ? (
-                            <>
-                              <Button 
-                                size="sm" 
-                                className="bg-yellow-600 hover:bg-yellow-700"
-                                onClick={() => handleRateBuyer(order.id, 1)}
-                                disabled={actionLoading[order.id] === 'rating'}
-                              >
-                                <Star className="w-4 h-4 mr-1" />
-                                {actionLoading[order.id] === 'rating' ? 'Đang gửi...' : 'Đánh giá tích cực'}
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="destructive"
-                                onClick={() => handleRateBuyer(order.id, -1)}
-                                disabled={actionLoading[order.id] === 'rating'}
-                              >
-                                <Star className="w-4 h-4 mr-1" />
-                                {actionLoading[order.id] === 'rating' ? 'Đang gửi...' : 'Đánh giá tiêu cực'}
-                              </Button>
-                            </>
+                            <Button 
+                              size="sm" 
+                              className="bg-yellow-600 hover:bg-yellow-700"
+                              onClick={() => openRatingDialog(order.id)}
+                              disabled={actionLoading[order.id] === 'rating'}
+                            >
+                              <Star className="w-4 h-4 mr-1" />
+                              Đánh giá
+                            </Button>
                           ) : (
                             <Badge className={order.seller_rating === 1 ? "bg-green-600" : "bg-red-600"}>
                               <Star className="w-4 h-4 mr-1" />
@@ -388,6 +423,59 @@ export default function SellerDashboardPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Rating Dialog */}
+      <Dialog open={ratingDialogOpen} onOpenChange={setRatingDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Đánh giá người mua</DialogTitle>
+            <DialogDescription>
+              Vui lòng chọn loại đánh giá và nhập nhận xét của bạn
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-3">
+              <Label>Loại đánh giá</Label>
+              <RadioGroup value={ratingType} onValueChange={(value) => setRatingType(value as '1' | '-1')}>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="1" id="positive" />
+                  <Label htmlFor="positive" className="font-normal cursor-pointer">
+                    Tích cực - Người mua đáng tin cậy
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="-1" id="negative" />
+                  <Label htmlFor="negative" className="font-normal cursor-pointer">
+                    Tiêu cực - Người mua không đáng tin cậy
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="comment">Nhận xét (tùy chọn)</Label>
+              <Textarea
+                id="comment"
+                placeholder="Nhập nhận xét của bạn về người mua..."
+                value={ratingComment}
+                onChange={(e) => setRatingComment(e.target.value)}
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRatingDialogOpen(false)}>
+              Hủy
+            </Button>
+            <Button 
+              onClick={submitRating}
+              disabled={selectedOrderId ? actionLoading[selectedOrderId] === 'rating' : false}
+              className={ratingType === '1' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+            >
+              {selectedOrderId && actionLoading[selectedOrderId] === 'rating' ? 'Đang gửi...' : 'Gửi đánh giá'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

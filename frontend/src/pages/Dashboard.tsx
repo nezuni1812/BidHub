@@ -14,6 +14,10 @@ import { getWatchlist } from "@/lib/watchlist"
 import { formatPrice, formatTimeRemaining, getImageUrl, type Product } from "@/lib/products"
 import { api } from "@/lib/api"
 import { useToast } from "@/components/ui/use-toast"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Textarea } from "@/components/ui/textarea"
 
 interface SellerProduct {
   id: number
@@ -37,6 +41,10 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'active' | 'watchlist' | 'won' | 'selling'>('active');
   const [actionLoading, setActionLoading] = useState<Record<number, string>>({});
+  const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [ratingType, setRatingType] = useState<'1' | '-1'>('1');
+  const [ratingComment, setRatingComment] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -118,6 +126,45 @@ export default function DashboardPage() {
       });
     } finally {
       setActionLoading(prev => ({ ...prev, [orderId]: '' }));
+    }
+  };
+
+  const openRatingDialog = (orderId: number) => {
+    setSelectedOrderId(orderId);
+    setRatingType('1');
+    setRatingComment('');
+    setRatingDialogOpen(true);
+  };
+
+  const submitRating = async () => {
+    if (!selectedOrderId) return;
+    
+    try {
+      setActionLoading(prev => ({ ...prev, [selectedOrderId]: 'rating' }));
+      
+      await rateSeller(selectedOrderId, parseInt(ratingType) as 1 | -1, ratingComment);
+      
+      toast({
+        title: "Thành công",
+        description: ratingType === '1' ? "Đã gửi đánh giá tích cực" : "Đã gửi đánh giá tiêu cực",
+      });
+      
+      setRatingDialogOpen(false);
+      setSelectedOrderId(null);
+      setRatingComment('');
+      
+      // Refresh data
+      const wonData = await getWonProducts(1, 20);
+      setWonItems(wonData.data);
+    } catch (error: any) {
+      console.error('Error rating seller:', error);
+      toast({
+        title: "Lỗi",
+        description: error.response?.data?.message || "Không thể gửi đánh giá",
+        variant: "destructive"
+      });
+    } finally {
+      setActionLoading(prev => ({ ...prev, [selectedOrderId]: '' }));
     }
   };
 
@@ -404,26 +451,15 @@ export default function DashboardPage() {
                               </Button>
                             </Link>
                             {!item.buyer_rating ? (
-                              <>
-                                <Button 
-                                  size="sm" 
-                                  className="bg-yellow-600 hover:bg-yellow-700"
-                                  onClick={() => handleRateSeller(item.order_id!, 1)}
-                                  disabled={actionLoading[item.order_id!] === 'rating'}
-                                >
-                                  <Star className="w-4 h-4 mr-1" />
-                                  {actionLoading[item.order_id!] === 'rating' ? 'Đang gửi...' : 'Đánh giá tích cực'}
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="destructive"
-                                  onClick={() => handleRateSeller(item.order_id!, -1)}
-                                  disabled={actionLoading[item.order_id!] === 'rating'}
-                                >
-                                  <Star className="w-4 h-4 mr-1" />
-                                  {actionLoading[item.order_id!] === 'rating' ? 'Đang gửi...' : 'Đánh giá tiêu cực'}
-                                </Button>
-                              </>
+                              <Button 
+                                size="sm" 
+                                className="bg-yellow-600 hover:bg-yellow-700"
+                                onClick={() => openRatingDialog(item.order_id!)}
+                                disabled={actionLoading[item.order_id!] === 'rating'}
+                              >
+                                <Star className="w-4 h-4 mr-1" />
+                                Đánh giá
+                              </Button>
                             ) : (
                               <Badge className={item.buyer_rating === 1 ? "bg-green-600" : "bg-red-600"}>
                                 <Star className="w-4 h-4 mr-1" />
@@ -541,6 +577,59 @@ export default function DashboardPage() {
           )}
         </Tabs>
       </div>
+
+      {/* Rating Dialog */}
+      <Dialog open={ratingDialogOpen} onOpenChange={setRatingDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Đánh giá người bán</DialogTitle>
+            <DialogDescription>
+              Vui lòng chọn loại đánh giá và nhập nhận xét của bạn
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-3">
+              <Label>Loại đánh giá</Label>
+              <RadioGroup value={ratingType} onValueChange={(value) => setRatingType(value as '1' | '-1')}>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="1" id="positive" />
+                  <Label htmlFor="positive" className="font-normal cursor-pointer">
+                    Tích cực - Người bán đáng tin cậy
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="-1" id="negative" />
+                  <Label htmlFor="negative" className="font-normal cursor-pointer">
+                    Tiêu cực - Người bán không đáng tin cậy
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="comment">Nhận xét (tùy chọn)</Label>
+              <Textarea
+                id="comment"
+                placeholder="Nhập nhận xét của bạn về người bán..."
+                value={ratingComment}
+                onChange={(e) => setRatingComment(e.target.value)}
+                rows={4}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRatingDialogOpen(false)}>
+              Hủy
+            </Button>
+            <Button 
+              onClick={submitRating}
+              disabled={selectedOrderId ? actionLoading[selectedOrderId] === 'rating' : false}
+              className={ratingType === '1' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+            >
+              {selectedOrderId && actionLoading[selectedOrderId] === 'rating' ? 'Đang gửi...' : 'Gửi đánh giá'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
