@@ -544,3 +544,26 @@ $$ language 'plpgsql';
 
 CREATE TRIGGER trigger_update_user_rating AFTER INSERT OR UPDATE ON user_ratings
     FOR EACH ROW EXECUTE FUNCTION update_user_rating();
+
+-- Migration: Fix user_ratings score constraint to accept 1 or -1
+-- Date: 2025-12-21
+-- Description: Change score constraint from 1-5 to accept only 1 (positive) or -1 (negative)
+
+-- Drop the old constraint
+ALTER TABLE user_ratings
+DROP CONSTRAINT IF EXISTS user_ratings_score_check;
+
+-- Add new constraint that accepts only 1 or -1
+ALTER TABLE user_ratings
+ADD CONSTRAINT user_ratings_score_check CHECK (score IN (1, -1));
+
+-- Verify the constraint
+SELECT
+    con.conname AS constraint_name,
+    pg_get_constraintdef(con.oid) AS constraint_definition
+FROM
+    pg_constraint con
+    JOIN pg_class rel ON rel.oid = con.conrelid
+WHERE
+    rel.relname = 'user_ratings'
+    AND con.conname = 'user_ratings_score_check';

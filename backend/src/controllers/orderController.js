@@ -260,6 +260,14 @@ const rateTransaction = asyncHandler(async (req, res) => {
     throw new ForbiddenError('You do not have permission to rate this order');
   }
 
+  // Check if already rated
+  if (isBuyer && order.buyer_rating !== null) {
+    throw new BadRequestError('You have already rated this order');
+  }
+  if (isSeller && order.seller_rating !== null) {
+    throw new BadRequestError('You have already rated this order');
+  }
+
   // Validate rating
   if (![1, -1].includes(rating)) {
     throw new BadRequestError('Rating must be 1 or -1');

@@ -25,9 +25,14 @@ export interface WonProduct {
   title: string;
   final_price: string;
   seller_name: string;
+  seller_email?: string;
   won_date: string;
   order_status?: string;
   main_image: string;
+  buyer_rating?: number | null;
+  seller_rating?: number | null;
+  buyer_rated_at?: string | null;
+  seller_rated_at?: string | null;
 }
 
 export interface DashboardResponse<T> {
@@ -73,3 +78,32 @@ export const getWonProducts = async (
     pagination: response.pagination || { page: 1, page_size: 20, total_items: 0, total_pages: 0 }
   };
 };
+
+/**
+ * Confirm delivery (buyer confirms they received the item)
+ */
+export async function confirmDelivery(orderId: number) {
+  const response = await api.put(`/orders/${orderId}/confirm-delivery`);
+  return response.data;
+}
+
+/**
+ * Rate seller (buyer rates seller)
+ */
+export async function rateSeller(orderId: number, rating: 1 | -1, comment?: string) {
+  const response = await api.post(`/orders/${orderId}/rate`, {
+    rating,
+    comment: comment || ''
+  });
+  return response.data;
+}
+
+/**
+ * Cancel order (buyer can cancel before payment)
+ */
+export async function cancelOrder(orderId: number, reason?: string) {
+  const response = await api.put(`/orders/${orderId}/cancel`, {
+    reason: reason || ''
+  });
+  return response.data;
+}

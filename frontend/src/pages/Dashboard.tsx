@@ -6,10 +6,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Link } from "react-router-dom"
-import { Heart, ShoppingCart, Trophy, Package, Edit, Eye, Trash2, MessageCircle } from "lucide-react"
+import { Heart, ShoppingCart, Trophy, Package, Edit, Eye, Trash2, MessageCircle, CheckCircle, Star, XCircle } from "lucide-react"
 import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/AuthContext"
-import { getActiveBids, getWonProducts, type BiddingProduct, type WonProduct } from "@/lib/dashboard"
+import { getActiveBids, getWonProducts, confirmDelivery, rateSeller, cancelOrder as cancelBuyerOrder, type BiddingProduct, type WonProduct } from "@/lib/dashboard"
 import { getWatchlist } from "@/lib/watchlist"
 import { formatPrice, formatTimeRemaining, getImageUrl, type Product } from "@/lib/products"
 import { api } from "@/lib/api"
@@ -36,6 +36,7 @@ export default function DashboardPage() {
   const [sellerProducts, setSellerProducts] = useState<SellerProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'active' | 'watchlist' | 'won' | 'selling'>('active');
+  const [actionLoading, setActionLoading] = useState<Record<number, string>>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -64,6 +65,90 @@ export default function DashboardPage() {
     
     fetchData();
   }, [activeTab, user]);
+
+  const handleConfirmDelivery = async (orderId: number) => {
+    try {
+      setActionLoading(prev => ({ ...prev, [orderId]: 'confirming' }));
+      
+      await confirmDelivery(orderId);
+      
+      toast({
+        title: "Thành công",
+        description: "Đã xác nhận nhận hàng",
+      });
+      
+      // Refresh data
+      const wonData = await getWonProducts(1, 20);
+      setWonItems(wonData.data);
+    } catch (error: any) {
+      console.error('Error confirming delivery:', error);
+      toast({
+        title: "Lỗi",
+        description: error.response?.data?.message || "Không thể xác nhận nhận hàng",
+        variant: "destructive"
+      });
+    } finally {
+      setActionLoading(prev => ({ ...prev, [orderId]: '' }));
+    }
+  };
+
+  const handleRateSeller = async (orderId: number, rating: 1 | -1) => {
+    const comment = prompt(rating === 1 ? "Nhập đánh giá tích cực (tùy chọn):" : "Nhập lý do đánh giá tiêu cực:");
+    if (comment === null) return; // User cancelled
+    
+    try {
+      setActionLoading(prev => ({ ...prev, [orderId]: 'rating' }));
+      
+      await rateSeller(orderId, rating, comment);
+      
+      toast({
+        title: "Thành công",
+        description: rating === 1 ? "Đã gửi đánh giá tích cực" : "Đã gửi đánh giá tiêu cực",
+      });
+      
+      // Refresh data
+      const wonData = await getWonProducts(1, 20);
+      setWonItems(wonData.data);
+    } catch (error: any) {
+      console.error('Error rating seller:', error);
+      toast({
+        title: "Lỗi",
+        description: error.response?.data?.message || "Không thể gửi đánh giá",
+        variant: "destructive"
+      });
+    } finally {
+      setActionLoading(prev => ({ ...prev, [orderId]: '' }));
+    }
+  };
+
+  const handleCancelOrder = async (orderId: number) => {
+    const reason = prompt("Nhập lý do hủy đơn (tùy chọn):");
+    if (reason === null) return; // User cancelled
+    
+    try {
+      setActionLoading(prev => ({ ...prev, [orderId]: 'cancelling' }));
+      
+      await cancelBuyerOrder(orderId, reason);
+      
+      toast({
+        title: "Thành công",
+        description: "Đã hủy đơn hàng",
+      });
+      
+      // Refresh data
+      const wonData = await getWonProducts(1, 20);
+      setWonItems(wonData.data);
+    } catch (error: any) {
+      console.error('Error cancelling order:', error);
+      toast({
+        title: "Lỗi",
+        description: error.response?.data?.message || "Không thể hủy đơn hàng",
+        variant: "destructive"
+      });
+    } finally {
+      setActionLoading(prev => ({ ...prev, [orderId]: '' }));
+    }
+  };
 
   if (!user) {
     return (
@@ -258,21 +343,112 @@ export default function DashboardPage() {
                         <span>{new Date(item.won_date).toLocaleDateString('vi-VN')}</span>
                       </div>
                       <div className="flex gap-2 flex-wrap">
+                        {/* Thanh toán */}
                         {item.order_status === 'pending_payment' && item.order_id && (
+                          <>
+                            <Link to={`/checkout/${item.order_id}`}>
+                              <Button size="sm" className="bg-primary">
+                                Tiến hành thanh toán
+                              </Button>
+                            </Link>
+                            <Button 
+                              size="sm" 
+                              variant="destructive"
+                              onClick={() => handleCancelOrder(item.order_id!)}
+                              disabled={actionLoading[item.order_id!] === 'cancelling'}
+                            >
+                              <XCircle className="w-4 h-4 mr-1" />
+                              {actionLoading[item.order_id!] === 'cancelling' ? 'Đang hủy...' : 'Hủy đơn'}
+                            </Button>
+                          </>
+                        )}
+                        
+                        {/* Đã thanh toán - Xem chi tiết */}
+                        {item.order_status === 'paid' && item.order_id && (
                           <Link to={`/checkout/${item.order_id}`}>
-                            <Button size="sm" className="bg-primary">
-                              Tiến hành thanh toán
+                            <Button size="sm" variant="outline">
+                              <Eye className="w-4 h-4 mr-1" />
+                              Xem chi tiết
                             </Button>
                           </Link>
                         )}
-                        {item.order_status === 'paid' && (
-                          <Badge className="bg-green-600">Đã thanh toán</Badge>
+                        
+                        {/* Đang giao hàng - Xem chi tiết + Xác nhận nhận hàng */}
+                        {item.order_status === 'shipping' && item.order_id && (
+                          <>
+                            <Link to={`/checkout/${item.order_id}`}>
+                              <Button size="sm" variant="outline">
+                                <Eye className="w-4 h-4 mr-1" />
+                                Xem chi tiết
+                              </Button>
+                            </Link>
+                            <Button 
+                              size="sm" 
+                              className="bg-green-600 hover:bg-green-700"
+                              onClick={() => handleConfirmDelivery(item.order_id!)}
+                              disabled={actionLoading[item.order_id!] === 'confirming'}
+                            >
+                              <CheckCircle className="w-4 h-4 mr-1" />
+                              {actionLoading[item.order_id!] === 'confirming' ? 'Đang xác nhận...' : 'Đã nhận hàng'}
+                            </Button>
+                          </>
                         )}
+                        
+                        {/* Đã giao hàng - Xem chi tiết + Đánh giá */}
+                        {item.order_status === 'delivered' && item.order_id && (
+                          <>
+                            <Link to={`/checkout/${item.order_id}`}>
+                              <Button size="sm" variant="outline">
+                                <Eye className="w-4 h-4 mr-1" />
+                                Xem chi tiết
+                              </Button>
+                            </Link>
+                            {!item.buyer_rating ? (
+                              <>
+                                <Button 
+                                  size="sm" 
+                                  className="bg-yellow-600 hover:bg-yellow-700"
+                                  onClick={() => handleRateSeller(item.order_id!, 1)}
+                                  disabled={actionLoading[item.order_id!] === 'rating'}
+                                >
+                                  <Star className="w-4 h-4 mr-1" />
+                                  {actionLoading[item.order_id!] === 'rating' ? 'Đang gửi...' : 'Đánh giá tích cực'}
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="destructive"
+                                  onClick={() => handleRateSeller(item.order_id!, -1)}
+                                  disabled={actionLoading[item.order_id!] === 'rating'}
+                                >
+                                  <Star className="w-4 h-4 mr-1" />
+                                  {actionLoading[item.order_id!] === 'rating' ? 'Đang gửi...' : 'Đánh giá tiêu cực'}
+                                </Button>
+                              </>
+                            ) : (
+                              <Badge className={item.buyer_rating === 1 ? "bg-green-600" : "bg-red-600"}>
+                                <Star className="w-4 h-4 mr-1" />
+                                Đã đánh giá: {item.buyer_rating === 1 ? 'Tích cực' : 'Tiêu cực'}
+                              </Badge>
+                            )}
+                          </>
+                        )}
+                        
+                        {/* Hoàn thành - Chỉ xem chi tiết */}
+                        {item.order_status === 'completed' && item.order_id && (
+                          <Link to={`/checkout/${item.order_id}`}>
+                            <Button size="sm" variant="outline">
+                              <Eye className="w-4 h-4 mr-1" />
+                              Xem chi tiết
+                            </Button>
+                          </Link>
+                        )}
+                        
+                        {/* Chat với người bán */}
                         {item.order_id && (
                           <Link to={`/chat`}>
                             <Button size="sm" variant="outline" className="gap-2">
                               <MessageCircle className="w-4 h-4" />
-                              Nhắn tin với người bán
+                              Nhắn tin
                             </Button>
                           </Link>
                         )}

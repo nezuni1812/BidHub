@@ -118,7 +118,11 @@ class Bid {
         o.id as order_id,
         o.order_status as order_status,
         o.payment_status as payment_status,
-        o.shipping_status as shipping_status
+        o.shipping_status as shipping_status,
+        o.buyer_rating as buyer_rating,
+        o.seller_rating as seller_rating,
+        o.buyer_rated_at as buyer_rated_at,
+        o.seller_rated_at as seller_rated_at
       FROM products p
       JOIN users u ON p.seller_id = u.id
       LEFT JOIN orders o ON o.product_id = p.id AND o.buyer_id = $1

@@ -37,6 +37,10 @@ export interface SellerOrder {
   order_status: string;
   created_at: string;
   paid_at: string | null;
+  buyer_rating?: number | null;
+  seller_rating?: number | null;
+  buyer_rated_at?: string | null;
+  seller_rated_at?: string | null;
 }
 
 /**
@@ -111,6 +115,37 @@ export async function getSellerProducts(page = 1, pageSize = 10) {
  */
 export async function getSellerOrders(page = 1, pageSize = 10) {
   const response = await api.get(`/orders/seller?page=${page}&page_size=${pageSize}`);
+  return response.data;
+}
+
+/**
+ * Update order shipping status (seller marks as shipped)
+ */
+export async function markAsShipped(orderId: number, trackingNumber?: string) {
+  const response = await api.put(`/orders/${orderId}/shipping`, {
+    tracking_number: trackingNumber || ''
+  });
+  return response.data;
+}
+
+/**
+ * Cancel order (seller can cancel anytime)
+ */
+export async function cancelOrder(orderId: number, reason?: string) {
+  const response = await api.put(`/orders/${orderId}/cancel`, {
+    reason: reason || ''
+  });
+  return response.data;
+}
+
+/**
+ * Rate buyer (seller rates buyer)
+ */
+export async function rateBuyer(orderId: number, rating: 1 | -1, comment?: string) {
+  const response = await api.post(`/orders/${orderId}/rate`, {
+    rating,
+    comment: comment || ''
+  });
   return response.data;
 }
 
