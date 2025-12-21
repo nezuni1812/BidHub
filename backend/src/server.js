@@ -6,6 +6,7 @@ const morgan = require('morgan');
 const compression = require('compression');
 const swaggerUi = require('swagger-ui-express');
 const passport = require('./config/passport');
+const { logger, errorLogger, winstonInstance } = require('./config/logger');
 require('dotenv').config();
 
 const config = require('./config');
@@ -43,6 +44,9 @@ app.use(morgan(config.env === 'development' ? 'dev' : 'combined'));
 app.use(express.json({ charset: 'utf-8' }));
 app.use(express.urlencoded({ extended: true, charset: 'utf-8' }));
 
+// Winston logger middleware (logs all HTTP requests)
+app.use(logger);
+
 // Initialize Passport
 app.use(passport.initialize());
 
@@ -72,6 +76,7 @@ const io = initSocket(server);
 app.set('io', io);
 
 // Error handlers
+app.use(errorLogger); // Winston error logger
 app.use(notFound);
 app.use(errorHandler);
 
@@ -97,6 +102,11 @@ server.listen(PORT, async () => {
 ║  http://localhost:${PORT}${config.apiPrefix}      ║
 ║                                            ║
 ║  🔌 WebSocket:                             ║
+║                                            ║
+║  📊 Logging:                               ║
+║  Files:         ./logs/*.json              ║
+║  Elasticsearch: ${process.env.ELASTICSEARCH_URL || 'http://localhost:9200'.padEnd(23)}║
+║  Kibana:        http://localhost:5601      ║
 ║  ws://localhost:${PORT}                      ║
 ║                                            ║
 ╚════════════════════════════════════════════╝
