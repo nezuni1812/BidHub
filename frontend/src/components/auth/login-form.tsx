@@ -2,8 +2,9 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Link, useNavigate } from "react-router-dom";
+import ReCAPTCHA from "react-google-recaptcha"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -20,6 +21,8 @@ export function LoginForm() {
     password: ''
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null)
+  const recaptchaRef = useRef<ReCAPTCHA>(null)
   
   const navigate = useNavigate()
   const { login: loginUser } = useAuth()
@@ -47,6 +50,15 @@ export function LoginForm() {
       newErrors.password = 'Password is required'
     }
     
+    if (!recaptchaToken) {
+      newErrors.recaptcha = 'Please verify you are not a robot'
+      toast({
+        variant: "destructive",
+        title: "Verification required",
+        description: "Please complete the reCAPTCHA verification",
+      })
+    }
+    
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -59,7 +71,10 @@ export function LoginForm() {
     setIsLoading(true)
     
     try {
-      const response = await login(formData)
+      const response = await login({
+        ...formData,
+        recaptchaToken
+      })
       
       if (response.success && response.data) {
         // Save auth data
@@ -82,6 +97,10 @@ export function LoginForm() {
         }
       }
     } catch (error: any) {
+      // Reset reCAPTCHA on error
+      setRecaptchaToken(null)
+      recaptchaRef.current?.reset()
+      
       toast({
         variant: "destructive",
         title: "Login failed",
@@ -146,6 +165,29 @@ export function LoginForm() {
             {errors.password && (
               <p className="text-sm text-destructive">{errors.password}</p>
             )}
+          </div>
+
+          {/* reCAPTCHA */}
+          <div className="flex justify-center">
+            <ReCAPTCHA
+              ref={recaptchaRef}
+              sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+              onChange={(token) => {
+                setRecaptchaToken(token)
+                if (errors.recaptcha) {
+                  setErrors(prev => ({ ...prev, recaptcha: '' }))
+                }
+              }}
+              onExpired={() => setRecaptchaToken(null)}
+              onErrored={() => {
+                setRecaptchaToken(null)
+                toast({
+                  variant: "destructive",
+                  title: "reCAPTCHA Error",
+                  description: "Failed to load reCAPTCHA. Please refresh the page.",
+                })
+              }}
+            />
           </div>
 
           <Button type="submit" className="w-full" disabled={isLoading}>

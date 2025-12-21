@@ -7,6 +7,7 @@ const { sendOTPEmail, sendPasswordResetEmail } = require('../utils/email');
 const { generateAccessToken, generateRefreshToken, verifyRefreshToken } = require('../utils/jwt');
 const db = require('../config/database');
 const passport = require('../config/passport');
+const axios = require('axios');
 
 /**
  * @desc    Register new user
@@ -139,7 +140,46 @@ const resendOTP = asyncHandler(async (req, res) => {
  * @access  Public
  */
 const login = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, recaptchaToken } = req.body;
+  
+  // Verify reCAPTCHA
+  if (!recaptchaToken) {
+    throw new BadRequestError('reCAPTCHA verification required');
+  }
+
+  console.log('=== reCAPTCHA DEBUG ===');
+  console.log('Token received:', recaptchaToken);
+  console.log('Secret key configured:', process.env.RECAPTCHA_SECRET_KEY ? 'Yes' : 'No');
+  console.log('Secret key (first 10 chars):', process.env.RECAPTCHA_SECRET_KEY?.substring(0, 10));
+
+  try {
+    const recaptchaResponse = await axios.post(
+      `https://www.google.com/recaptcha/api/siteverify`,
+      null,
+      {
+        params: {
+          secret: process.env.RECAPTCHA_SECRET_KEY,
+          response: recaptchaToken
+        }
+      }
+    );
+
+    console.log('reCAPTCHA API Response:', JSON.stringify(recaptchaResponse.data, null, 2));
+
+    if (!recaptchaResponse.data.success) {
+      console.log('reCAPTCHA verification failed. Error codes:', recaptchaResponse.data['error-codes']);
+      throw new BadRequestError('reCAPTCHA verification failed');
+    }
+    
+    console.log('reCAPTCHA verification successful!');
+    console.log('=======================');
+  } catch (error) {
+    console.error('reCAPTCHA verification error:', error);
+    if (error.response) {
+      console.error('Error response data:', error.response.data);
+    }
+    throw new BadRequestError('Failed to verify reCAPTCHA');
+  }
   
   const user = await User.findByEmail(email);
   
