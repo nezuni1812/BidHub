@@ -41,9 +41,20 @@ export default function SellerDashboardPage() {
         getSellerProducts(),
         getSellerOrders()
       ]);
+      console.log('📊 Stats:', statsData);
+      console.log('📦 Products response:', productsData);
+      console.log('📋 Orders response:', ordersData);
+      
       setStats(statsData);
-      setProducts(productsData.items || []);
-      setOrders(ordersData.items || []);
+      // productsData has nested structure: data.items
+      const productItems = productsData.items || [];
+      console.log('✅ Setting products:', productItems.length, 'items');
+      setProducts(productItems);
+      
+      // ordersData has data directly
+      const orderItems = ordersData || [];
+      console.log('✅ Setting orders:', orderItems.length, 'items');
+      setOrders(orderItems);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -134,7 +145,7 @@ export default function SellerDashboardPage() {
                         </div>
                         <div>
                           <p className="text-xs">Lượt xem</p>
-                          <p className="font-semibold text-foreground">{item.views}</p>
+                          <p className="font-semibold text-foreground">{item.views || 0}</p>
                         </div>
                         <div>
                           <p className="text-xs">Thời gian còn lại</p>
@@ -174,8 +185,8 @@ export default function SellerDashboardPage() {
                   <div className="flex flex-col gap-4">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="font-semibold text-lg">{order.product_title}</h3>
-                      <Badge variant="outline" className={order.payment_status === 'paid' ? 'bg-green-50' : ''}>
-                        {order.payment_status === 'paid' ? 'Đã thanh toán' : 'Chờ thanh toán'}
+                      <Badge variant="outline" className={order.payment_status === 'completed' ? 'bg-green-50' : ''}>
+                        {order.payment_status === 'completed' ? 'Đã thanh toán' : 'Chờ thanh toán'}
                       </Badge>
                     </div>
                     
@@ -195,7 +206,7 @@ export default function SellerDashboardPage() {
                     </div>
 
                     {/* Show address when paid */}
-                    {order.payment_status === 'paid' && order.buyer_address && (
+                    {order.payment_status === 'completed' && order.buyer_address && (
                       <div className="border-t pt-4 mt-2">
                         <p className="text-sm font-semibold mb-2">Địa chỉ giao hàng:</p>
                         <div className="flex items-start gap-2 text-sm">
