@@ -10,6 +10,7 @@ const Rating = require('../models/Rating');
 const UpgradeRequest = require('../models/UpgradeRequest');
 const AutoBid = require('../models/AutoBid');
 const Order = require('../models/Order');
+const DeniedBidder = require('../models/DeniedBidder');
 const db = require('../config/database');
 const EVENTS = require('../socket/events');
 
@@ -350,6 +351,12 @@ const setAutoBid = asyncHandler(async (req, res) => {
   // Check not seller
   if (product.seller_id === req.user.id) {
     throw new ForbiddenError('Cannot bid on your own product');
+  }
+
+  // Check if user is denied
+  const isDenied = await DeniedBidder.isDenied(product_id, req.user.id);
+  if (isDenied) {
+    throw new ForbiddenError('You have been denied from bidding on this product');
   }
 
   // Check auction not ended

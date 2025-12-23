@@ -10,6 +10,7 @@ import { useState, useEffect } from "react"
 import { BidDialog } from "@/components/bid-dialog"
 import { AskQuestionDialog } from "@/components/ask-question-dialog"
 import { AppendDescriptionDialog } from "@/components/append-description-dialog"
+import { DenyBidderDialog } from "@/components/deny-bidder-dialog"
 import { useParams, Link } from "react-router-dom"
 import { getProductById, getProductBids, formatPrice, formatTimeRemaining, getImageUrl, type Product, type Bid } from "@/lib/products"
 import { io, Socket } from "socket.io-client"
@@ -31,6 +32,8 @@ export default function ProductDetail() {
     const [currentImageIndex, setCurrentImageIndex] = useState(0)
     const [showBidDialog, setShowBidDialog] = useState(false)
     const [showQuestionDialog, setShowQuestionDialog] = useState(false)
+    const [showDenyDialog, setShowDenyDialog] = useState(false)
+    const [selectedBidder, setSelectedBidder] = useState<{ id: number; name: string } | null>(null)
     const [socket, setSocket] = useState<Socket | null>(null)
     const [myMaxPrice, setMyMaxPrice] = useState<number | null>(null)
     
@@ -205,6 +208,65 @@ export default function ProductDetail() {
             });
         });
         
+        // Listen for bidder denied events
+        newSocket.on('bidder-denied', (data: any) => {
+            console.log('🚫 Bidder denied:', data);
+            toast({
+                title: "🚫 Bạn đã bị từ chối đấu giá",
+                description: data.reason || "Người bán đã từ chối bạn tham gia đấu giá sản phẩm này",
+                variant: "destructive"
+            });
+            
+            // Refresh product data
+            if (id) {
+                getProductById(id).then(productData => {
+                    setProduct(productData);
+                    getProductBids(id).then(bidsData => {
+                        setBids(bidsData.data);
+                    });
+                });
+            }
+        });
+        
+        // Listen for price updates (when highest bidder is denied)
+        newSocket.on('price-updated', (data: any) => {
+            console.log('💰 Price updated:', data);
+            
+            // Refresh full product data to get new winner_id
+            if (id) {
+                getProductById(id).then(productData => {
+                    setProduct(productData);
+                });
+                getProductBids(id).then(bidsData => {
+                    setBids(bidsData.data);
+                });
+            }
+            
+            if (data.reason === 'bidder_denied') {
+                toast({
+                    title: "💰 Giá đã thay đổi",
+                    description: `Giá mới: ${formatPrice(data.new_price)} (người đấu giá cao nhất đã bị từ chối)`,
+                });
+            }
+        });
+        
+        // Listen for now winning (when you become the highest bidder after someone is denied)
+        newSocket.on('now-winning', (data: any) => {
+            console.log('🎉 Now winning:', data);
+            
+            // Refresh full product data to update winner status
+            if (id) {
+                getProductById(id).then(productData => {
+                    setProduct(productData);
+                });
+            }
+            
+            toast({
+                title: "🎉 Bạn đang dẫn đầu!",
+                description: `Giá của bạn ${formatPrice(data.bid_price)} hiện đang cao nhất`,
+            });
+        });
+        
         // Listen for new questions
         newSocket.on('new-question', (data: any) => {
             console.log('❓ New question posted:', data);
@@ -341,6 +403,55 @@ export default function ProductDetail() {
             });
         } catch (err) {
             console.error('❌ Error asking question:', err);
+            throw err;
+        }
+    };
+    
+    const handleDenyBidder = async (bidderId: number, reason: string): Promise<void> => {
+        if (!id) {
+            throw new Error('Product ID not found');
+        }
+        
+        try {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                throw new Error('Vui lòng đăng nhập');
+            }
+            
+            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+            const response = await fetch(`${API_URL}/seller/products/${id}/deny-bidder`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ bidder_id: bidderId, reason })
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Không thể từ chối người đấu giá');
+            }
+            
+            const result = await response.json();
+            
+            // Refresh bids and product data
+            const [updatedProduct, bidsData] = await Promise.all([
+                getProductById(id),
+                getProductBids(id)
+            ]);
+            
+            setProduct(updatedProduct);
+            setBids(bidsData.data);
+            
+            toast({
+                title: "✅ Đã từ chối người đấu giá",
+                description: result.data.price_changed 
+                    ? `Giá đã cập nhật từ ${formatPrice(result.data.previous_price)} thành ${formatPrice(result.data.new_price)}`
+                    : "Người đấu giá đã bị từ chối"
+            });
+        } catch (err) {
+            console.error('❌ Error denying bidder:', err);
             throw err;
         }
     };
@@ -711,24 +822,50 @@ export default function ProductDetail() {
                                     {bids.length === 0 ? (
                                         <p className="text-muted-foreground text-center py-4">Chưa có lượt đặt giá nào</p>
                                     ) : (
-                                        bids.map((bid) => (
-                                            <div key={bid.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="font-semibold">{bid.masked_bidder_name}</span>
-                                                        {bid.is_auto && (
-                                                            <Badge variant="secondary" className="text-xs">Auto</Badge>
+                                        bids.map((bid) => {
+                                            if (isSeller) {
+                                                console.log('[DEBUG] isSeller:', isSeller, 'product.status:', product.status, 'bid.user_id:', (bid as any).user_id, 'bid:', bid);
+                                            }
+                                            const isDenied = (bid as any).is_denied;
+                                            return (
+                                                <div key={bid.id} className={`flex items-center justify-between gap-3 p-3 rounded-lg ${isDenied ? 'bg-destructive/10 border border-destructive/20' : 'bg-muted/50'}`}>
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <span className={`font-semibold ${isDenied ? 'line-through text-muted-foreground' : ''}`}>{bid.masked_bidder_name}</span>
+                                                            {bid.is_auto && (
+                                                                <Badge variant="secondary" className="text-xs">Auto</Badge>
+                                                            )}
+                                                            {isDenied && (
+                                                                <Badge variant="destructive" className="text-xs">🚫 Đã bị từ chối</Badge>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            {new Date(bid.created_at).toLocaleString('vi-VN')}
+                                                        </p>
+                                                    </div>
+                                                    <div className="text-right flex items-center gap-2">
+                                                        <div>
+                                                            <p className={`font-bold ${isDenied ? 'text-muted-foreground line-through' : 'text-primary'}`}>{formatPrice(parseFloat(bid.bid_price as any))}</p>
+                                                        </div>
+                                                        {isSeller && product.status === 'active' && (bid as any).user_id && !isDenied && (
+                                                            <Button
+                                                                variant="destructive"
+                                                                size="sm"
+                                                                onClick={() => {
+                                                                    setSelectedBidder({
+                                                                        id: (bid as any).user_id,
+                                                                        name: bid.masked_bidder_name || 'Unknown'
+                                                                    });
+                                                                    setShowDenyDialog(true);
+                                                                }}
+                                                            >
+                                                                Từ chối
+                                                            </Button>
                                                         )}
                                                     </div>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {new Date(bid.created_at).toLocaleString('vi-VN')}
-                                                    </p>
                                                 </div>
-                                                <div className="text-right">
-                                                    <p className="font-bold text-primary">{formatPrice(parseFloat(bid.bid_price as any))}</p>
-                                                </div>
-                                            </div>
-                                        ))
+                                            );
+                                        })
                                     )}
                                 </div>
                             </Card>
@@ -815,6 +952,20 @@ export default function ProductDetail() {
                 sellerName={product.seller_name}
                 onAsk={handleAskQuestion}
             />
+
+            {selectedBidder && (
+                <DenyBidderDialog
+                    isOpen={showDenyDialog}
+                    onClose={() => {
+                        setShowDenyDialog(false);
+                        setSelectedBidder(null);
+                    }}
+                    bidderName={selectedBidder.name}
+                    bidderId={selectedBidder.id}
+                    productId={parseInt(id!)}
+                    onDeny={handleDenyBidder}
+                />
+            )}
         </div>
     )
 }

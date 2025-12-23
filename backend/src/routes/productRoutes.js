@@ -6,6 +6,7 @@ const {
   getProductById,
   getProductBids
 } = require('../controllers/productController');
+const { optionalAuth } = require('../middleware/auth');
 
 /**
  * @swagger
@@ -105,6 +106,6 @@ router.get('/:id', getProductById);
  *       200:
  *         description: Success
  */
-router.get('/:id/bids', getProductBids);
+router.get('/:id/bids', optionalAuth, getProductBids);
 
 module.exports = router;

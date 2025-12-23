@@ -173,6 +173,55 @@ class Bid {
     return parseInt(result.rows[0].count);
   }
 
+  /**
+   * Get the highest valid bid excluding denied bidders
+   * @param {number} productId - Product ID
+   * @param {number|null} excludeUserId - User ID to exclude (e.g., denied bidder)
+   * @returns {object|null} Highest bid or null
+   */
+  static async getHighestValidBid(productId, excludeUserId = null) {
+    let query = `
+      SELECT b.*, u.full_name
+      FROM bids b
+      JOIN users u ON b.user_id = u.id
+      WHERE b.product_id = $1
+        AND NOT EXISTS (
+          SELECT 1 FROM denied_bidders db
+          WHERE db.product_id = b.product_id AND db.user_id = b.user_id
+        )
+    `;
+    
+    const params = [productId];
+    
+    if (excludeUserId) {
+      query += ` AND b.user_id != $2`;
+      params.push(excludeUserId);
+    }
+    
+    query += ` ORDER BY b.bid_price DESC, b.created_at ASC LIMIT 1`;
+    
+    const result = await db.query(query, params);
+    return result.rows[0] || null;
+  }
+
+  /**
+   * Get current highest bidder for a product
+   * @param {number} productId - Product ID
+   * @returns {object|null} Current highest bid with user info
+   */
+  static async getCurrentHighestBid(productId) {
+    const query = `
+      SELECT b.*, u.full_name, u.email
+      FROM bids b
+      JOIN users u ON b.user_id = u.id
+      WHERE b.product_id = $1
+      ORDER BY b.bid_price DESC, b.created_at ASC
+      LIMIT 1
+    `;
+    const result = await db.query(query, [productId]);
+    return result.rows[0] || null;
+  }
+
   // ================================================
   // ADMIN METHODS
   // ================================================

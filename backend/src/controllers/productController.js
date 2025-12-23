@@ -73,11 +73,22 @@ const getProductById = asyncHandler(async (req, res) => {
  */
 const getProductBids = asyncHandler(async (req, res) => {
   const { page, page_size } = req.query;
+  const productId = req.params.id;
+  
+  // Check if user is seller to include user_id in response
+  let includeUserId = false;
+  if (req.user) {
+    const product = await Product.getById(productId);
+    if (product && product.seller_id === req.user.id) {
+      includeUserId = true;
+    }
+  }
   
   const result = await Product.getBidHistory(
-    req.params.id,
+    productId,
     page,
-    page_size
+    page_size,
+    includeUserId
   );
   
   res.json({

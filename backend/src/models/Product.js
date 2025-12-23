@@ -271,7 +271,7 @@ class Product {
     };
   }
 
-  static async getBidHistory(productId, page = 1, page_size = 20) {
+  static async getBidHistory(productId, page = 1, page_size = 20, includeUserId = false) {
     const offset = (page - 1) * page_size;
     
     const query = `
@@ -280,9 +280,12 @@ class Product {
         b.bid_price,
         b.is_auto,
         b.created_at,
-        CONCAT(LEFT(u.full_name, 4), REPEAT('*', GREATEST(LENGTH(u.full_name) - 4, 0))) as masked_bidder_name
+        ${includeUserId ? 'b.user_id,' : ''}
+        CONCAT(LEFT(u.full_name, 4), REPEAT('*', GREATEST(LENGTH(u.full_name) - 4, 0))) as masked_bidder_name,
+        CASE WHEN db.id IS NOT NULL THEN true ELSE false END as is_denied
       FROM bids b
       INNER JOIN users u ON b.user_id = u.id
+      LEFT JOIN denied_bidders db ON db.product_id = b.product_id AND db.user_id = b.user_id
       WHERE b.product_id = $1
       ORDER BY b.created_at DESC
       LIMIT $2 OFFSET $3

@@ -197,6 +197,22 @@ exports.denyBidder = asyncHandler(async (req, res) => {
     throw new BadRequestError('Cannot deny yourself');
   }
 
+  if (product.status !== 'active') {
+    throw new BadRequestError('Can only deny bidders for active auctions');
+  }
+
+  // Check if bidder exists and has bid on this product
+  const bidderHasBidQuery = `
+    SELECT COUNT(*) as bid_count
+    FROM bids
+    WHERE product_id = $1 AND user_id = $2
+  `;
+  const bidderHasBid = await db.query(bidderHasBidQuery, [productId, bidder_id]);
+  
+  if (parseInt(bidderHasBid.rows[0].bid_count) === 0) {
+    throw new BadRequestError('This user has not bid on this product');
+  }
+
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
@@ -204,47 +220,37 @@ exports.denyBidder = asyncHandler(async (req, res) => {
     // Add to denied list
     await DeniedBidder.create(productId, bidder_id, reason);
 
-    // Check if denied bidder is current highest bidder
-    const highestBidQuery = `
-      SELECT b.*, u.full_name
-      FROM bids b
-      JOIN users u ON b.user_id = u.id
-      WHERE b.product_id = $1
-      ORDER BY b.bid_price DESC, b.created_at ASC
-      LIMIT 1
-    `;
-    const highestBidResult = await client.query(highestBidQuery, [productId]);
+    // Get current highest bid
+    const currentHighestBid = await Bid.getCurrentHighestBid(productId);
 
-    if (highestBidResult.rows.length > 0 && highestBidResult.rows[0].user_id === bidder_id) {
-      // Find second highest bidder (not denied)
-      const secondHighestQuery = `
-        SELECT b.*
-        FROM bids b
-        WHERE b.product_id = $1
-          AND b.user_id != $2
-          AND NOT EXISTS (
-            SELECT 1 FROM denied_bidders db
-            WHERE db.product_id = b.product_id AND db.user_id = b.user_id
-          )
-        ORDER BY b.bid_price DESC, b.created_at ASC
-        LIMIT 1
-      `;
-      const secondHighestResult = await client.query(secondHighestQuery, [productId, bidder_id]);
+    let priceChanged = false;
+    let newPrice = product.current_price;
+    let secondHighestBidder = null;
 
-      if (secondHighestResult.rows.length > 0) {
-        const secondHighest = secondHighestResult.rows[0];
+    // If denied bidder is the current highest bidder
+    if (currentHighestBid && currentHighestBid.user_id === bidder_id) {
+      // Find the highest valid bid (excluding denied bidder)
+      const nextHighestBid = await Bid.getHighestValidBid(productId, bidder_id);
+
+      if (nextHighestBid) {
+        // Update product to second highest price AND winner
+        newPrice = nextHighestBid.bid_price;
+        secondHighestBidder = nextHighestBid;
         
-        // Update product current_price
         await client.query(
-          'UPDATE products SET current_price = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-          [secondHighest.bid_price, productId]
+          'UPDATE products SET current_price = $1, winner_id = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3',
+          [newPrice, nextHighestBid.user_id, productId]
         );
+        priceChanged = true;
       } else {
-        // No valid bids remaining, reset to start price
+        // No valid bids remaining, reset to start price and clear winner
+        newPrice = product.start_price;
+        
         await client.query(
-          'UPDATE products SET current_price = start_price, total_bids = 0, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
+          'UPDATE products SET current_price = start_price, winner_id = NULL, total_bids = 0, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
           [productId]
         );
+        priceChanged = true;
       }
     }
 
@@ -267,12 +273,45 @@ exports.denyBidder = asyncHandler(async (req, res) => {
       // Don't fail denial if email fails
     }
 
+    // Emit socket event for real-time update
+    const io = req.app.get('io');
+    if (io) {
+      // Notify denied bidder
+      io.to(`user-${bidder_id}`).emit('bidder-denied', {
+        product_id: parseInt(productId),
+        product_title: product.title,
+        reason: reason || 'Không có lý do cụ thể'
+      });
+
+      // If price changed, notify all watchers
+      if (priceChanged) {
+        io.to(`product-${productId}`).emit('price-updated', {
+          product_id: parseInt(productId),
+          new_price: parseFloat(newPrice),
+          reason: 'bidder_denied',
+          denied_bidder_id: bidder_id
+        });
+
+        // Notify new highest bidder if exists
+        if (secondHighestBidder) {
+          io.to(`user-${secondHighestBidder.user_id}`).emit('now-winning', {
+            product_id: parseInt(productId),
+            product_title: product.title,
+            bid_price: parseFloat(secondHighestBidder.bid_price)
+          });
+        }
+      }
+    }
+
     res.json({
       success: true,
       message: 'Bidder denied successfully',
       data: {
-        product_id: productId,
-        denied_user_id: bidder_id
+        product_id: parseInt(productId),
+        denied_user_id: bidder_id,
+        price_changed: priceChanged,
+        new_price: parseFloat(newPrice),
+        previous_price: parseFloat(product.current_price)
       }
     });
   } catch (error) {

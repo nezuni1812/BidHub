@@ -21,6 +21,8 @@ module.exports = {
   AUCTION_ENDED: 'auction-ended',
   PRICE_UPDATE: 'price-update',
   BUY_NOW_SUCCESS: 'buy-now-success',
+  BIDDER_DENIED: 'bidder-denied',
+  NOW_WINNING: 'now-winning',
   
   // Question Events
   NEW_QUESTION: 'new-question',
