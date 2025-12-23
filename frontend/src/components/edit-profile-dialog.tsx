@@ -23,10 +23,20 @@ interface EditProfileDialogProps {
 export function EditProfileDialog({ currentName, currentAddress, currentDateOfBirth, onSave }: EditProfileDialogProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  
+  const getLocalDateString = (dateStr?: string) => {
+    if (!dateStr) return ''
+    const date = new Date(dateStr)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+  
   const [formData, setFormData] = useState({
     name: currentName,
     address: currentAddress,
-    date_of_birth: currentDateOfBirth ? currentDateOfBirth.split('T')[0] : '',
+    date_of_birth: getLocalDateString(currentDateOfBirth),
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
 

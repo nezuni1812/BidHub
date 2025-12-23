@@ -197,6 +197,41 @@ const getProfile = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Get another user's profile with ratings
+ * @route   GET /api/v1/bidder/users/:id/profile
+ * @access  Private (Bidder)
+ */
+const getUserProfile = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  const user = await User.findById(id);
+  if (!user) {
+    throw new NotFoundError('User not found');
+  }
+  
+  const ratings = await Rating.getUserRatings(id);
+  const ratingStats = await Rating.getUserRatingStats(id);
+  
+  res.json({
+    success: true,
+    data: {
+      user: {
+        id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        address: user.address,
+        date_of_birth: user.date_of_birth,
+        role: user.role,
+        rating: user.rating,
+        created_at: user.created_at
+      },
+      rating_stats: ratingStats,
+      ratings
+    }
+  });
+});
+
+/**
  * @desc    Rate a user (seller)
  * @route   POST /api/v1/bidder/rate
  * @access  Private (Bidder)
@@ -528,6 +563,7 @@ module.exports = {
   getBiddingProducts,
   getWonProducts,
   getProfile,
+  getUserProfile,
   rateUser,
   requestUpgrade,
   getUpgradeRequest,

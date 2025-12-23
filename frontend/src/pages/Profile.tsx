@@ -37,7 +37,7 @@ interface UserProfile {
 }
 
 export default function ProfilePage() {
-  const { username } = useParams<{ username: string }>();
+  const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [ratings, setRatings] = useState<Rating[]>([])
@@ -45,26 +45,38 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const isOwnProfile = true // Viewing own profile
+  const isOwnProfile = !id || (user && id === user.id.toString())
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         setLoading(true)
         const token = localStorage.getItem('access_token')
-        if (!token) {
-          setError('Vui lòng đăng nhập để xem hồ sơ')
-          return
-        }
 
         const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'
-        const response = await fetch(`${API_URL}/bidder/profile`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
+        
+        const endpoint = id 
+          ? `${API_URL}/bidder/users/${id}/profile`
+          : `${API_URL}/bidder/profile`
+        
+        const headers: Record<string, string> = {}
+        if (!id) {
+          if (!token) {
+            setError('Vui lòng đăng nhập để xem hồ sơ')
+            return
           }
-        })
+          headers['Authorization'] = `Bearer ${token}`
+        } else if (token) {
+          headers['Authorization'] = `Bearer ${token}`
+        }
+
+        const response = await fetch(endpoint, { headers })
 
         if (!response.ok) {
+          if (response.status === 404) {
+            setError('Không tìm thấy hồ sơ người dùng')
+            return
+          }
           throw new Error('Không thể tải hồ sơ')
         }
 
@@ -81,12 +93,15 @@ export default function ProfilePage() {
     }
 
     fetchProfile()
-  }, [username])
+  }, [id])
 
   const handleProfileUpdate = async (data: { name: string; address: string; date_of_birth?: string }) => {
     try {
       const token = localStorage.getItem('access_token')
-      if (!token) return
+      if (!token) {
+        alert('Vui lòng đăng nhập lại')
+        return
+      }
 
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'
       const requestBody: any = {
@@ -109,7 +124,11 @@ export default function ProfilePage() {
         const result = await response.json()
         // Backend returns data directly, not data.user
         setProfile(result.data)
-        console.log('Profile updated successfully:', result.data)
+        alert('Cập nhật hồ sơ thành công!')
+      } else if (response.status === 401) {
+        alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.')
+        // Optionally redirect to login
+        window.location.href = '/auth/login'
       } else {
         throw new Error('Không thể cập nhật hồ sơ')
       }

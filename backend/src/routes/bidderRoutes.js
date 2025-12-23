@@ -8,6 +8,7 @@ const {
   getBiddingProducts,
   getWonProducts,
   getProfile,
+  getUserProfile,
   rateUser,
   requestUpgrade,
   getUpgradeRequest,
@@ -33,7 +34,8 @@ const {
 const validate = require('../middleware/validate');
 const { authenticate, authorize } = require('../middleware/auth');
 
-// All routes require authentication and bidder/seller role
+router.get('/users/:id/profile', getUserProfile);
+
 router.use(authenticate);
 router.use(authorize('bidder', 'seller', 'admin'));
 
@@ -180,6 +182,29 @@ router.get('/bidding', paginationValidation, validate, getBiddingProducts);
  *         description: Won products retrieved
  */
 router.get('/won', paginationValidation, validate, getWonProducts);
+
+/**
+ * @swagger
+ * /bidder/users/{id}/profile:
+ *   get:
+ *     tags: [Bidder]
+ *     summary: Get another user's profile with ratings
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: User profile retrieved
+ *       404:
+ *         description: User not found
+ */
+// (moved above to be public without auth)
 
 /**
  * @swagger

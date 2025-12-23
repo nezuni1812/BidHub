@@ -108,7 +108,7 @@ export function Navigation() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate(`/profile/${user.email}`)}>
+                  <DropdownMenuItem onClick={() => navigate(`/profile/${user.id}`)}>
                     <User className="mr-2 h-4 w-4" />
                     <span>Hồ sơ</span>
                   </DropdownMenuItem>
