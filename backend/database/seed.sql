@@ -4,6 +4,27 @@
 -- ================================================
 
 -- ================================================
+-- CLEAN UP OLD DATA (Run this before inserting new data)
+-- ================================================
+TRUNCATE TABLE notifications,
+product_description_history,
+auto_bid_configs,
+watchlists,
+user_ratings,
+product_questions,
+bids,
+product_images,
+products,
+users,
+categories,
+denied_bidders,
+unrated_bidder_permissions,
+upgrade_requests,
+refresh_tokens,
+orders,
+chat_messages RESTART IDENTITY CASCADE;
+
+-- ================================================
 -- 1. CATEGORIES (2-level hierarchy)
 -- ================================================
 -- Parent categories (level 1)
@@ -119,7 +140,7 @@ VALUES
         '$2b$10$rICkX.oN8VhHhGUxo6YWkOqGY8fIGHKMmD9cLhDnPmIxC4p1kZ/4K',
         'Hà Nội, Việt Nam',
         '1985-01-15',
-        5.00,
+        0.00,
         true
     ),
 
@@ -132,7 +153,7 @@ VALUES
     '$2b$10$rICkX.oN8VhHhGUxo6YWkOqGY8fIGHKMmD9cLhDnPmIxC4p1kZ/4K',
     '123 Nguyễn Huệ, Q1, HCM',
     '1990-05-20',
-    4.85,
+    0.00,
     true
 ),
 (
@@ -143,7 +164,7 @@ VALUES
     '$2b$10$rICkX.oN8VhHhGUxo6YWkOqGY8fIGHKMmD9cLhDnPmIxC4p1kZ/4K',
     '456 Lê Lợi, Q3, HCM',
     '1988-08-10',
-    4.50,
+    0.00,
     true
 ),
 (
@@ -154,7 +175,7 @@ VALUES
     '$2b$10$rICkX.oN8VhHhGUxo6YWkOqGY8fIGHKMmD9cLhDnPmIxC4p1kZ/4K',
     '789 Hai Bà Trưng, Hà Nội',
     '1992-12-25',
-    4.90,
+    0.00,
     true
 ),
 
@@ -167,7 +188,7 @@ VALUES
     '$2b$10$rICkX.oN8VhHhGUxo6YWkOqGY8fIGHKMmD9cLhDnPmIxC4p1kZ/4K',
     '111 Trần Hưng Đạo, Q5, HCM',
     '1995-03-15',
-    4.20,
+    0.00,
     true
 ),
 (
@@ -178,7 +199,7 @@ VALUES
     '$2b$10$rICkX.oN8VhHhGUxo6YWkOqGY8fIGHKMmD9cLhDnPmIxC4p1kZ/4K',
     '222 Lý Thường Kiệt, Q10, HCM',
     '1993-07-22',
-    4.70,
+    0.00,
     true
 ),
 (
@@ -189,7 +210,7 @@ VALUES
     '$2b$10$rICkX.oN8VhHhGUxo6YWkOqGY8fIGHKMmD9cLhDnPmIxC4p1kZ/4K',
     '333 Nguyễn Trãi, Hà Nội',
     '1991-11-08',
-    3.80,
+    0.00,
     true
 ),
 (
@@ -200,7 +221,7 @@ VALUES
     '$2b$10$rICkX.oN8VhHhGUxo6YWkOqGY8fIGHKMmD9cLhDnPmIxC4p1kZ/4K',
     '444 Cầu Giấy, Hà Nội',
     '1994-04-18',
-    4.50,
+    0.00,
     true
 ),
 (
@@ -1218,7 +1239,7 @@ VALUES
 );
 
 -- ================================================
--- 7. USER RATINGS
+-- 7. USER RATINGS (Mixed positive and negative for varied scores)
 -- ================================================
 INSERT INTO
     user_ratings (
@@ -1230,12 +1251,12 @@ INSERT INTO
         created_at
     )
 VALUES
-    -- Ratings for seller 2
+    -- Ratings for seller 2 (3 positive, 1 negative = 0.75)
     (
         5,
         2,
         NULL,
-        5,
+        1,
         'Giao hàng nhanh, đóng gói cẩn thận. Rất hài lòng!',
         CURRENT_TIMESTAMP - INTERVAL '30 days'
     ),
@@ -1243,7 +1264,7 @@ VALUES
         6,
         2,
         NULL,
-        5,
+        1,
         'Shop uy tín, sản phẩm đúng mô tả.',
         CURRENT_TIMESTAMP - INTERVAL '25 days'
     ),
@@ -1251,7 +1272,7 @@ VALUES
         7,
         2,
         NULL,
-        4,
+        1,
         'Sản phẩm tốt, giao hơi chậm.',
         CURRENT_TIMESTAMP - INTERVAL '20 days'
     ),
@@ -1259,17 +1280,17 @@ VALUES
         8,
         2,
         NULL,
-        5,
-        'Tuyệt vời, sẽ ủng hộ tiếp!',
+        -1,
+        'Đóng gói không cẩn thận, hàng bị móp.',
         CURRENT_TIMESTAMP - INTERVAL '15 days'
     ),
 
--- Ratings for seller 3
+-- Ratings for seller 3 (5 positive, 2 negative = 0.71)
 (
     5,
     3,
     NULL,
-    4,
+    1,
     'Hàng ok, đóng gói tốt.',
     CURRENT_TIMESTAMP - INTERVAL '28 days'
 ),
@@ -1277,7 +1298,7 @@ VALUES
     6,
     3,
     NULL,
-    5,
+    1,
     'Rất hài lòng với sản phẩm.',
     CURRENT_TIMESTAMP - INTERVAL '22 days'
 ),
@@ -1285,17 +1306,49 @@ VALUES
     8,
     3,
     NULL,
-    4,
+    1,
     'Shop nhiệt tình, hàng đẹp.',
     CURRENT_TIMESTAMP - INTERVAL '18 days'
 ),
+(
+    7,
+    3,
+    NULL,
+    -1,
+    'Giao hàng chậm quá.',
+    CURRENT_TIMESTAMP - INTERVAL '15 days'
+),
+(
+    9,
+    3,
+    NULL,
+    1,
+    'Sản phẩm tốt.',
+    CURRENT_TIMESTAMP - INTERVAL '12 days'
+),
+(
+    5,
+    3,
+    NULL,
+    1,
+    'Uy tín, sẽ mua lại.',
+    CURRENT_TIMESTAMP - INTERVAL '8 days'
+),
+(
+    6,
+    3,
+    NULL,
+    -1,
+    'Hàng không đúng mô tả.',
+    CURRENT_TIMESTAMP - INTERVAL '5 days'
+),
 
--- Ratings for seller 4
+-- Ratings for seller 4 (6 positive, 1 negative = 0.86)
 (
     5,
     4,
     NULL,
-    5,
+    1,
     'Sản phẩm chất lượng cao, giá tốt.',
     CURRENT_TIMESTAMP - INTERVAL '26 days'
 ),
@@ -1303,7 +1356,7 @@ VALUES
     6,
     4,
     NULL,
-    5,
+    1,
     'Shop rất uy tín, recommend!',
     CURRENT_TIMESTAMP - INTERVAL '21 days'
 ),
@@ -1311,7 +1364,7 @@ VALUES
     7,
     4,
     NULL,
-    5,
+    1,
     'Hàng xịn, giao nhanh.',
     CURRENT_TIMESTAMP - INTERVAL '16 days'
 ),
@@ -1319,17 +1372,42 @@ VALUES
     8,
     4,
     NULL,
-    5,
-    'Tuyệt đối hài lòng 5 sao!',
+    1,
+    'Tuyệt đối hài lòng!',
     CURRENT_TIMESTAMP - INTERVAL '10 days'
+),
+(
+    9,
+    4,
+    NULL,
+    1,
+    'Chất lượng tốt.',
+    CURRENT_TIMESTAMP - INTERVAL '7 days'
+),
+(
+    5,
+    4,
+    NULL,
+    1,
+    'Sẽ ủng hộ tiếp.',
+    CURRENT_TIMESTAMP - INTERVAL '4 days'
+),
+(
+    6,
+    4,
+    NULL,
+    -1,
+    'Lần này hàng không được tốt lắm.',
+    CURRENT_TIMESTAMP - INTERVAL '2 days'
 ),
 
 -- Ratings for bidders
+-- Bidder 5 (3 positive, 1 negative = 0.75)
 (
     2,
     5,
     NULL,
-    4,
+    1,
     'Thanh toán nhanh, giao dịch suôn sẻ.',
     CURRENT_TIMESTAMP - INTERVAL '24 days'
 ),
@@ -1337,15 +1415,33 @@ VALUES
     3,
     5,
     NULL,
-    4,
+    1,
     'Khách hàng dễ thương, giao dịch tốt.',
     CURRENT_TIMESTAMP - INTERVAL '19 days'
 ),
 (
+    4,
+    5,
+    NULL,
+    1,
+    'Thanh toán đúng hẹn.',
+    CURRENT_TIMESTAMP - INTERVAL '13 days'
+),
+(
+    2,
+    5,
+    NULL,
+    -1,
+    'Hẹn nhiều lần mới thanh toán.',
+    CURRENT_TIMESTAMP - INTERVAL '8 days'
+),
+
+-- Bidder 6 (4 positive, 1 negative = 0.80)
+(
     2,
     6,
     NULL,
-    5,
+    1,
     'Khách hàng tuyệt vời!',
     CURRENT_TIMESTAMP - INTERVAL '23 days'
 ),
@@ -1353,7 +1449,7 @@ VALUES
     3,
     6,
     NULL,
-    5,
+    1,
     'Thanh toán ngay, rất hài lòng.',
     CURRENT_TIMESTAMP - INTERVAL '17 days'
 ),
@@ -1361,15 +1457,33 @@ VALUES
     4,
     6,
     NULL,
-    4,
+    1,
     'Giao dịch tốt.',
     CURRENT_TIMESTAMP - INTERVAL '12 days'
 ),
 (
     2,
+    6,
+    NULL,
+    1,
+    'Khách uy tín.',
+    CURRENT_TIMESTAMP - INTERVAL '7 days'
+),
+(
+    3,
+    6,
+    NULL,
+    -1,
+    'Không nhận hàng đúng hẹn.',
+    CURRENT_TIMESTAMP - INTERVAL '3 days'
+),
+
+-- Bidder 7 (1 positive, 1 negative = 0.50)
+(
+    2,
     7,
     NULL,
-    3,
+    -1,
     'Thanh toán hơi chậm.',
     CURRENT_TIMESTAMP - INTERVAL '22 days'
 ),
@@ -1377,15 +1491,17 @@ VALUES
     3,
     7,
     NULL,
-    4,
+    1,
     'Ok, giao dịch bình thường.',
     CURRENT_TIMESTAMP - INTERVAL '14 days'
 ),
+
+-- Bidder 8 (2 positive, 1 negative = 0.67)
 (
     2,
     8,
     NULL,
-    5,
+    1,
     'Khách hàng thân thiện!',
     CURRENT_TIMESTAMP - INTERVAL '20 days'
 ),
@@ -1393,13 +1509,197 @@ VALUES
     4,
     8,
     NULL,
-    4,
+    1,
     'Giao dịch tốt, recommend.',
     CURRENT_TIMESTAMP - INTERVAL '11 days'
+),
+(
+    3,
+    8,
+    NULL,
+    -1,
+    'Có hẹn nhưng đến muộn.',
+    CURRENT_TIMESTAMP - INTERVAL '6 days'
 );
 
 -- ================================================
--- 8. WATCHLISTS
+-- 8. ORDERS (Sample completed orders)
+-- ================================================
+INSERT INTO
+    orders (
+        id,
+        product_id,
+        buyer_id,
+        seller_id,
+        order_status,
+        payment_method,
+        payment_status,
+        payment_transaction_id,
+        shipping_address,
+        shipping_status,
+        tracking_number,
+        total_price,
+        buyer_rating,
+        seller_rating,
+        buyer_comment,
+        seller_comment,
+        buyer_rated_at,
+        seller_rated_at,
+        completed_at,
+        created_at,
+        updated_at
+    )
+VALUES
+    -- Order 1: Completed with ratings
+    (
+        1,
+        1,
+        5,
+        2,
+        'completed',
+        'COD',
+        'completed',
+        'TXN001',
+        '111 Trần Hưng Đạo, Q5, HCM',
+        'delivered',
+        'VN12345678',
+        32500000,
+        1,
+        1,
+        'Sản phẩm tốt, giao hàng nhanh.',
+        'Khách hàng thanh toán đúng hẹn.',
+        CURRENT_TIMESTAMP - INTERVAL '25 days',
+        CURRENT_TIMESTAMP - INTERVAL '25 days',
+        CURRENT_TIMESTAMP - INTERVAL '24 days',
+        CURRENT_TIMESTAMP - INTERVAL '30 days',
+        CURRENT_TIMESTAMP - INTERVAL '24 days'
+    ),
+    -- Order 2: Completed with ratings
+    (
+        2,
+        2,
+        6,
+        3,
+        'completed',
+        'Bank Transfer',
+        'completed',
+        'TXN002',
+        '222 Lý Thường Kiệt, Q10, HCM',
+        'delivered',
+        'VN87654321',
+        195000000,
+        1,
+        1,
+        'Đồng hồ chính hãng, đẹp!',
+        'Khách hàng tuyệt vời.',
+        CURRENT_TIMESTAMP - INTERVAL '20 days',
+        CURRENT_TIMESTAMP - INTERVAL '20 days',
+        CURRENT_TIMESTAMP - INTERVAL '19 days',
+        CURRENT_TIMESTAMP - INTERVAL '25 days',
+        CURRENT_TIMESTAMP - INTERVAL '19 days'
+    ),
+    -- Order 3: Completed with mixed ratings
+    (
+        3,
+        3,
+        7,
+        4,
+        'completed',
+        'COD',
+        'completed',
+        'TXN003',
+        '333 Nguyễn Trãi, Hà Nội',
+        'delivered',
+        'VN11223344',
+        52000000,
+        -1,
+        1,
+        'Giao hàng hơi chậm.',
+        'Giao dịch ok.',
+        CURRENT_TIMESTAMP - INTERVAL '18 days',
+        CURRENT_TIMESTAMP - INTERVAL '18 days',
+        CURRENT_TIMESTAMP - INTERVAL '17 days',
+        CURRENT_TIMESTAMP - INTERVAL '23 days',
+        CURRENT_TIMESTAMP - INTERVAL '17 days'
+    ),
+    -- Order 4: Pending payment
+    (
+        4,
+        10,
+        8,
+        2,
+        'pending_payment',
+        'Bank Transfer',
+        'pending',
+        NULL,
+        '444 Cầu Giấy, Hà Nội',
+        'pending',
+        NULL,
+        31000000,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        CURRENT_TIMESTAMP - INTERVAL '2 days',
+        CURRENT_TIMESTAMP - INTERVAL '2 days'
+    ),
+    -- Order 5: Shipping
+    (
+        5,
+        11,
+        9,
+        3,
+        'shipping',
+        'COD',
+        'pending',
+        NULL,
+        '555 Bình Thạnh, HCM',
+        'shipped',
+        'VN99887766',
+        42000000,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        NULL,
+        CURRENT_TIMESTAMP - INTERVAL '3 days',
+        CURRENT_TIMESTAMP - INTERVAL '1 day'
+    ),
+    -- Order 6: Completed with negative buyer rating
+    (
+        6,
+        12,
+        5,
+        4,
+        'completed',
+        'Bank Transfer',
+        'completed',
+        'TXN006',
+        '111 Trần Hưng Đạo, Q5, HCM',
+        'delivered',
+        'VN55667788',
+        48000000,
+        -1,
+        1,
+        'Hàng không đúng như mô tả.',
+        'Khách thanh toán nhanh.',
+        CURRENT_TIMESTAMP - INTERVAL '10 days',
+        CURRENT_TIMESTAMP - INTERVAL '10 days',
+        CURRENT_TIMESTAMP - INTERVAL '9 days',
+        CURRENT_TIMESTAMP - INTERVAL '15 days',
+        CURRENT_TIMESTAMP - INTERVAL '9 days'
+    );
+
+-- Reset sequence for orders
+SELECT setval( 'orders_id_seq', ( SELECT MAX(id) FROM orders ) );
+
+-- ================================================
+-- 9. WATCHLISTS
 -- ================================================
 INSERT INTO
     watchlists (user_id, product_id)
@@ -1424,7 +1724,7 @@ VALUES (5, 1),
     (9, 15);
 
 -- ================================================
--- 9. AUTO BID CONFIGS
+-- 10. AUTO BID CONFIGS
 -- ================================================
 INSERT INTO
     auto_bid_configs (
@@ -1441,7 +1741,7 @@ VALUES (5, 1, 34000000, true),
     (8, 1, 33000000, false);
 
 -- ================================================
--- 10. DESCRIPTION HISTORY (Additional descriptions added by sellers)
+-- 11. DESCRIPTION HISTORY (Additional descriptions added by sellers)
 -- ================================================
 INSERT INTO
     product_description_history (
@@ -1471,7 +1771,7 @@ VALUES (
     );
 
 -- ================================================
--- 11. NOTIFICATIONS (Sample notifications)
+-- 12. NOTIFICATIONS (Sample notifications)
 -- ================================================
 INSERT INTO
     notifications (

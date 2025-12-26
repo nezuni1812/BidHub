@@ -117,7 +117,7 @@ VALUES
         '$2b$10$CNsCCMjsbKv67mDI6OX/p.3PbZ80j8d.tf.cRkuyMIlYTtA77o5d2',
         'Hà Nội, Việt Nam',
         '1985-01-15',
-        5.00,
+        0.00,
         true
     ),
     -- Sellers
@@ -129,7 +129,7 @@ VALUES
         '$2b$10$CNsCCMjsbKv67mDI6OX/p.3PbZ80j8d.tf.cRkuyMIlYTtA77o5d2',
         '123 Nguyễn Huệ, Q1, HCM',
         '1990-05-20',
-        4.85,
+        0.00,
         true
     ),
     (
@@ -140,7 +140,7 @@ VALUES
         '$2b$10$CNsCCMjsbKv67mDI6OX/p.3PbZ80j8d.tf.cRkuyMIlYTtA77o5d2',
         '456 Lê Lợi, Q3, HCM',
         '1988-08-10',
-        4.50,
+        0.00,
         true
     ),
     (
@@ -151,7 +151,7 @@ VALUES
         '$2b$10$CNsCCMjsbKv67mDI6OX/p.3PbZ80j8d.tf.cRkuyMIlYTtA77o5d2',
         '789 Hai Bà Trưng, Hà Nội',
         '1992-12-25',
-        4.90,
+        0.00,
         true
     ),
     -- Bidders
@@ -163,7 +163,7 @@ VALUES
         '$2b$10$CNsCCMjsbKv67mDI6OX/p.3PbZ80j8d.tf.cRkuyMIlYTtA77o5d2',
         '111 Trần Hưng Đạo, Q5, HCM',
         '1995-03-15',
-        4.20,
+        0.00,
         true
     ),
     (
@@ -174,7 +174,7 @@ VALUES
         '$2b$10$CNsCCMjsbKv67mDI6OX/p.3PbZ80j8d.tf.cRkuyMIlYTtA77o5d2',
         '222 Lý Thường Kiệt, Q10, HCM',
         '1993-07-22',
-        4.70,
+        0.00,
         true
     ),
     (
@@ -185,7 +185,7 @@ VALUES
         '$2b$10$CNsCCMjsbKv67mDI6OX/p.3PbZ80j8d.tf.cRkuyMIlYTtA77o5d2',
         '333 Nguyễn Trãi, Hà Nội',
         '1991-11-08',
-        3.80,
+        0.00,
         true
     ),
     (
@@ -196,7 +196,7 @@ VALUES
         '$2b$10$CNsCCMjsbKv67mDI6OX/p.3PbZ80j8d.tf.cRkuyMIlYTtA77o5d2',
         '444 Cầu Giấy, Hà Nội',
         '1994-04-18',
-        4.50,
+        0.00,
         true
     ),
     (

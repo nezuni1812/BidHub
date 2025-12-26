@@ -522,16 +522,21 @@ CREATE OR REPLACE FUNCTION update_user_rating()
 RETURNS TRIGGER AS $$
 DECLARE
     total_ratings INTEGER;
-    sum_scores INTEGER;
+    positive_count INTEGER;
     new_rating DECIMAL(3,2);
 BEGIN
-    SELECT COUNT(*), COALESCE(SUM(score), 0)
-    INTO total_ratings, sum_scores
+    -- Đếm tổng số ratings và số lượng positive ratings (score = 1)
+    SELECT 
+        COUNT(*),
+        COUNT(*) FILTER (WHERE score = 1)
+    INTO total_ratings, positive_count
     FROM user_ratings
     WHERE rated_user_id = NEW.rated_user_id;
     
     IF total_ratings > 0 THEN
-        new_rating := sum_scores::DECIMAL / total_ratings::DECIMAL;
+        -- Tính rating dưới dạng % (0.00 đến 1.00)
+        -- rating = số positive / tổng số
+        new_rating := positive_count::DECIMAL / total_ratings::DECIMAL;
         UPDATE users 
         SET rating = new_rating,
             updated_at = CURRENT_TIMESTAMP
