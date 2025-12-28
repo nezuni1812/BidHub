@@ -6,6 +6,7 @@ const User = require('../models/User');
 const Rating = require('../models/Rating');
 const db = require('../config/database');
 const stripe = require('../config/stripe');
+const { convertVNDtoUSDCents } = require('../services/exchangeRateService');
 
 /**
  * @desc    Get order details
@@ -417,26 +418,40 @@ const createPaymentIntent = asyncHandler(async (req, res) => {
   }
 
   try {
-    const amount = Math.round(parseFloat(order.total_price));
+    const amountVND = Math.round(parseFloat(order.total_price));
     
-    // Stripe VND limits: min 10,000 VND, max 99,999,999 VND
-    if (amount < 10000) {
+    // Stripe VND limits: min 10,000 VND, max 99,999.99 VND
+    if (amountVND < 10000) {
       throw new BadRequestError('Số tiền thanh toán tối thiểu là 10,000 VND');
     }
     
-    if (amount > 9999999999) {
-      throw new BadRequestError('Số tiền thanh toán vượt quá giới hạn Stripe (9,999,999,999 VND). Vui lòng liên hệ người bán để thanh toán trực tiếp.');
+    // Auto convert to USD if VND exceeds 99,999.99
+    let currency = 'vnd';
+    let amount = amountVND;
+    let exchangeRate = null;
+    
+    if (amountVND > 9999999) { // 99,999.99 VND
+      // Convert VND to USD using real-time exchange rate
+      console.log(`Amount ${amountVND} VND exceeds Stripe VND limit, converting to USD...`);
+      const conversion = await convertVNDtoUSDCents(amountVND);
+      amount = conversion.amountCents;
+      exchangeRate = conversion.rate;
+      currency = 'usd';
+      console.log(`Converted to ${conversion.amountUSD} USD (${amount} cents) at rate 1 USD = ${exchangeRate} VND`);
     }
 
     // Create payment intent
     const paymentIntent = await stripe.paymentIntents.create({
       amount: amount,
-      currency: 'vnd',
+      currency: currency,
       metadata: {
         order_id: order.id,
         product_id: order.product_id,
         buyer_id: order.buyer_id,
-        seller_id: order.seller_id
+        seller_id: order.seller_id,
+        original_amount_vnd: amountVND, // Store original VND amount
+        currency_used: currency,
+        exchange_rate: exchangeRate ? exchangeRate.toString() : null
       },
       description: `Payment for ${order.product_title}`
     });
@@ -445,7 +460,11 @@ const createPaymentIntent = asyncHandler(async (req, res) => {
       success: true,
       data: {
         clientSecret: paymentIntent.client_secret,
-        paymentIntentId: paymentIntent.id
+        paymentIntentId: paymentIntent.id,
+        currency: currency,
+        displayAmount: amountVND, // Original VND amount for display
+        chargedAmount: amount, // Actual charged amount in the currency used
+        exchangeRate: exchangeRate // Exchange rate used (if converted to USD)
       }
     });
   } catch (stripeError) {
