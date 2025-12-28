@@ -63,39 +63,26 @@ export default function ProductsPage() {
     if (user?.role === 'admin') {
       fetchProducts()
     }
-  }, [page, statusFilter, user])
+  }, [page, user])
+
+  useEffect(() => {
+    // Reset to page 1 when filter changes
+    setPage(1)
+  }, [statusFilter, searchQuery])
 
   const fetchProducts = async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams({
-        page: page.toString(),
-        limit: '20'
+        page: '1',
+        limit: '100' // Load all products for client-side filtering
       })
-      
-      if (statusFilter !== 'all') {
-        params.append('status', statusFilter)
-      }
 
       const response = await api.get(`/admin/products?${params.toString()}`)
       if (response.data) {
         setProducts(response.data as Product[])
         
-        // Set pagination from response
-        if (response.data && typeof response.data === 'object' && 'pagination' in response.data) {
-          const responseWithPagination = response.data as any
-          setPagination(responseWithPagination.pagination)
-        } else {
-          // Fallback if no pagination in response
-          setPagination({
-            page: page,
-            page_size: 20,
-            total: Array.isArray(response.data) ? response.data.length : 0,
-            total_pages: Math.ceil((Array.isArray(response.data) ? response.data.length : 0) / 20)
-          })
-        }
-
-        // Calculate stats from current page data
+        // Calculate stats from all data
         const dataArray = Array.isArray(response.data) ? response.data : []
         const currentStats = {
           total: dataArray.length,
@@ -103,11 +90,7 @@ export default function ProductsPage() {
           pending: dataArray.filter((p: Product) => p.status === 'pending').length,
           ended: dataArray.filter((p: Product) => p.status === 'ended').length
         }
-        
-        // Only update stats if no filter is applied (showing all)
-        if (statusFilter === 'all') {
-          setStats(currentStats)
-        }
+        setStats(currentStats)
       }
     } catch (error: any) {
       toast({
@@ -159,10 +142,32 @@ export default function ProductsPage() {
     navigate(`/product/${productId}`)
   }
 
-  const handleSearch = () => {
-    // Implement search functionality if needed
-    fetchProducts()
-  }
+  // Filter products based on search and status
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = !searchQuery ||
+      product.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.seller_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.category_name?.toLowerCase().includes(searchQuery.toLowerCase())
+    
+    const matchesStatus = statusFilter === 'all' || product.status === statusFilter
+    
+    return matchesSearch && matchesStatus
+  })
+
+  // Paginate filtered results
+  const pageSize = 20
+  const totalPages = Math.ceil(filteredProducts.length / pageSize)
+  const paginatedProducts = filteredProducts.slice((page - 1) * pageSize, page * pageSize)
+
+  // Update pagination info
+  useEffect(() => {
+    setPagination({
+      page: page,
+      page_size: pageSize,
+      total: filteredProducts.length,
+      total_pages: totalPages
+    })
+  }, [filteredProducts.length, page, totalPages])
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -212,49 +217,34 @@ export default function ProductsPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           <Card className="p-4">
             <p className="text-sm text-muted-foreground">Tổng sản phẩm</p>
-            <p className="text-2xl font-bold">{statusFilter === 'all' ? pagination.total : products.length}</p>
+            <p className="text-2xl font-bold">{stats.total}</p>
           </Card>
           <Card className="p-4">
             <p className="text-sm text-muted-foreground">Đang đấu giá</p>
-            <p className="text-2xl font-bold text-green-600">
-              {statusFilter === 'all' ? stats.active : (statusFilter === 'active' ? products.length : '-')}
-            </p>
-          </Card>
-          <Card className="p-4">
-            <p className="text-sm text-muted-foreground">Chờ duyệt</p>
-            <p className="text-2xl font-bold text-amber-600">
-              {statusFilter === 'all' ? stats.pending : (statusFilter === 'pending' ? products.length : '-')}
-            </p>
+            <p className="text-2xl font-bold text-green-600">{stats.active}</p>
           </Card>
           <Card className="p-4">
             <p className="text-sm text-muted-foreground">Đã kết thúc</p>
-            <p className="text-2xl font-bold text-muted-foreground">
-              {statusFilter === 'all' ? stats.ended : (statusFilter === 'ended' ? products.length : '-')}
-            </p>
+            <p className="text-2xl font-bold text-muted-foreground">{stats.ended}</p>
           </Card>
         </div>
 
         {/* Filters */}
         <Card className="p-4 mb-6">
           <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 flex gap-2">
-              <div className="relative flex-1">
+            <div className="flex-1">
+              <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Tìm kiếm sản phẩm..."
+                  placeholder="Tìm kiếm theo tên sản phẩm, người bán, danh mục..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                   className="pl-10"
                 />
               </div>
-              <Button onClick={handleSearch} variant="secondary">
-                <Search className="w-4 h-4 mr-2" />
-                Tìm
-              </Button>
             </div>
             <div className="flex gap-2">
               <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -265,7 +255,6 @@ export default function ProductsPage() {
                 <SelectContent>
                   <SelectItem value="all">Tất cả</SelectItem>
                   <SelectItem value="active">Đang đấu giá</SelectItem>
-                  <SelectItem value="pending">Chờ duyệt</SelectItem>
                   <SelectItem value="ended">Đã kết thúc</SelectItem>
                   <SelectItem value="completed">Hoàn thành</SelectItem>
                   <SelectItem value="removed">Đã xóa</SelectItem>
@@ -298,14 +287,14 @@ export default function ProductsPage() {
                       Đang tải...
                     </td>
                   </tr>
-                ) : products.length === 0 ? (
+                ) : paginatedProducts.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-8 text-center text-muted-foreground">
                       Không tìm thấy sản phẩm
                     </td>
                   </tr>
                 ) : (
-                  products.map((product) => (
+                  paginatedProducts.map((product) => (
                     <tr key={product.id} className="border-b border-border hover:bg-muted/50">
                       <td className="py-4 px-4">
                         <div className="font-medium max-w-xs truncate">{product.title}</div>

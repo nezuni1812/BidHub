@@ -58,6 +58,12 @@ export default function AdminDashboard() {
   const [categories, setCategories] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [processingRequest, setProcessingRequest] = useState<string | null>(null)
+  
+  // Filter states
+  const [userSearchTerm, setUserSearchTerm] = useState('')
+  const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
+  const [productSearchTerm, setProductSearchTerm] = useState('')
+  const [productStatusFilter, setProductStatusFilter] = useState<'all' | 'active' | 'ended' | 'completed'>('all')
   const { toast } = useToast()
   const navigate = useNavigate()
 
@@ -198,6 +204,31 @@ export default function AdminDashboard() {
     navigate(`/profile/${username}`)
   }
 
+  // Filtered data
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = !userSearchTerm || 
+      user.full_name?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+      user.username?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(userSearchTerm.toLowerCase())
+    
+    const matchesStatus = userStatusFilter === 'all' ||
+      (userStatusFilter === 'active' && user.is_active) ||
+      (userStatusFilter === 'inactive' && !user.is_active)
+    
+    return matchesSearch && matchesStatus
+  })
+
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = !productSearchTerm ||
+      product.title?.toLowerCase().includes(productSearchTerm.toLowerCase()) ||
+      product.seller_name?.toLowerCase().includes(productSearchTerm.toLowerCase())
+    
+    const matchesStatus = productStatusFilter === 'all' ||
+      product.status === productStatusFilter
+    
+    return matchesSearch && matchesStatus
+  })
+
   if (!user || user.role !== 'admin') {
     return null;
   }
@@ -234,7 +265,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           <Card className="p-6">
             <div className="flex items-center justify-between mb-2">
               <p className="text-muted-foreground text-sm">Total Products</p>
@@ -255,17 +286,6 @@ export default function AdminDashboard() {
             <p className="text-xs text-muted-foreground mt-1">
               +{stats?.users.new_users || 0} new this month
             </p>
-          </Card>
-
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-muted-foreground text-sm">Total Revenue</p>
-              <DollarSign className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <p className="text-3xl font-bold">
-              {formatPrice(stats?.revenue.total || 0)}
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">{stats?.revenue.period}</p>
           </Card>
 
           <Card className="p-6 border-amber-200">
@@ -343,21 +363,6 @@ export default function AdminDashboard() {
               </div>
             </div>
           </Card>
-
-          <Card className="p-6">
-            <h3 className="font-semibold mb-4">Revenue Insights</h3>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Total Revenue (30 days)</p>
-                <p className="text-2xl font-bold">{formatPrice(stats?.revenue.total || 0)}</p>
-              </div>
-              <div className="pt-4 border-t">
-                <p className="text-sm text-muted-foreground">
-                  Generated from {stats?.products.by_status.completed || 0} completed transactions
-                </p>
-              </div>
-            </div>
-          </Card>
         </div>
 
         {/* Tabs */}
@@ -372,8 +377,21 @@ export default function AdminDashboard() {
           {/* Users Management */}
           <TabsContent value="users" className="mt-6 space-y-4">
             <div className="flex gap-2 mb-4">
-              <Input placeholder="Search users..." className="max-w-xs" />
-              <Button variant="outline">Filter</Button>
+              <Input 
+                placeholder="Search users..." 
+                className="max-w-xs" 
+                value={userSearchTerm}
+                onChange={(e) => setUserSearchTerm(e.target.value)}
+              />
+              <select 
+                className="px-3 py-2 border border-input bg-background rounded-md text-sm"
+                value={userStatusFilter}
+                onChange={(e) => setUserStatusFilter(e.target.value as any)}
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
             </div>
 
             <div className="overflow-x-auto">
@@ -395,14 +413,14 @@ export default function AdminDashboard() {
                         Loading users...
                       </td>
                     </tr>
-                  ) : users.length === 0 ? (
+                  ) : filteredUsers.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="py-8 text-center text-muted-foreground">
                         No users found
                       </td>
                     </tr>
                   ) : (
-                    users.slice(0, 10).map((user) => (
+                    filteredUsers.slice(0, 10).map((user) => (
                       <tr key={user.user_id} className="border-b border-border hover:bg-muted/50">
                         <td className="py-4 px-4">{user.full_name || user.username}</td>
                         <td className="py-4 px-4 text-muted-foreground">{user.email}</td>
@@ -415,7 +433,9 @@ export default function AdminDashboard() {
                           </Badge>
                         </td>
                         <td className="py-4 px-4">
-                          {user.average_rating ? `${user.average_rating.toFixed(1)} ★` : "N/A"}
+                          {user.rating !== null && user.rating !== undefined && user.rating !== "0.00"
+                            ? `${(parseFloat(user.rating) * 100).toFixed(0)}%` 
+                            : "N/A"}
                         </td>
                         <td className="py-4 px-4">
                           <Button variant="ghost" size="sm" onClick={() => handleViewUser(user.username)}>
@@ -434,8 +454,22 @@ export default function AdminDashboard() {
           <TabsContent value="listings" className="mt-6 space-y-4">
             <div className="flex justify-between items-center mb-4">
               <div className="flex gap-2">
-                <Input placeholder="Search listings..." className="max-w-xs" />
-                <Button variant="outline">Filter</Button>
+                <Input 
+                  placeholder="Search listings..." 
+                  className="max-w-xs" 
+                  value={productSearchTerm}
+                  onChange={(e) => setProductSearchTerm(e.target.value)}
+                />
+                <select 
+                  className="px-3 py-2 border border-input bg-background rounded-md text-sm"
+                  value={productStatusFilter}
+                  onChange={(e) => setProductStatusFilter(e.target.value as any)}
+                >
+                  <option value="all">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="ended">Ended</option>
+                  <option value="completed">Completed</option>
+                </select>
               </div>
               <Button onClick={() => navigate('/admin/products')}>
                 Quản lý chi tiết
@@ -461,14 +495,14 @@ export default function AdminDashboard() {
                         Loading products...
                       </td>
                     </tr>
-                  ) : products.length === 0 ? (
+                  ) : filteredProducts.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="py-8 text-center text-muted-foreground">
                         No products found
                       </td>
                     </tr>
                   ) : (
-                    products.slice(0, 10).map((product) => (
+                    filteredProducts.slice(0, 10).map((product) => (
                       <tr key={product.id} className="border-b border-border hover:bg-muted/50">
                         <td className="py-4 px-4 font-medium">{product.title}</td>
                         <td className="py-4 px-4 text-muted-foreground">{product.seller_name}</td>

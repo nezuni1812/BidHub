@@ -68,7 +68,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           <Card className="p-6">
             <div className="flex items-center justify-between mb-2">
               <p className="text-muted-foreground text-sm">Total Listings</p>
@@ -87,15 +87,6 @@ export default function AdminDashboard() {
             <p className="text-xs text-muted-foreground mt-1">+8% from last month</p>
           </Card>
 
-          <Card className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-muted-foreground text-sm">Total Revenue</p>
-              <DollarSign className="w-5 h-5 text-muted-foreground" />
-            </div>
-            <p className="text-3xl font-bold">${(stats.totalRevenue / 1000000).toFixed(0)}M</p>
-            <p className="text-xs text-muted-foreground mt-1">+15% from last month</p>
-          </Card>
-
           <Card className="p-6 border-amber-200">
             <div className="flex items-center justify-between mb-2">
               <p className="text-muted-foreground text-sm">Seller Requests</p>
@@ -110,11 +101,6 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <Card className="p-6">
             <h3 className="font-semibold mb-4">Platform Activity</h3>
-            <AdminChart />
-          </Card>
-
-          <Card className="p-6">
-            <h3 className="font-semibold mb-4">Revenue Trend</h3>
             <AdminChart />
           </Card>
         </div>
