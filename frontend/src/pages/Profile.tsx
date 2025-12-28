@@ -205,17 +205,6 @@ export default function ProfilePage() {
                     <p className="text-sm text-muted-foreground mt-1">🎂 {formatDate(profile.date_of_birth)}</p>
                   )}
                 </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <p className="text-2xl font-bold">{totalRatings}</p>
-                    <p className="text-xs text-muted-foreground">Tổng đánh giá</p>
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">{positivePercentage.toFixed(1)}%</p>
-                    <p className="text-xs text-muted-foreground">Tỷ lệ tích cực</p>
-                  </div>
-                </div>
               </div>
 
               {/* Reputation Score */}
@@ -246,7 +235,7 @@ export default function ProfilePage() {
         <Tabs defaultValue="feedback" className="w-full">
           <TabsList className="grid w-full max-w-xs grid-cols-2">
             <TabsTrigger value="feedback">Đánh giá ({ratings.length})</TabsTrigger>
-            <TabsTrigger value="details">Chi tiết đánh giá</TabsTrigger>
+            <TabsTrigger value="details">Phân tích đánh giá</TabsTrigger>
           </TabsList>
 
           <TabsContent value="feedback" className="mt-6 space-y-4">
@@ -283,7 +272,6 @@ export default function ProfilePage() {
 
           <TabsContent value="details" className="mt-6">
             <Card className="p-6">
-              <h3 className="font-semibold mb-6">Phân tích đánh giá</h3>
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-medium w-24">Tích cực</span>
