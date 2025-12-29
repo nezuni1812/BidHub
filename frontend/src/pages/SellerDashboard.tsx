@@ -50,16 +50,16 @@ export default function SellerDashboardPage() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const [statsData, productsData, ordersData] = await Promise.all([
-        getSellerStats(),
+      console.log('🔄 Fetching seller dashboard data...');
+      
+      const [productsData, ordersData] = await Promise.all([
         getSellerProducts(),
         getSellerOrders()
       ]);
-      console.log('📊 Stats:', statsData);
+      
       console.log('📦 Products response:', productsData);
       console.log('📋 Orders response:', ordersData);
       
-      setStats(statsData);
       // productsData has nested structure: data.items
       const productItems = productsData.items || [];
       console.log('✅ Setting products:', productItems.length, 'items');
@@ -69,8 +69,48 @@ export default function SellerDashboardPage() {
       const orderItems = ordersData || [];
       console.log('✅ Setting orders:', orderItems.length, 'items');
       setOrders(orderItems);
+      
+      // Calculate stats from existing data
+      const activeProducts = productItems.length;
+      
+      // Filter completed orders
+      const completedOrders = orderItems.filter((order: any) => 
+        order.payment_status === 'completed'
+      );
+      const soldProducts = completedOrders.length;
+      
+      // Calculate total revenue
+      const totalRevenue = completedOrders.reduce((sum: number, order: any) => {
+        return sum + parseFloat(order.total_price || '0');
+      }, 0);
+      
+      // Fetch user profile to get rating
+      let averageRating = '0.00';
+      if (user?.id) {
+        try {
+          const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
+          const response = await fetch(`${API_URL}/bidder/users/${user.id}/profile`);
+          if (response.ok) {
+            const result = await response.json();
+            averageRating = result.data.user.rating || '0.00';
+            console.log('⭐ User rating from profile:', averageRating);
+          }
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+        }
+      }
+      
+      const calculatedStats = {
+        active_products: activeProducts,
+        sold_products: soldProducts,
+        total_revenue: totalRevenue.toString(),
+        average_rating: averageRating
+      };
+      
+      console.log('📊 Calculated stats:', calculatedStats);
+      setStats(calculatedStats);
     } catch (error) {
-      console.error('Error fetching dashboard data:', error);
+      console.error('❌ Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
     }
@@ -208,25 +248,24 @@ export default function SellerDashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <Card className="p-6">
             <p className="text-muted-foreground text-sm mb-1">Sản phẩm đang bán</p>
-            <p className="text-3xl font-bold">{loading ? '...' : (stats?.active_products || 0)}</p>
+            <p className="text-2xl font-bold">{loading ? '...' : (stats?.active_products || 0)}</p>
           </Card>
           <Card className="p-6">
             <p className="text-muted-foreground text-sm mb-1">Tổng doanh thu</p>
-            <p className="text-3xl font-bold text-primary">
+            <p className="text-2xl font-bold text-primary break-words">
               {loading ? '...' : formatPrice(parseFloat(stats?.total_revenue || '0'))}
             </p>
           </Card>
           <Card className="p-6">
             <p className="text-muted-foreground text-sm mb-1">Đã bán</p>
-            <p className="text-3xl font-bold">{loading ? '...' : (stats?.sold_products || 0)}</p>
+            <p className="text-2xl font-bold">{loading ? '...' : (stats?.sold_products || 0)}</p>
           </Card>
           <Card className="p-6">
             <p className="text-muted-foreground text-sm mb-1">Đánh giá</p>
             <div className="flex items-center gap-2">
-              <span className="text-3xl font-bold">
-                {loading ? '...' : (parseFloat(stats?.average_rating || '0')).toFixed(2)}
+              <span className="text-2xl font-bold">
+                {loading ? '...' : `${(parseFloat(stats?.average_rating || '0') * 100).toFixed(0)}%`}
               </span>
-              <span className="text-yellow-500">★</span>
             </div>
           </Card>
         </div>

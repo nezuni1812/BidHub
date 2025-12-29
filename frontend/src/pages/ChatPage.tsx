@@ -278,11 +278,17 @@ export default function ChatPage() {
     const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
 
     if (diffInHours < 24) {
-      return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+      return date.toLocaleTimeString('vi-VN', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        timeZone: 'Asia/Ho_Chi_Minh'
+      })
     } else if (diffInHours < 48) {
-      return 'Yesterday'
+      return 'Hôm qua'
     } else {
-      return date.toLocaleDateString('vi-VN')
+      return date.toLocaleDateString('vi-VN', {
+        timeZone: 'Asia/Ho_Chi_Minh'
+      })
     }
   }
 

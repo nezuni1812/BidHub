@@ -16,9 +16,12 @@ exports.getAvailableBidders = asyncHandler(async (req, res) => {
   const currentUserId = req.user.id;
   
   const query = `
-    SELECT id, full_name, email, role, rating
+    SELECT id, full_name, email, role, ROUND(rating::numeric, 2) as rating
     FROM users
-    WHERE id != $1 AND is_active = true AND role != 'admin'
+    WHERE id != $1 
+      AND is_active = true 
+      AND role != 'admin'
+      AND rating < 0.8
     ORDER BY full_name ASC
   `;
   
@@ -681,6 +684,107 @@ exports.allowUnratedBidder = asyncHandler(async (req, res) => {
       data: {
         product_id: parseInt(productId),
         bidder_id: parseInt(bidderId)
+      }
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+});
+
+// Allow multiple unrated bidders to bid on product (batch operation)
+exports.allowMultipleBidders = asyncHandler(async (req, res) => {
+  const userId = req.user.id;
+  const { productId } = req.params;
+  const { bidderIds } = req.body;
+
+  if (!Array.isArray(bidderIds) || bidderIds.length === 0) {
+    throw new BadRequestError('bidderIds must be a non-empty array');
+  }
+
+  const client = await db.getClient();
+  try {
+    await client.query('BEGIN');
+
+    // Verify product ownership
+    const productResult = await client.query(
+      'SELECT seller_id, status FROM products WHERE id = $1',
+      [productId]
+    );
+
+    if (productResult.rows.length === 0) {
+      throw new NotFoundError('Product not found');
+    }
+
+    const product = productResult.rows[0];
+    if (product.seller_id !== userId) {
+      throw new ForbiddenError('You can only manage permissions for your own products');
+    }
+
+    if (product.status !== 'active') {
+      throw new BadRequestError('Can only grant permissions for active auctions');
+    }
+
+    // Get all bidders with their rating info
+    const biddersResult = await client.query(
+      `SELECT u.id, u.rating, 
+              COALESCE(COUNT(r.id), 0) as rating_count,
+              EXISTS(
+                SELECT 1 FROM unrated_bidder_permissions 
+                WHERE product_id = $1 AND bidder_id = u.id
+              ) as already_allowed
+       FROM users u
+       LEFT JOIN user_ratings r ON u.id = r.rated_user_id
+       WHERE u.id = ANY($2) AND u.is_active = true
+       GROUP BY u.id`,
+      [productId, bidderIds]
+    );
+
+    let addedCount = 0;
+    const skipped = [];
+    const notFound = bidderIds.filter(id => 
+      !biddersResult.rows.find(row => row.id === id)
+    );
+
+    // Process each bidder
+    for (const bidder of biddersResult.rows) {
+      const ratingCount = parseInt(bidder.rating_count);
+      const userRating = parseFloat(bidder.rating);
+      
+      // Skip if bidder already has sufficient rating (>= 0.8) or already has ratings
+      if (ratingCount > 0 || userRating >= 0.8 || bidder.already_allowed) {
+        skipped.push({
+          id: bidder.id,
+          reason: bidder.already_allowed ? 'already_allowed' : 'has_ratings'
+        });
+        continue;
+      }
+
+      // Grant permission
+      await client.query(
+        `INSERT INTO unrated_bidder_permissions (product_id, bidder_id, seller_id)
+         VALUES ($1, $2, $3)
+         ON CONFLICT (product_id, bidder_id) DO NOTHING`,
+        [productId, bidder.id, userId]
+      );
+      addedCount++;
+    }
+
+    await client.query('COMMIT');
+
+    res.json({
+      success: true,
+      message: `Granted permissions to ${addedCount} bidder(s)`,
+      data: {
+        added: addedCount,
+        skipped: skipped.length,
+        notFound: notFound.length,
+        details: {
+          skippedBidders: skipped,
+          notFoundBidders: notFound
+        }
       }
     });
   } catch (error) {
