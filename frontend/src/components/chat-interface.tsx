@@ -135,7 +135,11 @@ export function ChatInterface({ initialConversationId, className = "" }: ChatInt
             id: messages.length + 1,
             sender: "You",
             text: newMessage,
-            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+            time: new Date().toLocaleTimeString('vi-VN', { 
+                hour: "2-digit", 
+                minute: "2-digit",
+                timeZone: 'Asia/Ho_Chi_Minh'
+            }),
             isOwn: true,
         }
         setMessages(prev => [...prev, msg])
