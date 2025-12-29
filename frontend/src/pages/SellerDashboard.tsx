@@ -34,7 +34,9 @@ export default function SellerDashboardPage() {
 
   // Protect route - only sellers can access
   useEffect(() => {
-    if (user && user.role !== 'seller') {
+    if (user && user.role === 'admin') {
+      navigate('/admin');
+    } else if (user && user.role !== 'seller') {
       navigate('/');
     }
   }, [user, navigate]);

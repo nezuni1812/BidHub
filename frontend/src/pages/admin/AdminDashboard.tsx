@@ -98,8 +98,8 @@ export default function AdminDashboard() {
       if (categoriesRes.data) setCategories(categoriesRes.data as any[])
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Failed to load dashboard data",
+        title: "Lỗi",
+        description: error.message || "Không thể tải dữ liệu bảng điều khiển",
         variant: "destructive"
       })
     } finally {
@@ -238,7 +238,7 @@ export default function AdminDashboard() {
       <div className="min-h-screen bg-background">
         <Navigation />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <p>Loading...</p>
+          <p>Đang tải...</p>
         </div>
       </div>
     )
@@ -251,8 +251,8 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8 flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Manage platform, users, and listings</p>
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <p className="text-muted-foreground">Quản lý nền tảng, người dùng và danh sách</p>
           </div>
           <div className="flex gap-2">
             <Button onClick={() => navigate('/admin/products')} variant="outline">
@@ -268,97 +268,97 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           <Card className="p-6">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-muted-foreground text-sm">Total Products</p>
+              <p className="text-muted-foreground text-sm">Tổng sản phẩm</p>
               <ShoppingCart className="w-5 h-5 text-muted-foreground" />
             </div>
             <p className="text-3xl font-bold">{stats?.products.total.toLocaleString() || 0}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              {stats?.products.active_auctions || 0} active auctions
+              {stats?.products.active_auctions || 0} phiên đấu giá đang hoạt động
             </p>
           </Card>
 
           <Card className="p-6">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-muted-foreground text-sm">Total Users</p>
+              <p className="text-muted-foreground text-sm">Tổng người dùng</p>
               <Users className="w-5 h-5 text-muted-foreground" />
             </div>
             <p className="text-3xl font-bold">{stats?.users.total.toLocaleString() || 0}</p>
             <p className="text-xs text-muted-foreground mt-1">
-              +{stats?.users.new_users || 0} new this month
+              +{stats?.users.new_users || 0} mới tháng này
             </p>
           </Card>
 
           <Card className="p-6 border-amber-200">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-muted-foreground text-sm">Seller Requests</p>
+              <p className="text-muted-foreground text-sm">Yêu cầu người bán</p>
               <AlertCircle className="w-5 h-5 text-amber-600" />
             </div>
             <p className="text-3xl font-bold text-amber-600">
               {upgradeRequests.length || 0}
             </p>
-            <p className="text-xs text-muted-foreground mt-1">Awaiting approval</p>
+            <p className="text-xs text-muted-foreground mt-1">Chờ phê duyệt</p>
           </Card>
         </div>
 
         {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <Card className="p-6">
-            <h3 className="font-semibold mb-4">Platform Overview</h3>
+            <h3 className="font-semibold mb-4">Tổng quan nền tảng</h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Total Bids (30 days)</span>
+                <span className="text-sm text-muted-foreground">Tổng lượt đấu giá (30 ngày)</span>
                 <span className="font-semibold">{stats?.bids.total.toLocaleString() || 0}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Total Categories</span>
+                <span className="text-sm text-muted-foreground">Tổng danh mục</span>
                 <span className="font-semibold">{stats?.categories.total.toLocaleString() || 0}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">New Auctions (30 days)</span>
+                <span className="text-sm text-muted-foreground">Phiên đấu giá mới (30 ngày)</span>
                 <span className="font-semibold">{stats?.products.new_auctions.toLocaleString() || 0}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Approved Upgrades (30 days)</span>
+                <span className="text-sm text-muted-foreground">Nâng cấp đã duyệt (30 ngày)</span>
                 <span className="font-semibold">{stats?.upgrades.approved.toLocaleString() || 0}</span>
               </div>
             </div>
           </Card>
 
           <Card className="p-6">
-            <h3 className="font-semibold mb-4">User Distribution</h3>
+            <h3 className="font-semibold mb-4">Phân bổ người dùng</h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Admins</span>
+                <span className="text-sm text-muted-foreground">Quản trị viên</span>
                 <Badge variant="default">{stats?.users.by_role.admin || 0}</Badge>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Sellers</span>
+                <span className="text-sm text-muted-foreground">Người bán</span>
                 <Badge variant="secondary">{stats?.users.by_role.seller || 0}</Badge>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Bidders</span>
+                <span className="text-sm text-muted-foreground">Người đấu giá</span>
                 <Badge variant="outline">{stats?.users.by_role.bidder || 0}</Badge>
               </div>
             </div>
           </Card>
 
           <Card className="p-6">
-            <h3 className="font-semibold mb-4">Product Status</h3>
+            <h3 className="font-semibold mb-4">Trạng thái sản phẩm</h3>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Active</span>
+                <span className="text-sm text-muted-foreground">Đang hoạt động</span>
                 <Badge variant="default">{stats?.products.by_status.active || 0}</Badge>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Completed</span>
+                <span className="text-sm text-muted-foreground">Hoàn thành</span>
                 <Badge variant="secondary">{stats?.products.by_status.completed || 0}</Badge>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Ended</span>
+                <span className="text-sm text-muted-foreground">Kết thúc</span>
                 <Badge variant="outline">{stats?.products.by_status.ended || 0}</Badge>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Pending</span>
+                <span className="text-sm text-muted-foreground">Chờ duyệt</span>
                 <Badge variant="outline">{stats?.products.by_status.pending || 0}</Badge>
               </div>
             </div>
@@ -368,17 +368,17 @@ export default function AdminDashboard() {
         {/* Tabs */}
         <Tabs defaultValue="users" className="w-full">
           <TabsList className="grid w-full max-w-xl grid-cols-4">
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="listings">Listings</TabsTrigger>
-            <TabsTrigger value="requests">Seller Requests</TabsTrigger>
-            <TabsTrigger value="categories">Categories</TabsTrigger>
+            <TabsTrigger value="users">Người dùng</TabsTrigger>
+            <TabsTrigger value="listings">Danh sách</TabsTrigger>
+            <TabsTrigger value="requests">Yêu cầu người bán</TabsTrigger>
+            <TabsTrigger value="categories">Danh mục</TabsTrigger>
           </TabsList>
 
           {/* Users Management */}
           <TabsContent value="users" className="mt-6 space-y-4">
             <div className="flex gap-2 mb-4">
               <Input 
-                placeholder="Search users..." 
+                placeholder="Tìm kiếm người dùng..." 
                 className="max-w-xs" 
                 value={userSearchTerm}
                 onChange={(e) => setUserSearchTerm(e.target.value)}
@@ -388,9 +388,9 @@ export default function AdminDashboard() {
                 value={userStatusFilter}
                 onChange={(e) => setUserStatusFilter(e.target.value as any)}
               >
-                <option value="all">All Status</option>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                <option value="all">Tất cả trạng thái</option>
+                <option value="active">Hoạt động</option>
+                <option value="inactive">Không hoạt động</option>
               </select>
             </div>
 
@@ -398,25 +398,25 @@ export default function AdminDashboard() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="text-left py-3 px-4 font-semibold">Name</th>
+                    <th className="text-left py-3 px-4 font-semibold">Tên</th>
                     <th className="text-left py-3 px-4 font-semibold">Email</th>
-                    <th className="text-left py-3 px-4 font-semibold">Join Date</th>
-                    <th className="text-left py-3 px-4 font-semibold">Status</th>
-                    <th className="text-left py-3 px-4 font-semibold">Rating</th>
-                    <th className="text-left py-3 px-4 font-semibold">Actions</th>
+                    <th className="text-left py-3 px-4 font-semibold">Ngày tham gia</th>
+                    <th className="text-left py-3 px-4 font-semibold">Trạng thái</th>
+                    <th className="text-left py-3 px-4 font-semibold">Đánh giá</th>
+                    <th className="text-left py-3 px-4 font-semibold"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
                       <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                        Loading users...
+                        Đang tải người dùng...
                       </td>
                     </tr>
                   ) : filteredUsers.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                        No users found
+                        Không tìm thấy người dùng
                       </td>
                     </tr>
                   ) : (
@@ -429,7 +429,7 @@ export default function AdminDashboard() {
                         </td>
                         <td className="py-4 px-4">
                           <Badge variant={user.is_active ? "default" : "outline"}>
-                            {user.is_active ? "Active" : "Inactive"}
+                            {user.is_active ? "Hoạt động" : "Không hoạt động"}
                           </Badge>
                         </td>
                         <td className="py-4 px-4">
@@ -455,7 +455,7 @@ export default function AdminDashboard() {
             <div className="flex justify-between items-center mb-4">
               <div className="flex gap-2">
                 <Input 
-                  placeholder="Search listings..." 
+                  placeholder="Tìm kiếm danh sách..." 
                   className="max-w-xs" 
                   value={productSearchTerm}
                   onChange={(e) => setProductSearchTerm(e.target.value)}
@@ -465,10 +465,10 @@ export default function AdminDashboard() {
                   value={productStatusFilter}
                   onChange={(e) => setProductStatusFilter(e.target.value as any)}
                 >
-                  <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="ended">Ended</option>
-                  <option value="completed">Completed</option>
+                  <option value="all">Tất cả trạng thái</option>
+                  <option value="active">Đang hoạt động</option>
+                  <option value="ended">Kết thúc</option>
+                  <option value="completed">Hoàn thành</option>
                 </select>
               </div>
               <Button onClick={() => navigate('/admin/products')}>
@@ -480,25 +480,25 @@ export default function AdminDashboard() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="text-left py-3 px-4 font-semibold">Title</th>
-                    <th className="text-left py-3 px-4 font-semibold">Seller</th>
-                    <th className="text-left py-3 px-4 font-semibold">Current Price</th>
-                    <th className="text-left py-3 px-4 font-semibold">Status</th>
-                    <th className="text-left py-3 px-4 font-semibold">End Time</th>
-                    <th className="text-left py-3 px-4 font-semibold">Actions</th>
+                    <th className="text-left py-3 px-4 font-semibold">Tiêu đề</th>
+                    <th className="text-left py-3 px-4 font-semibold">Người bán</th>
+                    <th className="text-left py-3 px-4 font-semibold">Giá hiện tại</th>
+                    <th className="text-left py-3 px-4 font-semibold">Trạng thái</th>
+                    <th className="text-left py-3 px-4 font-semibold">Thời gian kết thúc</th>
+                    <th className="text-left py-3 px-4 font-semibold"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
                     <tr>
                       <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                        Loading products...
+                        Đang tải sản phẩm...
                       </td>
                     </tr>
                   ) : filteredProducts.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="py-8 text-center text-muted-foreground">
-                        No products found
+                        Không tìm thấy sản phẩm
                       </td>
                     </tr>
                   ) : (
@@ -509,7 +509,10 @@ export default function AdminDashboard() {
                         <td className="py-4 px-4">{formatPrice(product.current_price)}</td>
                         <td className="py-4 px-4">
                           <Badge variant={product.status === 'active' ? 'default' : 'outline'}>
-                            {product.status}
+                            {product.status === 'active' ? 'Đang hoạt động' : 
+                             product.status === 'ended' ? 'Kết thúc' : 
+                             product.status === 'completed' ? 'Hoàn thành' : 
+                             product.status === 'pending' ? 'Chờ duyệt' : product.status}
                           </Badge>
                         </td>
                         <td className="py-4 px-4 text-muted-foreground">
@@ -543,11 +546,11 @@ export default function AdminDashboard() {
           <TabsContent value="requests" className="mt-6 space-y-4">
             {loading ? (
               <Card className="p-6">
-                <p className="text-center text-muted-foreground">Loading upgrade requests...</p>
+                <p className="text-center text-muted-foreground">Đang tải yêu cầu nâng cấp...</p>
               </Card>
             ) : upgradeRequests.length === 0 ? (
               <Card className="p-6">
-                <p className="text-center text-muted-foreground">No pending upgrade requests</p>
+                <p className="text-center text-muted-foreground">Không có yêu cầu nâng cấp chờ duyệt</p>
               </Card>
             ) : (
               upgradeRequests.map((request) => (
@@ -559,10 +562,10 @@ export default function AdminDashboard() {
                         Email: {request.email}
                       </p>
                       <p className="text-sm text-muted-foreground mb-1">
-                        Total Bids: {request.total_bids} | Auctions Won: {request.auctions_won}
+                        Tổng lượt đấu giá: {request.total_bids} | Phiên thắng: {request.auctions_won}
                       </p>
                       <p className="text-sm text-muted-foreground mb-2">
-                        Requested on {new Date(request.requested_at).toLocaleDateString()}
+                        Yêu cầu vào {new Date(request.requested_at).toLocaleDateString()}
                       </p>
                       <Badge variant="outline">{request.status}</Badge>
                     </div>
@@ -572,7 +575,7 @@ export default function AdminDashboard() {
                         onClick={() => handleApproveRequest(request.id)}
                         disabled={processingRequest === request.id}
                       >
-                        {processingRequest === request.id ? "Processing..." : "Approve"}
+                        {processingRequest === request.id ? "Đang xử lý..." : "Phê duyệt"}
                       </Button>
                       <Button 
                         variant="outline" 
@@ -581,7 +584,7 @@ export default function AdminDashboard() {
                         onClick={() => handleRejectRequest(request.id)}
                         disabled={processingRequest === request.id}
                       >
-                        {processingRequest === request.id ? "Processing..." : "Reject"}
+                        {processingRequest === request.id ? "Đang xử lý..." : "Từ chối"}
                       </Button>
                     </div>
                   </div>

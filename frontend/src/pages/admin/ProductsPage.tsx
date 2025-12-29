@@ -277,7 +277,7 @@ export default function ProductsPage() {
                   <th className="text-left py-3 px-4 font-semibold">Lượt đấu giá</th>
                   <th className="text-left py-3 px-4 font-semibold">Trạng thái</th>
                   <th className="text-left py-3 px-4 font-semibold">Kết thúc</th>
-                  <th className="text-left py-3 px-4 font-semibold">Hành động</th>
+                  <th className="text-left py-3 px-4 font-semibold"></th>
                 </tr>
               </thead>
               <tbody>

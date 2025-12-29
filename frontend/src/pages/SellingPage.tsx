@@ -26,6 +26,13 @@ export default function SellingPage() {
   const [hasUpgradeRequest, setHasUpgradeRequest] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
+  // Redirect admin to admin dashboard
+  useEffect(() => {
+    if (user && user.role === 'admin') {
+      navigate('/admin')
+    }
+  }, [user, navigate])
+
   useEffect(() => {
     if (user && user.role === 'bidder') {
       checkUpgradeRequest()
@@ -50,7 +57,12 @@ export default function SellingPage() {
       return
     }
 
-    if (user.role === 'seller' || user.role === 'admin') {
+    if (user.role === 'admin') {
+      navigate('/admin')
+      return
+    }
+
+    if (user.role === 'seller') {
       navigate('/seller/post-item')
       return
     }

@@ -70,22 +70,34 @@ export function Navigation() {
           </form>
 
           <div className="flex items-center gap-2">
-            <Link 
-              to={user?.role === 'seller' ? '/seller/post-item' : '/selling'} 
-              className="px-3 py-2 text-sm font-medium hover:bg-muted rounded-md transition"
-            >
-              Bán hàng
-            </Link>
-            <Link to="/dashboard">
-              <Button variant="ghost" size="sm">
-                Dashboard
-              </Button>
-            </Link>
-            <Link to="/chat">
-              <Button variant="ghost" size="sm">
-                Chat
-              </Button>
-            </Link>
+            {user?.role !== 'admin' && (
+              <Link 
+                to={user?.role === 'seller' ? '/seller/post-item' : '/selling'} 
+                className="px-3 py-2 text-sm font-medium hover:bg-muted rounded-md transition"
+              >
+                Bán hàng
+              </Link>
+            )}
+            {user?.role === 'admin' ? (
+              <Link to="/admin">
+                <Button variant="ghost" size="sm">
+                  Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link to="/dashboard">
+                  <Button variant="ghost" size="sm">
+                    Dashboard
+                  </Button>
+                </Link>
+                <Link to="/chat">
+                  <Button variant="ghost" size="sm">
+                    Chat
+                  </Button>
+                </Link>
+              </>
+            )}
 
             {user ? (
               // Show user menu when logged in

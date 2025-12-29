@@ -72,6 +72,12 @@ export default function ChatPage() {
       navigate('/login')
       return
     }
+
+    if (user.role === 'admin') {
+      navigate('/admin')
+      return
+    }
+
     fetchConversations()
   }, [user, authLoading])
 
@@ -283,7 +289,7 @@ export default function ChatPage() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p>Loading...</p>
+        <p>Đang tải...</p>
       </div>
     )
   }
@@ -294,16 +300,16 @@ export default function ChatPage() {
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">Messages</h1>
+        <h1 className="text-3xl font-bold mb-6">Tin nhắn</h1>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
           {/* Conversations List */}
           <Card className="lg:col-span-1 overflow-hidden">
-            <div className="p-4 border-b border-border">
+            <div className="px-4 pb-4 border-b border-border">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search conversations..."
+                  placeholder="Tìm kiếm cuộc trò chuyện..."
                   className="pl-10"
                 />
               </div>
@@ -311,13 +317,13 @@ export default function ChatPage() {
             
             <div className="overflow-y-auto h-[calc(100%-80px)]">
               {loading ? (
-                <div className="p-8 text-center text-muted-foreground">Loading...</div>
+                <div className="p-8 text-center text-muted-foreground">Đang tải...</div>
               ) : conversations.length === 0 ? (
                 <div className="p-8 text-center">
                   <MessageCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground opacity-50" />
-                  <p className="text-muted-foreground">No conversations yet</p>
+                  <p className="text-muted-foreground">Chưa có cuộc trò chuyện nào</p>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Win an auction or sell an item to start chatting
+                    Thắng đấu giá hoặc bán sản phẩm để bắt đầu trò chuyện
                   </p>
                 </div>
               ) : (
@@ -361,7 +367,7 @@ export default function ChatPage() {
             {selectedConversation ? (
               <>
                 {/* Chat Header */}
-                <div className="p-4 border-b border-border">
+                <div className="pb-4 px-4 border-b border-border">
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="font-semibold">{selectedConversation.other_user_name}</h3>
@@ -374,7 +380,7 @@ export default function ChatPage() {
                       size="sm"
                       onClick={() => navigate(`/product/${selectedConversation.product_id}`)}
                     >
-                      View Product
+                      Xem sản phẩm
                     </Button>
                   </div>
                 </div>
@@ -383,7 +389,7 @@ export default function ChatPage() {
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                   {messages.length === 0 ? (
                     <div className="text-center text-muted-foreground py-8">
-                      <p>No messages yet. Start the conversation!</p>
+                      <p>Chưa có tin nhắn nào. Bắt đầu cuộc trò chuyện!</p>
                     </div>
                   ) : (
                     <>
@@ -427,7 +433,7 @@ export default function ChatPage() {
                 <div className="p-4 border-t border-border">
                   <div className="flex gap-2">
                     <Input
-                      placeholder="Type a message..."
+                      placeholder="Nhập tin nhắn..."
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyPress={(e) => {
@@ -444,7 +450,7 @@ export default function ChatPage() {
                       className="gap-2"
                     >
                       <Send className="w-4 h-4" />
-                      {sending ? 'Sending...' : 'Send'}
+                      {sending ? 'Đang gửi...' : 'Gửi'}
                     </Button>
                   </div>
                 </div>
@@ -453,7 +459,7 @@ export default function ChatPage() {
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center text-muted-foreground">
                   <MessageCircle className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p>Select a conversation to start chatting</p>
+                  <p>Chọn một cuộc trò chuyện để bắt đầu</p>
                 </div>
               </div>
             )}

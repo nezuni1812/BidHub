@@ -20,7 +20,7 @@ export function ChatSidebarOverlay({ isOpen, onClose, activeConversationId }: Ch
         <div className="flex-1 flex flex-col">
           {/* Header */}
           <div className="p-4 border-b border-border bg-card flex justify-between items-center">
-            <h2 className="text-lg font-semibold">Messages</h2>
+            <h2 className="text-lg font-semibold">Trò chuyện</h2>
             <button
               onClick={onClose}
               className="p-2 hover:bg-muted rounded-lg transition"

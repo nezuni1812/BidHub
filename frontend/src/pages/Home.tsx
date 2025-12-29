@@ -21,7 +21,7 @@ import { useToast } from "@/components/ui/use-toast"
 
 interface Filters {
   search: string
-  category: number | null
+  categories: number[]
   categoryName: string | null
   priceRange: [number, number]
   sortBy: string
@@ -33,7 +33,7 @@ export default function Home() {
   const { toast } = useToast();
   const [filters, setFilters] = useState<Filters>({
     search: "",
-    category: null,
+    categories: [],
     categoryName: null,
     priceRange: [0, 50000000],
     sortBy: "newest",
@@ -86,7 +86,7 @@ export default function Home() {
   // Reset page to 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filters.search, filters.category, filters.sortBy, filters.showWatchlist]);
+  }, [filters.search, filters.categories, filters.sortBy, filters.showWatchlist]);
 
   // Fetch products based on filters
   useEffect(() => {
@@ -159,38 +159,103 @@ export default function Home() {
             break
         }
         
-        const params: ProductSearchParams = {
-          keyword: filters.search || undefined,
-          category_id: filters.category || undefined,
-          sort_by,
-          page: currentPage,
-          page_size: 8
+        // Build params based on selected categories
+        if (filters.categories.length === 0) {
+          // No category filter
+          const params: ProductSearchParams = {
+            keyword: filters.search || undefined,
+            sort_by,
+            page: currentPage,
+            page_size: 8
+          }
+          
+          console.log('📤 [HOME] Request params (no category):', params)
+          const response = await searchProducts(params)
+          
+          let productList = response.data || []
+          
+          // Client-side sorting for most-bids if needed
+          if (filters.sortBy === 'most-bids') {
+            productList = [...productList].sort((a, b) => b.total_bids - a.total_bids)
+          }
+          
+          setProducts(productList)
+          setPagination(response.pagination)
+          
+        } else if (filters.categories.length === 1) {
+          // Single category - use API filter
+          const params: ProductSearchParams = {
+            keyword: filters.search || undefined,
+            category_id: filters.categories[0],
+            sort_by,
+            page: currentPage,
+            page_size: 8
+          }
+          
+          console.log('📤 [HOME] Request params (single category):', params)
+          const response = await searchProducts(params)
+          
+          let productList = response.data || []
+          
+          // Client-side sorting for most-bids if needed
+          if (filters.sortBy === 'most-bids') {
+            productList = [...productList].sort((a, b) => b.total_bids - a.total_bids)
+          }
+          
+          setProducts(productList)
+          setPagination(response.pagination)
+          
+        } else {
+          // Multiple categories - fetch each category and merge results
+          console.log('📤 [HOME] Fetching multiple categories:', filters.categories)
+          
+          const allProducts: Product[] = []
+          
+          // Fetch products for each category
+          for (const categoryId of filters.categories) {
+            const params: ProductSearchParams = {
+              keyword: filters.search || undefined,
+              category_id: categoryId,
+              sort_by,
+              page: 1,
+              page_size: 100 // Get more products per category
+            }
+            
+            console.log('📤 [HOME] Fetching category:', categoryId)
+            const response = await searchProducts(params)
+            
+            if (response.data && response.data.length > 0) {
+              allProducts.push(...response.data)
+            }
+          }
+          
+          console.log('✅ [HOME] Total products from all categories:', allProducts.length)
+          
+          // Remove duplicates (in case a product appears in multiple responses)
+          const uniqueProducts = Array.from(
+            new Map(allProducts.map(p => [p.id, p])).values()
+          )
+          
+          let productList = uniqueProducts
+          
+          // Client-side sorting for most-bids if needed
+          if (filters.sortBy === 'most-bids') {
+            productList = [...productList].sort((a, b) => b.total_bids - a.total_bids)
+          }
+          
+          // Handle pagination manually for merged results
+          const startIndex = (currentPage - 1) * 8
+          const endIndex = startIndex + 8
+          const paginatedList = productList.slice(startIndex, endIndex)
+          
+          setProducts(paginatedList)
+          setPagination({
+            page: currentPage,
+            page_size: 8,
+            total: productList.length,
+            total_pages: Math.ceil(productList.length / 8)
+          })
         }
-        
-        console.log('📤 [HOME] Request params:', params)
-        console.log('🌐 [HOME] API Base URL:', import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1')
-        
-        const response = await searchProducts(params)
-        
-        console.log('📥 [HOME] Raw API Response:', response)
-        console.log('📦 [HOME] Response.data:', response.data)
-        console.log('📊 [HOME] Response.pagination:', response.pagination)
-        
-        let productList = response.data || []
-        
-        console.log('✅ [HOME] Product list length:', productList.length)
-        if (productList.length > 0) {
-          console.log('📝 [HOME] First product:', productList[0])
-        }
-        
-        // Client-side sorting for most-bids if needed
-        if (filters.sortBy === 'most-bids') {
-          productList = [...productList].sort((a, b) => b.total_bids - a.total_bids)
-          console.log('🔄 [HOME] Sorted by most bids')
-        }
-        
-        setProducts(productList)
-        setPagination(response.pagination)
         
         console.log('✨ [HOME] Products state updated successfully')
       } catch (err) {
@@ -207,7 +272,7 @@ export default function Home() {
     }
     
     fetchProducts()
-  }, [filters.search, filters.category, filters.sortBy, filters.showWatchlist, currentPage])
+  }, [filters.search, filters.categories, filters.sortBy, filters.showWatchlist, currentPage])
   
   // Toggle watchlist for a product
   const toggleWatchlist = async (productId: number, e: React.MouseEvent) => {
@@ -331,13 +396,15 @@ export default function Home() {
                     {filters.search} <X className="w-3 h-3 ml-1" />
                   </Badge>
                 )}
-                {filters.category && (
+                {filters.categories.length > 0 && (
                   <Badge
                     variant="secondary"
                     className="cursor-pointer"
-                    onClick={() => setFilters({ ...filters, category: null, categoryName: null })}
+                    onClick={() => setFilters({ ...filters, categories: [], categoryName: null })}
                   >
-                    {filters.categoryName || 'Category'} <X className="w-3 h-3 ml-1" />
+                    {filters.categories.length === 1 
+                      ? (filters.categoryName || 'Danh mục') 
+                      : `${filters.categories.length} danh mục`} <X className="w-3 h-3 ml-1" />
                   </Badge>
                 )}
                 {filters.sellerRating > 0 && (
@@ -374,7 +441,7 @@ export default function Home() {
                   onClick={() =>
                     setFilters({
                       search: "",
-                      category: null,
+                      categories: [],
                       categoryName: null,
                       priceRange: [0, 50000000],
                       sortBy: "newest",

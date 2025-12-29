@@ -16,7 +16,7 @@ interface Category {
 interface SearchFiltersProps {
   filters: {
     search: string
-    category: number | null
+    categories: number[]
     categoryName: string | null
     priceRange: [number, number]
     sortBy: string
@@ -89,6 +89,78 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
     })
   }
 
+  // Helper: Get all child IDs of a parent category
+  const getChildIds = (parent: Category): number[] => {
+    if (!parent.children || parent.children.length === 0) return []
+    return parent.children.map(child => parseInt(child.id))
+  }
+
+  // Helper: Check if all children are selected
+  const areAllChildrenSelected = (parent: Category): boolean => {
+    const childIds = getChildIds(parent)
+    if (childIds.length === 0) return false
+    return childIds.every(id => filters.categories.includes(id))
+  }
+
+  // Helper: Check if parent is selected (either directly or all children selected)
+  const isParentSelected = (parent: Category): boolean => {
+    const parentId = parseInt(parent.id)
+    // Check if parent ID is in categories OR all children are selected
+    return filters.categories.includes(parentId) || areAllChildrenSelected(parent)
+  }
+
+  // Handle parent category toggle
+  const handleParentToggle = (parent: Category) => {
+    const parentId = parseInt(parent.id)
+    const childIds = getChildIds(parent)
+    let newCategories = [...filters.categories]
+
+    if (isParentSelected(parent)) {
+      // Unselect: remove parent and all children
+      newCategories = newCategories.filter(id => id !== parentId && !childIds.includes(id))
+    } else {
+      // Select: if has children, add all children; otherwise add parent
+      if (childIds.length > 0) {
+        // Add all children (don't add parent itself)
+        childIds.forEach(id => {
+          if (!newCategories.includes(id)) {
+            newCategories.push(id)
+          }
+        })
+      } else {
+        // No children, add parent
+        if (!newCategories.includes(parentId)) {
+          newCategories.push(parentId)
+        }
+      }
+    }
+
+    onChange({
+      ...filters,
+      categories: newCategories,
+      categoryName: newCategories.length > 0 ? 'Multiple' : null,
+    })
+  }
+
+  // Handle child category toggle
+  const handleChildToggle = (childId: number) => {
+    let newCategories = [...filters.categories]
+    
+    if (newCategories.includes(childId)) {
+      // Remove child
+      newCategories = newCategories.filter(id => id !== childId)
+    } else {
+      // Add child
+      newCategories.push(childId)
+    }
+
+    onChange({
+      ...filters,
+      categories: newCategories,
+      categoryName: newCategories.length > 0 ? 'Multiple' : null,
+    })
+  }
+
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => ({
       ...prev,
@@ -131,32 +203,33 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
                 <div key={parent.id} className="space-y-1">
                   {/* Parent Category */}
                   <div className="flex items-start gap-1">
-                    {parent.children && parent.children.length > 0 && (
-                      <button
-                        onClick={() => toggleCategory(parent.id)}
-                        className="mt-1 hover:bg-muted rounded p-0.5 transition-colors"
-                      >
-                        <ChevronRight 
-                          className={`w-3.5 h-3.5 transition-transform ${
-                            expandedCategories.has(parent.id) ? 'rotate-90' : ''
-                          }`} 
-                        />
-                      </button>
-                    )}
+                    <button
+                      onClick={() => parent.children && parent.children.length > 0 && toggleCategory(parent.id)}
+                      className={`mt-1 rounded p-0.5 transition-colors ${
+                        parent.children && parent.children.length > 0 
+                          ? 'hover:bg-muted cursor-pointer' 
+                          : 'opacity-0 cursor-default'
+                      }`}
+                    >
+                      <ChevronRight 
+                        className={`w-3.5 h-3.5 transition-transform ${
+                          expandedCategories.has(parent.id) ? 'rotate-90' : ''
+                        }`} 
+                      />
+                    </button>
                     <label className="flex items-center gap-2 cursor-pointer hover:opacity-75 transition flex-1 py-1">
                       <input
                         type="checkbox"
-                        checked={filters.category === parseInt(parent.id)}
-                        onChange={(e) =>
-                          onChange({
-                            ...filters,
-                            category: e.target.checked ? parseInt(parent.id) : null,
-                            categoryName: e.target.checked ? parent.name : null,
-                          })
-                        }
+                        checked={isParentSelected(parent)}
+                        onChange={() => handleParentToggle(parent)}
                         className="w-3.5 h-3.5 rounded border-border cursor-pointer flex-shrink-0"
                       />
-                      <span className="text-sm font-medium">{parent.name}</span>
+                      <span className="text-sm font-medium">
+                        {parent.name}
+                        {parent.children && parent.children.length > 0 && (
+                          <span className="text-xs text-muted-foreground ml-1">({parent.children.length})</span>
+                        )}
+                      </span>
                     </label>
                   </div>
 
@@ -172,14 +245,8 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
                         >
                           <input
                             type="checkbox"
-                            checked={filters.category === parseInt(child.id)}
-                            onChange={(e) =>
-                              onChange({
-                                ...filters,
-                                category: e.target.checked ? parseInt(child.id) : null,
-                                categoryName: e.target.checked ? child.name : null,
-                              })
-                            }
+                            checked={filters.categories.includes(parseInt(child.id))}
+                            onChange={() => handleChildToggle(parseInt(child.id))}
                             className="w-3.5 h-3.5 rounded border-border cursor-pointer flex-shrink-0"
                           />
                           <span className="text-sm">{child.name}</span>
