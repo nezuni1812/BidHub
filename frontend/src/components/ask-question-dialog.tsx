@@ -25,17 +25,17 @@ export function AskQuestionDialog({ isOpen, onClose, sellerName, onAsk }: AskQue
     
     // Validation: question must be 10-1000 characters
     if (!trimmedQuestion) {
-      setError("Please enter your question")
+      setError("Vui lòng nhập câu hỏi của bạn")
       return
     }
     
     if (trimmedQuestion.length < 10) {
-      setError("Question must be at least 10 characters long")
+      setError("Câu hỏi phải có ít nhất 10 ký tự")
       return
     }
     
     if (trimmedQuestion.length > 1000) {
-      setError("Question must not exceed 1000 characters")
+      setError("Câu hỏi không được vượt quá 1000 ký tự")
       return
     }
 
@@ -51,7 +51,7 @@ export function AskQuestionDialog({ isOpen, onClose, sellerName, onAsk }: AskQue
         setQuestion("")
       }, 2000)
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to send question. Please try again.";
+      const errorMessage = err instanceof Error ? err.message : "Không thể gửi câu hỏi. Vui lòng thử lại.";
       setError(errorMessage)
     } finally {
       setIsLoading(false)
@@ -63,7 +63,7 @@ export function AskQuestionDialog({ isOpen, onClose, sellerName, onAsk }: AskQue
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-md">
-        <div className="p-6">
+        <div className="px-6">
           {success ? (
             <div className="text-center py-8">
               <div className="flex justify-center mb-4">
@@ -71,27 +71,27 @@ export function AskQuestionDialog({ isOpen, onClose, sellerName, onAsk }: AskQue
                   <Check className="w-6 h-6 text-green-600" />
                 </div>
               </div>
-              <h2 className="text-xl font-bold mb-2">Question Sent!</h2>
-              <p className="text-muted-foreground">Your question has been sent to {sellerName}.</p>
+              <h2 className="text-xl font-bold mb-2">Đã gửi câu hỏi!</h2>
+              <p className="text-muted-foreground">Câu hỏi của bạn đã được gửi đến {sellerName}.</p>
             </div>
           ) : (
             <>
-              <h2 className="text-2xl font-bold mb-2">Ask a Question</h2>
-              <p className="text-muted-foreground text-sm mb-6">Ask {sellerName} about this item</p>
+              <h2 className="text-2xl font-bold mb-2">Đặt câu hỏi</h2>
+              <p className="text-muted-foreground text-sm mb-6">Hỏi {sellerName} về sản phẩm này</p>
 
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="question">Your question</Label>
+                  <Label htmlFor="question">Câu hỏi của bạn</Label>
                   <Textarea
                     id="question"
-                    placeholder="Enter your question here (minimum 10 characters)..."
+                    placeholder="Nhập câu hỏi của bạn ở đây (tối thiểu 10 ký tự)..."
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
                     disabled={isLoading}
                     className="mt-2 min-h-24"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    {question.trim().length}/1000 characters {question.trim().length < 10 && question.trim().length > 0 && `(${10 - question.trim().length} more needed)`}
+                    {question.trim().length}/1000 ký tự {question.trim().length < 10 && question.trim().length > 0 && `(cần thêm ${10 - question.trim().length})`}
                   </p>
                 </div>
 
@@ -104,14 +104,14 @@ export function AskQuestionDialog({ isOpen, onClose, sellerName, onAsk }: AskQue
 
                 <div className="flex gap-3 pt-4">
                   <Button variant="outline" className="flex-1 bg-transparent" onClick={onClose} disabled={isLoading}>
-                    Cancel
+                    Hủy
                   </Button>
                   <Button 
                     className="flex-1" 
                     onClick={handleAsk} 
                     disabled={!question.trim() || question.trim().length < 10 || isLoading}
                   >
-                    {isLoading ? "Sending..." : "Send Question"}
+                    {isLoading ? "Đang gửi..." : "Gửi câu hỏi"}
                   </Button>
                 </div>
               </div>
