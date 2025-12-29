@@ -23,7 +23,7 @@ interface Filters {
   search: string
   categories: number[]
   categoryName: string | null
-  priceRange: [number, number]
+  priceRange: [number, number] | null
   sortBy: string
   sellerRating: number
   showWatchlist: boolean
@@ -35,7 +35,7 @@ export default function Home() {
     search: "",
     categories: [],
     categoryName: null,
-    priceRange: [0, 50000000],
+    priceRange: null,
     sortBy: "newest",
     sellerRating: 0,
     showWatchlist: false,
@@ -86,7 +86,7 @@ export default function Home() {
   // Reset page to 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [filters.search, filters.categories, filters.sortBy, filters.showWatchlist]);
+  }, [filters.search, filters.categories, filters.sortBy, filters.showWatchlist, filters.priceRange, filters.sellerRating]);
 
   // Fetch products based on filters
   useEffect(() => {
@@ -162,11 +162,14 @@ export default function Home() {
         // Build params based on selected categories
         if (filters.categories.length === 0) {
           // No category filter
+          // If we have client-side filters (price or rating), fetch all products
+          const hasClientSideFilters = filters.priceRange || filters.sellerRating > 0;
+          
           const params: ProductSearchParams = {
             keyword: filters.search || undefined,
             sort_by,
-            page: currentPage,
-            page_size: 8
+            page: hasClientSideFilters ? 1 : currentPage,
+            page_size: hasClientSideFilters ? 1000 : 8
           }
           
           console.log('📤 [HOME] Request params (no category):', params)
@@ -174,22 +177,61 @@ export default function Home() {
           
           let productList = response.data || []
           
+          // Apply client-side filters
+          productList = productList.filter(product => {
+            // Filter by price range (only if set)
+            if (filters.priceRange) {
+              const price = parseFloat(product.current_price as any);
+              if (price < filters.priceRange[0] || price > filters.priceRange[1]) {
+                return false;
+              }
+            }
+            
+            // Filter by seller rating
+            if (filters.sellerRating > 0) {
+              const rating = parseFloat(product.seller_rating as any) * 100;
+              if (rating < filters.sellerRating) {
+                return false;
+              }
+            }
+            
+            return true;
+          });
+          
           // Client-side sorting for most-bids if needed
           if (filters.sortBy === 'most-bids') {
-            productList = [...productList].sort((a, b) => b.total_bids - a.total_bids)
+            productList = [...productList].sort((a, b) => (typeof b.total_bids === 'string' ? parseInt(b.total_bids) : b.total_bids) - (typeof a.total_bids === 'string' ? parseInt(a.total_bids) : a.total_bids))
           }
           
-          setProducts(productList)
-          setPagination(response.pagination)
+          // If we have client-side filters, do manual pagination
+          if (hasClientSideFilters) {
+            const startIndex = (currentPage - 1) * 8;
+            const endIndex = startIndex + 8;
+            const paginatedList = productList.slice(startIndex, endIndex);
+            
+            setProducts(paginatedList);
+            setPagination({
+              page: currentPage,
+              page_size: 8,
+              total: productList.length,
+              total_pages: Math.ceil(productList.length / 8)
+            });
+          } else {
+            setProducts(productList)
+            setPagination(response.pagination)
+          }
           
         } else if (filters.categories.length === 1) {
           // Single category - use API filter
+          // If we have client-side filters (price or rating), fetch all products
+          const hasClientSideFilters = filters.priceRange || filters.sellerRating > 0;
+          
           const params: ProductSearchParams = {
             keyword: filters.search || undefined,
             category_id: filters.categories[0],
             sort_by,
-            page: currentPage,
-            page_size: 8
+            page: hasClientSideFilters ? 1 : currentPage,
+            page_size: hasClientSideFilters ? 1000 : 8
           }
           
           console.log('📤 [HOME] Request params (single category):', params)
@@ -197,13 +239,49 @@ export default function Home() {
           
           let productList = response.data || []
           
+          // Apply client-side filters
+          productList = productList.filter(product => {
+            // Filter by price range (only if set)
+            if (filters.priceRange) {
+              const price = parseFloat(product.current_price as any);
+              if (price < filters.priceRange[0] || price > filters.priceRange[1]) {
+                return false;
+              }
+            }
+            
+            // Filter by seller rating
+            if (filters.sellerRating > 0) {
+              const rating = parseFloat(product.seller_rating as any) * 100;
+              if (rating < filters.sellerRating) {
+                return false;
+              }
+            }
+            
+            return true;
+          });
+          
           // Client-side sorting for most-bids if needed
           if (filters.sortBy === 'most-bids') {
             productList = [...productList].sort((a, b) => b.total_bids - a.total_bids)
           }
           
-          setProducts(productList)
-          setPagination(response.pagination)
+          // If we have client-side filters, do manual pagination
+          if (hasClientSideFilters) {
+            const startIndex = (currentPage - 1) * 8;
+            const endIndex = startIndex + 8;
+            const paginatedList = productList.slice(startIndex, endIndex);
+            
+            setProducts(paginatedList);
+            setPagination({
+              page: currentPage,
+              page_size: 8,
+              total: productList.length,
+              total_pages: Math.ceil(productList.length / 8)
+            });
+          } else {
+            setProducts(productList)
+            setPagination(response.pagination)
+          }
           
         } else {
           // Multiple categories - fetch each category and merge results
@@ -238,9 +316,30 @@ export default function Home() {
           
           let productList = uniqueProducts
           
+          // Apply client-side filters
+          productList = productList.filter(product => {
+            // Filter by price range (only if set)
+            if (filters.priceRange) {
+              const price = parseFloat(product.current_price as any);
+              if (price < filters.priceRange[0] || price > filters.priceRange[1]) {
+                return false;
+              }
+            }
+            
+            // Filter by seller rating
+            if (filters.sellerRating > 0) {
+              const rating = parseFloat(product.seller_rating as any) * 100;
+              if (rating < filters.sellerRating) {
+                return false;
+              }
+            }
+            
+            return true;
+          });
+          
           // Client-side sorting for most-bids if needed
           if (filters.sortBy === 'most-bids') {
-            productList = [...productList].sort((a, b) => b.total_bids - a.total_bids)
+            productList = [...productList].sort((a, b) => (typeof b.total_bids === 'string' ? parseInt(b.total_bids) : b.total_bids) - (typeof a.total_bids === 'string' ? parseInt(a.total_bids) : a.total_bids))
           }
           
           // Handle pagination manually for merged results
@@ -272,7 +371,7 @@ export default function Home() {
     }
     
     fetchProducts()
-  }, [filters.search, filters.categories, filters.sortBy, filters.showWatchlist, currentPage])
+  }, [filters.search, filters.categories, filters.sortBy, filters.showWatchlist, filters.priceRange, filters.sellerRating, currentPage])
   
   // Toggle watchlist for a product
   const toggleWatchlist = async (productId: number, e: React.MouseEvent) => {
@@ -325,7 +424,7 @@ export default function Home() {
     }
   };
 
-  const hasActiveFilters = filters.search || filters.category || filters.sellerRating > 0 || filters.showWatchlist
+  const hasActiveFilters = filters.search || filters.category || filters.priceRange || filters.sellerRating > 0 || filters.showWatchlist
 
   return (
     <div className="min-h-screen bg-background">
@@ -407,13 +506,22 @@ export default function Home() {
                       : `${filters.categories.length} danh mục`} <X className="w-3 h-3 ml-1" />
                   </Badge>
                 )}
+                {filters.priceRange && (
+                  <Badge
+                    variant="secondary"
+                    className="cursor-pointer"
+                    onClick={() => setFilters({ ...filters, priceRange: null })}
+                  >
+                    Giá: {filters.priceRange[0].toLocaleString('vi-VN')} - {filters.priceRange[1].toLocaleString('vi-VN')} ₫ <X className="w-3 h-3 ml-1" />
+                  </Badge>
+                )}
                 {filters.sellerRating > 0 && (
                   <Badge
                     variant="secondary"
                     className="cursor-pointer"
                     onClick={() => setFilters({ ...filters, sellerRating: 0 })}
                   >
-                    Đánh giá {filters.sellerRating}%+ <X className="w-3 h-3 ml-1" />
+                    Từ {filters.sellerRating}% <X className="w-3 h-3 ml-1" />
                   </Badge>
                 )}
               </div>
@@ -443,7 +551,7 @@ export default function Home() {
                       search: "",
                       categories: [],
                       categoryName: null,
-                      priceRange: [0, 50000000],
+                      priceRange: null,
                       sortBy: "newest",
                       sellerRating: 0,
                       showWatchlist: false,
@@ -484,9 +592,39 @@ export default function Home() {
                           {product.category_name}
                         </Badge>
                         <h3 className="font-semibold line-clamp-2 mb-2">{product.title}</h3>
-                        <p className="text-xs text-muted-foreground mb-3">
-                          bởi {product.seller_name} ⭐ {parseFloat(product.seller_rating as any).toFixed(1)}
-                        </p>
+                        <div className="flex items-center gap-2 mb-3">
+                          <p className="text-xs text-muted-foreground">
+                            bởi {product.seller_name}
+                          </p>
+                          {(() => {
+                            const rating = (parseFloat(product.seller_rating as any) * 100);
+                            let bgColor = 'bg-gray-100 dark:bg-gray-800';
+                            let textColor = 'text-gray-600 dark:text-gray-400';
+                            
+                            if (rating >= 80) {
+                              bgColor = 'bg-green-100 dark:bg-green-900/30';
+                              textColor = 'text-green-700 dark:text-green-400';
+                            } else if (rating >= 60) {
+                              bgColor = 'bg-blue-100 dark:bg-blue-900/30';
+                              textColor = 'text-blue-700 dark:text-blue-400';
+                            } else if (rating >= 40) {
+                              bgColor = 'bg-yellow-100 dark:bg-yellow-900/30';
+                              textColor = 'text-yellow-700 dark:text-yellow-400';
+                            } else if (rating >= 20) {
+                              bgColor = 'bg-orange-100 dark:bg-orange-900/30';
+                              textColor = 'text-orange-700 dark:text-orange-400';
+                            } else {
+                              bgColor = 'bg-red-100 dark:bg-red-900/30';
+                              textColor = 'text-red-700 dark:text-red-400';
+                            }
+                            
+                            return (
+                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 ${bgColor} ${textColor} rounded-full text-xs font-medium`}>
+                                {rating.toFixed(0)}%
+                              </span>
+                            );
+                          })()}
+                        </div>
                         <div className="mt-auto space-y-2">
                           <div>
                             <p className="text-xs text-muted-foreground">Giá hiện tại</p>

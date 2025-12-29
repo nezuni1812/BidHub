@@ -18,7 +18,7 @@ interface SearchFiltersProps {
     search: string
     categories: number[]
     categoryName: string | null
-    priceRange: [number, number]
+    priceRange: [number, number] | null
     sortBy: string
     sellerRating: number
     showWatchlist: boolean
@@ -27,6 +27,16 @@ interface SearchFiltersProps {
 }
 
 const ratings = [80, 60, 40, 20, 0]
+
+// Format number with thousand separators
+const formatNumber = (num: number): string => {
+  return num.toLocaleString('vi-VN');
+}
+
+// Parse formatted number string back to number
+const parseFormattedNumber = (str: string): number => {
+  return parseFloat(str.replace(/\./g, '').replace(/,/g, '.')) || 0;
+}
 
 export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
   const [categories, setCategories] = useState<Category[]>([])
@@ -274,33 +284,47 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
             <div className="space-y-4">
               <div className="flex gap-2">
                 <input
-                  type="number"
-                  value={(filters.priceRange[0] / 1000000).toFixed(1)}
-                  onChange={(e) =>
+                  type="text"
+                  value={filters.priceRange ? formatNumber(filters.priceRange[0]) : ''}
+                  onChange={(e) => {
+                    const value = parseFormattedNumber(e.target.value);
                     onChange({
                       ...filters,
-                      priceRange: [Number.parseFloat(e.target.value) * 1000000, filters.priceRange[1]],
+                      priceRange: [value, filters.priceRange ? filters.priceRange[1] : 50000000],
                     })
-                  }
+                  }}
                   className="w-full px-2 py-1 border border-border rounded text-sm"
                   placeholder="Tối thiểu"
                 />
                 <input
-                  type="number"
-                  value={(filters.priceRange[1] / 1000000).toFixed(1)}
-                  onChange={(e) =>
+                  type="text"
+                  value={filters.priceRange ? formatNumber(filters.priceRange[1]) : ''}
+                  onChange={(e) => {
+                    const value = parseFormattedNumber(e.target.value);
                     onChange({
                       ...filters,
-                      priceRange: [filters.priceRange[0], Number.parseFloat(e.target.value) * 1000000],
+                      priceRange: [filters.priceRange ? filters.priceRange[0] : 0, value],
                     })
-                  }
+                  }}
                   className="w-full px-2 py-1 border border-border rounded text-sm"
                   placeholder="Tối đa"
                 />
               </div>
-              <div className="text-xs text-muted-foreground">
-                ${(filters.priceRange[0] / 1000000).toFixed(1)}M - ${(filters.priceRange[1] / 1000000).toFixed(1)}M
-              </div>
+              {filters.priceRange && (
+                <div className="space-y-2">
+                  <div className="text-xs text-muted-foreground">
+                    {formatNumber(filters.priceRange[0])} VND - {formatNumber(filters.priceRange[1])} VND
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onChange({ ...filters, priceRange: null })}
+                    className="w-full"
+                  >
+                    Xóa bộ lọc giá
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -330,7 +354,7 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
                     }
                     className="w-4 h-4 cursor-pointer"
                   />
-                  <span className="text-sm">{rating === 0 ? "Tất cả" : `${rating}%+`}</span>
+                  <span className="text-sm">{rating === 0 ? "Tất cả" : `từ ${rating}%`}</span>
                 </label>
               ))}
             </div>
