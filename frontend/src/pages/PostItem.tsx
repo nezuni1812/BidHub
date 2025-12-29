@@ -71,6 +71,16 @@ export default function PostItemPage() {
   const [availableBidders, setAvailableBidders] = useState<AvailableBidder[]>([])
   const [selectedBidders, setSelectedBidders] = useState<string[]>([])
   const [loadingBidders, setLoadingBidders] = useState(false)
+  const [errors, setErrors] = useState<{
+    title?: string;
+    category?: string;
+    description?: string;
+    startingBid?: string;
+    biddingIncrement?: string;
+    buyNowPrice?: string;
+    mainImage?: string;
+    additionalImages?: string;
+  }>({})
   
   // Protect route - only sellers can access
   useEffect(() => {
@@ -206,6 +216,61 @@ export default function PostItemPage() {
     setAdditionalImages((prev) => prev.filter((_, i) => i !== index))
   }
 
+  const validateForm = () => {
+    const newErrors: typeof errors = {};
+
+    // Validate title
+    if (!formData.title.trim()) {
+      newErrors.title = 'Vui lòng nhập tên sản phẩm';
+    } else if (formData.title.trim().length < 3) {
+      newErrors.title = 'Tên sản phẩm phải có ít nhất 3 ký tự';
+    } else if (formData.title.trim().length > 200) {
+      newErrors.title = 'Tên sản phẩm không được quá 200 ký tự';
+    }
+
+    // Validate category
+    if (!formData.category_id) {
+      newErrors.category = 'Vui lòng chọn danh mục';
+    }
+
+    // Validate description
+    if (!formData.description.trim()) {
+      newErrors.description = 'Vui lòng nhập mô tả sản phẩm';
+    } else if (formData.description.trim().length < 10) {
+      newErrors.description = 'Mô tả phải có ít nhất 10 ký tự';
+    } else if (formData.description.trim().length > 5000) {
+      newErrors.description = 'Mô tả không được quá 5000 ký tự';
+    }
+
+    // Validate starting bid
+    if (!formData.startingBid || parseFloat(parseNumber(formData.startingBid)) <= 0) {
+      newErrors.startingBid = 'Giá khởi điểm phải lớn hơn 0';
+    }
+
+    // Validate bidding increment
+    if (!formData.biddingIncrement || parseFloat(parseNumber(formData.biddingIncrement)) <= 0) {
+      newErrors.biddingIncrement = 'Bước giá phải lớn hơn 0';
+    }
+
+    // Validate buy now price
+    if (formData.buyNowPrice && parseFloat(parseNumber(formData.buyNowPrice)) <= parseFloat(parseNumber(formData.startingBid))) {
+      newErrors.buyNowPrice = 'Giá mua ngay phải lớn hơn giá khởi điểm';
+    }
+
+    // Validate main image
+    if (!mainImage) {
+      newErrors.mainImage = 'Vui lòng tải lên ảnh chính';
+    }
+
+    // Validate additional images
+    if (additionalImages.length < 2) {
+      newErrors.additionalImages = 'Vui lòng tải lên ít nhất 2 ảnh phụ';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -216,71 +281,11 @@ export default function PostItemPage() {
     console.log('📊 Selected bidders count:', selectedBidders.length)
 
     try {
-      // Validate required fields
-      if (!formData.title.trim()) {
+      // Validate all fields
+      if (!validateForm()) {
         toast({
-          title: "Thiếu tên sản phẩm",
-          description: "Vui lòng nhập tên sản phẩm",
-          variant: "destructive"
-        })
-        setIsSubmitting(false)
-        return
-      }
-
-      if (!formData.description.trim()) {
-        toast({
-          title: "Thiếu mô tả",
-          description: "Vui lòng nhập mô tả sản phẩm",
-          variant: "destructive"
-        })
-        setIsSubmitting(false)
-        return
-      }
-
-      if (!formData.category_id) {
-        toast({
-          title: "Thiếu danh mục",
-          description: "Vui lòng chọn danh mục",
-          variant: "destructive"
-        })
-        setIsSubmitting(false)
-        return
-      }
-
-      if (!formData.startingBid || parseFloat(formData.startingBid) <= 0) {
-        toast({
-          title: "Giá khởi điểm không hợp lệ",
-          description: "Vui lòng nhập giá khởi điểm hợp lệ",
-          variant: "destructive"
-        })
-        setIsSubmitting(false)
-        return
-      }
-
-      if (!formData.biddingIncrement || parseFloat(formData.biddingIncrement) <= 0) {
-        toast({
-          title: "Bước giá không hợp lệ",
-          description: "Vui lòng nhập bước giá hợp lệ",
-          variant: "destructive"
-        })
-        setIsSubmitting(false)
-        return
-      }
-
-      if (!mainImage) {
-        toast({
-          title: "Thiếu ảnh chính",
-          description: "Vui lòng tải lên ảnh chính cho sản phẩm",
-          variant: "destructive"
-        })
-        setIsSubmitting(false)
-        return
-      }
-
-      if (additionalImages.length < 2) {
-        toast({
-          title: "Thiếu ảnh phụ",
-          description: "Vui lòng tải lên ít nhất 2 ảnh phụ",
+          title: "Thông tin không hợp lệ",
+          description: "Vui lòng kiểm tra lại các trường thông tin",
           variant: "destructive"
         })
         setIsSubmitting(false)
@@ -341,23 +346,37 @@ export default function PostItemPage() {
             description: `Đang thêm ${selectedBidders.length} người đấu giá được phép...`
           })
 
-          const allowPromises = selectedBidders.map(bidderId => {
-            console.log(`📤 Calling allow API for bidder ${bidderId}`)
-            return api.post(`/seller/products/${productId}/allow-unrated-bidder/${bidderId}`)
-          })
-
           try {
-            const results = await Promise.all(allowPromises)
-            console.log('✅ All bidders allowed:', results)
-            toast({
-              title: "Thành công",
-              description: "Đã tạo sản phẩm và thêm người đấu giá thành công!",
+            // Call batch API to allow multiple bidders
+            const response = await api.post(`/seller/products/${productId}/allow-multiple-bidders`, {
+              bidderIds: selectedBidders
             })
+
+            console.log('✅ Batch allow response:', response.data)
+            
+            const { added, skipped, notFound } = response.data.data
+            
+            if (added > 0) {
+              toast({
+                title: "Thành công",
+                description: `Đã tạo sản phẩm và thêm ${added} người đấu giá thành công!${skipped > 0 ? ` (Bỏ qua ${skipped} người đã đủ điều kiện)` : ''}`,
+              })
+            } else if (skipped > 0) {
+              toast({
+                title: "Đã tạo sản phẩm",
+                description: `Tất cả ${skipped} người đã đủ điều kiện đấu giá`,
+              })
+            } else {
+              toast({
+                title: "Thành công",
+                description: "Sản phẩm đã được tạo thành công!",
+              })
+            }
           } catch (error) {
-            console.error('❌ Failed to allow some bidders:', error)
+            console.error('❌ Failed to allow bidders:', error)
             toast({
-              title: "Thành công một phần",
-              description: "Đã tạo sản phẩm nhưng không thể thêm một số người đấu giá",
+              title: "Đã tạo sản phẩm",
+              description: "Sản phẩm đã được tạo nhưng không thể thêm người đấu giá",
               variant: "destructive"
             })
           }
@@ -426,11 +445,17 @@ export default function PostItemPage() {
                 <Input
                   id="title"
                   value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, title: e.target.value })
+                    if (errors.title) setErrors({ ...errors, title: undefined })
+                  }}
                   placeholder="Nhập tên sản phẩm"
-                  className="mt-2"
+                  className={`mt-2 ${errors.title ? 'border-destructive' : ''}`}
                   required
                 />
+                {errors.title && (
+                  <p className="text-xs text-destructive mt-1">{errors.title}</p>
+                )}
               </div>
 
               <div>
@@ -445,8 +470,11 @@ export default function PostItemPage() {
                   <select
                     id="category"
                     value={formData.category_id}
-                    onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                    className="w-full mt-2 px-3 py-2 rounded-lg border border-border bg-background text-sm"
+                    onChange={(e) => {
+                      setFormData({ ...formData, category_id: e.target.value })
+                      if (errors.category) setErrors({ ...errors, category: undefined })
+                    }}
+                    className={`w-full mt-2 px-3 py-2 rounded-lg border bg-background text-sm ${errors.category ? 'border-destructive' : 'border-border'}`}
                     required
                   >
                     <option value="">-- Chọn danh mục --</option>
@@ -457,7 +485,11 @@ export default function PostItemPage() {
                     ))}
                   </select>
                 )}
-                <p className="text-xs text-muted-foreground mt-1">Chỉ có thể chọn danh mục con</p>
+                {errors.category ? (
+                  <p className="text-xs text-destructive mt-1">{errors.category}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground mt-1">Chỉ có thể chọn danh mục con</p>
+                )}
               </div>
 
               <div>
@@ -465,11 +497,20 @@ export default function PostItemPage() {
                 <Textarea
                   id="description"
                   value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  onChange={(e) => {
+                    setFormData({ ...formData, description: e.target.value })
+                    if (errors.description) setErrors({ ...errors, description: undefined })
+                  }}
                   placeholder="Mô tả chi tiết sản phẩm của bạn..."
-                  className="mt-2 min-h-32"
+                  className={`mt-2 min-h-32 ${errors.description ? 'border-destructive' : ''}`}
                   required
                 />
+                {errors.description && (
+                  <p className="text-xs text-destructive mt-1">{errors.description}</p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  {formData.description.length}/5000 ký tự
+                </p>
               </div>
             </div>
           </Card>
@@ -627,7 +668,7 @@ export default function PostItemPage() {
                             </span>
                             {parseFloat(bidder.rating) > 0 && (
                               <span className="text-xs text-muted-foreground">
-                                ⭐ {parseFloat(bidder.rating).toFixed(1)}
+                                ⭐ {parseFloat(bidder.rating).toFixed(2)}
                               </span>
                             )}
                           </div>

@@ -538,4 +538,74 @@ router.post(
   sellerController.allowUnratedBidder
 );
 
+/**
+ * @swagger
+ * /seller/products/{productId}/allow-multiple-bidders:
+ *   post:
+ *     summary: Allow multiple unrated bidders to bid on product (batch operation)
+ *     description: Grant permissions for multiple bidders with no ratings to participate in the auction. Automatically skips bidders who already have sufficient ratings or permissions.
+ *     tags: [Seller]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: productId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Product ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - bidderIds
+ *             properties:
+ *               bidderIds:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *                 example: [5, 6, 7]
+ *                 description: Array of bidder user IDs
+ *     responses:
+ *       200:
+ *         description: Permissions granted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Granted permissions to 2 bidder(s)"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     added:
+ *                       type: integer
+ *                       example: 2
+ *                     skipped:
+ *                       type: integer
+ *                       example: 1
+ *                     notFound:
+ *                       type: integer
+ *                       example: 0
+ *       400:
+ *         description: Invalid bidderIds or auction not active
+ *       403:
+ *         description: Not product owner
+ *       404:
+ *         description: Product not found
+ */
+router.post(
+  '/products/:productId/allow-multiple-bidders',
+  validate,
+  sellerController.allowMultipleBidders
+);
+
 module.exports = router;
