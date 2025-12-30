@@ -10,6 +10,7 @@ const ImageUploadService = require('../services/imageUploadService');
 const { sendQuestionAnsweredEmail, sendBidderDeniedEmail } = require('../utils/email');
 const db = require('../config/database');
 const { BadRequestError, NotFoundError, ForbiddenError } = require('../utils/errors');
+const EVENTS = require('../socket/events');
 
 // Get available bidders (all users except current seller and admins)
 exports.getAvailableBidders = asyncHandler(async (req, res) => {
@@ -344,6 +345,16 @@ exports.answerQuestion = asyncHandler(async (req, res) => {
 
   // Answer question
   const updatedQuestion = await Question.answer(questionId, answer);
+
+  // Emit socket event for real-time update
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`product-${question.product_id}`).emit(EVENTS.QUESTION_ANSWERED, {
+      productId: question.product_id,
+      questionId: parseInt(questionId),
+      answer: answer
+    });
+  }
 
   // Send email notifications
   try {

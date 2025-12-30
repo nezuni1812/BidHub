@@ -9,6 +9,7 @@ import { Heart, Share2, Flag } from "lucide-react"
 import { useState, useEffect } from "react"
 import { BidDialog } from "@/components/bid-dialog"
 import { AskQuestionDialog } from "@/components/ask-question-dialog"
+import { AnswerQuestionDialog } from "@/components/answer-question-dialog"
 import { AppendDescriptionDialog } from "@/components/append-description-dialog"
 import { DenyBidderDialog } from "@/components/deny-bidder-dialog"
 import { useParams, Link } from "react-router-dom"
@@ -16,7 +17,7 @@ import { getProductById, getProductBids, formatPrice, formatTimeRemaining, getIm
 import { io, Socket } from "socket.io-client"
 import { useToast } from "@/components/ui/use-toast"
 import { addToWatchlist, removeFromWatchlist, isInWatchlist as checkWatchlist } from "@/lib/watchlist"
-import { askQuestion } from "@/lib/questions"
+import { askQuestion, answerQuestion } from "@/lib/questions"
 import { useAuth } from "@/contexts/AuthContext"
 
 export default function ProductDetail() {
@@ -32,6 +33,8 @@ export default function ProductDetail() {
     const [currentImageIndex, setCurrentImageIndex] = useState(0)
     const [showBidDialog, setShowBidDialog] = useState(false)
     const [showQuestionDialog, setShowQuestionDialog] = useState(false)
+    const [showAnswerDialog, setShowAnswerDialog] = useState(false)
+    const [selectedQuestion, setSelectedQuestion] = useState<{ id: number; question: string; asker_name: string } | null>(null)
     const [showDenyDialog, setShowDenyDialog] = useState(false)
     const [selectedBidder, setSelectedBidder] = useState<{ id: number; name: string } | null>(null)
     const [socket, setSocket] = useState<Socket | null>(null)
@@ -292,6 +295,26 @@ export default function ProductDetail() {
             });
         });
         
+        // Listen for answered questions
+        newSocket.on('question-answered', (data: any) => {
+            console.log('✅ Question answered:', data);
+            
+            setProduct(prev => {
+                if (!prev) return prev;
+                const updatedQuestions = prev.questions?.map(q => 
+                    q.id === data.questionId 
+                        ? { ...q, answer: data.answer, answered_at: new Date().toISOString() }
+                        : q
+                );
+                return { ...prev, questions: updatedQuestions };
+            });
+            
+            toast({
+                title: "Câu hỏi đã được trả lời",
+                description: "Người bán đã trả lời câu hỏi"
+            });
+        });
+        
         setSocket(newSocket);
         
         return () => {
@@ -403,6 +426,34 @@ export default function ProductDetail() {
             });
         } catch (err) {
             console.error('❌ Error asking question:', err);
+            throw err;
+        }
+    };
+    
+    const handleAnswerQuestion = async (answer: string): Promise<void> => {
+        if (!selectedQuestion) {
+            throw new Error('No question selected');
+        }
+        
+        try {
+            await answerQuestion(selectedQuestion.id, answer);
+            
+            // Update the product questions locally
+            if (product) {
+                const updatedQuestions = product.questions?.map(q => 
+                    q.id === selectedQuestion.id 
+                        ? { ...q, answer, answered_at: new Date().toISOString() }
+                        : q
+                );
+                setProduct({ ...product, questions: updatedQuestions });
+            }
+            
+            toast({
+                title: "Đã trả lời!",
+                description: "Câu trả lời của bạn đã được gửi thành công."
+            });
+        } catch (err) {
+            console.error('❌ Error answering question:', err);
             throw err;
         }
     };
@@ -741,14 +792,16 @@ export default function ProductDetail() {
                                         );
                                     })()}
                                 </div>
-                                <Button
-                                    variant="outline"
-                                    className="w-full bg-transparent"
-                                    size="sm"
-                                    onClick={() => setShowQuestionDialog(true)}
-                                >
-                                    Liên hệ người bán
-                                </Button>
+                                {!isSeller && (
+                                    <Button
+                                        variant="outline"
+                                        className="w-full bg-transparent"
+                                        size="sm"
+                                        onClick={() => setShowQuestionDialog(true)}
+                                    >
+                                        Liên hệ người bán
+                                    </Button>
+                                )}
                             </div>
                         </Card>
 
@@ -919,9 +972,11 @@ export default function ProductDetail() {
                             <Card className="p-6">
                                 <div className="flex justify-between items-center mb-4">
                                     <h3 className="font-semibold">Câu hỏi về sản phẩm</h3>
-                                    <Button size="sm" onClick={() => setShowQuestionDialog(true)}>
-                                        Đặt câu hỏi
-                                    </Button>
+                                    {!isSeller && (
+                                        <Button size="sm" onClick={() => setShowQuestionDialog(true)}>
+                                            Đặt câu hỏi
+                                        </Button>
+                                    )}
                                 </div>
                                 <div className="space-y-4">
                                     {!product.questions || product.questions.length === 0 ? (
@@ -931,17 +986,38 @@ export default function ProductDetail() {
                                             <div key={q.id} className="border-b border-border pb-4 last:border-0">
                                                 <div className="flex justify-between items-start mb-2">
                                                     <p className="font-semibold text-sm">{q.question}</p>
-                                                    <Badge variant={q.answer ? "default" : "outline"} className="text-xs">
-                                                        {q.answer ? "Answered" : "Pending"}
-                                                    </Badge>
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge variant={q.answer ? "default" : "outline"} className="text-xs">
+                                                            {q.answer ? "Đã trả lời" : "Chưa trả lời"}
+                                                        </Badge>
+                                                        {isSeller && !q.answer && (
+                                                            <Button 
+                                                                size="sm" 
+                                                                variant="outline"
+                                                                onClick={() => {
+                                                                    setSelectedQuestion({
+                                                                        id: q.id,
+                                                                        question: q.question,
+                                                                        asker_name: q.asker_name
+                                                                    });
+                                                                    setShowAnswerDialog(true);
+                                                                }}
+                                                            >
+                                                                Trả lời
+                                                            </Button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                                 <p className="text-sm text-muted-foreground mb-2">
-                                                    Asked by {q.asker_name} - {new Date(q.created_at).toLocaleDateString('vi-VN')}
+                                                    Hỏi bởi {q.asker_name} - {new Date(q.created_at).toLocaleDateString('vi-VN')}
                                                 </p>
                                                 {q.answer && (
-                                                    <p className="text-sm bg-muted/50 rounded p-2 mt-2">
-                                                        {q.answer}
-                                                    </p>
+                                                    <div className="mt-2">
+                                                        <p className="text-xs text-muted-foreground mb-1">Câu trả lời:</p>
+                                                        <p className="text-sm bg-muted/50 rounded p-3">
+                                                            {q.answer}
+                                                        </p>
+                                                    </div>
                                                 )}
                                             </div>
                                         ))
@@ -996,6 +1072,18 @@ export default function ProductDetail() {
                 sellerName={product.seller_name}
                 onAsk={handleAskQuestion}
             />
+
+            {selectedQuestion && (
+                <AnswerQuestionDialog
+                    isOpen={showAnswerDialog}
+                    onClose={() => {
+                        setShowAnswerDialog(false);
+                        setSelectedQuestion(null);
+                    }}
+                    question={selectedQuestion}
+                    onAnswer={handleAnswerQuestion}
+                />
+            )}
 
             {selectedBidder && (
                 <DenyBidderDialog

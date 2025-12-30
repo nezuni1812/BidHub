@@ -33,3 +33,10 @@ export const getProductQuestions = async (productId: number): Promise<Question[]
   const response = await api.get<Question[]>(`/products/${productId}/questions`);
   return response.data || [];
 };
+
+/**
+ * Answer a question (seller only)
+ */
+export const answerQuestion = async (questionId: number, answer: string): Promise<void> => {
+  await api.post(`/seller/questions/${questionId}/answer`, { answer });
+};

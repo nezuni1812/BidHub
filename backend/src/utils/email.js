@@ -80,7 +80,7 @@ const sendPasswordResetEmail = async (email, otp, fullName) => {
 };
 
 const sendQuestionNotificationEmail = async (sellerEmail, sellerName, productTitle, productId, question, askerName) => {
-  const productLink = `${config.frontendUrl}/products/${productId}`;
+  const productLink = `${config.frontendUrl}/product/${productId}`;
   const subject = `BidHub - Câu hỏi mới về sản phẩm "${productTitle}"`;
   
   const html = `
@@ -121,7 +121,7 @@ const sendQuestionNotificationEmail = async (sellerEmail, sellerName, productTit
 
 // Bid placed - notify seller, new bidder, previous bidder
 const sendBidPlacedEmail = async (toEmail, userName, productTitle, productId, bidPrice, isOutbid = false) => {
-  const productLink = `${config.frontendUrl}/products/${productId}`;
+  const productLink = `${config.frontendUrl}/product/${productId}`;
   const subject = isOutbid 
     ? `BidHub - Bạn đã bị trả giá cho "${productTitle}"`
     : `BidHub - Có lượt đặt giá mới cho "${productTitle}"`;
@@ -203,7 +203,7 @@ const sendBidderDeniedEmail = async (bidderEmail, bidderName, productTitle, prod
 
 // Auction ended - no winner
 const sendAuctionEndedNoWinnerEmail = async (sellerEmail, sellerName, productTitle, productId) => {
-  const productLink = `${config.frontendUrl}/products/${productId}`;
+  const productLink = `${config.frontendUrl}/product/${productId}`;
   const subject = `BidHub - Đấu giá kết thúc: "${productTitle}" (Không có người mua)`;
   
   const html = `
@@ -245,7 +245,7 @@ const sendAuctionEndedNoWinnerEmail = async (sellerEmail, sellerName, productTit
 
 // Auction ended - with winner
 const sendAuctionEndedWinnerEmail = async (toEmail, userName, productTitle, productId, finalPrice, isWinner = false) => {
-  const productLink = `${config.frontendUrl}/products/${productId}`;
+  const productLink = `${config.frontendUrl}/product/${productId}`;
   const subject = isWinner
     ? `BidHub - Chúc mừng! Bạn đã thắng đấu giá "${productTitle}"`
     : `BidHub - Đấu giá kết thúc: "${productTitle}"`;
@@ -291,7 +291,7 @@ const sendAuctionEndedWinnerEmail = async (toEmail, userName, productTitle, prod
 
 // Question answered - notify asker and other watchers
 const sendQuestionAnsweredEmail = async (toEmail, userName, productTitle, productId, question, answer) => {
-  const productLink = `${config.frontendUrl}/products/${productId}`;
+  const productLink = `${config.frontendUrl}/product/${productId}`;
   const subject = `BidHub - Câu hỏi của bạn về "${productTitle}" đã được trả lời`;
   
   const html = `
