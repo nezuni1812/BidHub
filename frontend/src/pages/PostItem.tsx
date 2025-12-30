@@ -354,21 +354,30 @@ export default function PostItemPage() {
 
             console.log('✅ Batch allow response:', response.data)
             
-            const { added, skipped, notFound } = response.data.data
-            
-            if (added > 0) {
-              toast({
-                title: "Thành công",
-                description: `Đã tạo sản phẩm và thêm ${added} người đấu giá thành công!${skipped > 0 ? ` (Bỏ qua ${skipped} người đã đủ điều kiện)` : ''}`,
-              })
-            } else if (skipped > 0) {
+            // Check if response has the expected structure
+            if (response.data && response.data.data) {
+              const { added, skipped, notFound } = response.data.data
+              
+              if (added > 0) {
+                toast({
+                  title: "Thành công",
+                  description: `Đã tạo sản phẩm và thêm ${added} người đấu giá thành công!${skipped > 0 ? ` (Bỏ qua ${skipped} người đã đủ điều kiện)` : ''}`,
+                })
+              } else if (skipped > 0) {
+                toast({
+                  title: "Đã tạo sản phẩm",
+                  description: `Tất cả ${skipped} người đã đủ điều kiện đấu giá`,
+                })
+              } else {
+                toast({
+                  title: "Thành công",
+                  description: "Sản phẩm đã được tạo thành công!",
+                })
+              }
+            } else {
+              // If response structure is unexpected
               toast({
                 title: "Đã tạo sản phẩm",
-                description: `Tất cả ${skipped} người đã đủ điều kiện đấu giá`,
-              })
-            } else {
-              toast({
-                title: "Thành công",
                 description: "Sản phẩm đã được tạo thành công!",
               })
             }
