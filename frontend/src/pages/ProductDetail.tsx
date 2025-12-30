@@ -711,7 +711,7 @@ export default function ProductDetail() {
                                     <p className="text-sm text-muted-foreground">{product.total_bids} lượt đặt giá</p>
                                 </div>
 
-                                {myMaxPrice && (
+                                {myMaxPrice && product.status === 'active' && (
                                     <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
                                         <p className="text-sm font-semibold text-blue-700 dark:text-blue-400 mb-1">Giá tối đa của bạn</p>
                                         <p className="text-lg font-bold text-blue-900 dark:text-blue-300">{formatPrice(myMaxPrice)}</p>
@@ -724,18 +724,28 @@ export default function ProductDetail() {
                                     <p className="text-lg font-bold text-foreground">{formatTimeRemaining(secondsRemaining)}</p>
                                 </div>
 
-                                <Button className="w-full" size="lg" onClick={() => setShowBidDialog(true)}>
-                                    Đặt giá
-                                </Button>
+                                {product.status === 'active' && (
+                                    <>
+                                        <Button className="w-full" size="lg" onClick={() => setShowBidDialog(true)}>
+                                            Đặt giá
+                                        </Button>
 
-                                {buyNowPrice && (
-                                    <Button 
-                                        className="w-full bg-green-600 hover:bg-green-700 text-white" 
-                                        size="lg"
-                                        onClick={handleBuyNow}
-                                    >
-                                        Mua ngay - {formatPrice(buyNowPrice)}
-                                    </Button>
+                                        {buyNowPrice && (
+                                            <Button 
+                                                className="w-full bg-green-600 hover:bg-green-700 text-white" 
+                                                size="lg"
+                                                onClick={handleBuyNow}
+                                            >
+                                                Mua ngay - {formatPrice(buyNowPrice)}
+                                            </Button>
+                                        )}
+                                    </>
+                                )}
+
+                                {product.status !== 'active' && (
+                                    <div className="bg-muted rounded-lg p-4 text-center">
+                                        <p className="text-sm font-semibold text-muted-foreground">Đấu giá đã kết thúc</p>
+                                    </div>
                                 )}
 
                                 <div className="flex gap-2">
