@@ -44,33 +44,33 @@ export function RegisterForm() {
     const newErrors: Record<string, string> = {}
     
     if (!formData.full_name.trim()) {
-      newErrors.full_name = 'Full name is required'
+      newErrors.full_name = 'Vui lòng nhập họ và tên'
     }
     
     if (!formData.email) {
-      newErrors.email = 'Email is required'
+      newErrors.email = 'Vui lòng nhập email'
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid'
+      newErrors.email = 'Email không hợp lệ'
     }
     
     if (!formData.password) {
-      newErrors.password = 'Password is required'
+      newErrors.password = 'Vui lòng nhập mật khẩu'
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters'
+      newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự'
     }
     
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password'
+      newErrors.confirmPassword = 'Vui lòng xác nhận mật khẩu'
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match'
+      newErrors.confirmPassword = 'Mật khẩu không khớp'
     }
     
     if (!formData.address.trim()) {
-      newErrors.address = 'Address is required'
+      newErrors.address = 'Vui lòng nhập địa chỉ'
     }
     
     if (!formData.date_of_birth) {
-      newErrors.date_of_birth = 'Date of birth is required'
+      newErrors.date_of_birth = 'Vui lòng nhập ngày sinh'
     } else {
       // Check if user is at least 18 years old
       const birthDate = new Date(formData.date_of_birth)
@@ -79,7 +79,7 @@ export function RegisterForm() {
       const monthDiff = today.getMonth() - birthDate.getMonth()
       
       if (age < 18 || (age === 18 && monthDiff < 0)) {
-        newErrors.date_of_birth = 'You must be at least 18 years old'
+        newErrors.date_of_birth = 'Bạn phải đủ 18 tuổi'
       }
     }
     
@@ -100,8 +100,8 @@ export function RegisterForm() {
       
       if (response.success) {
         toast({
-          title: "Registration successful",
-          description: "Please check your email for the OTP code",
+          title: "Đăng ký thành công",
+          description: "Vui lòng kiểm tra email để lấy mã OTP",
         })
         
         // Show OTP dialog
@@ -110,8 +110,8 @@ export function RegisterForm() {
     } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Registration failed",
-        description: error.message || "Please try again",
+        title: "Đăng ký thất bại",
+        description: error.message || "Vui lòng thử lại",
       })
     } finally {
       setIsLoading(false)
@@ -130,8 +130,8 @@ export function RegisterForm() {
     
     // Show success toast
     toast({
-      title: "Account verified!",
-      description: `Welcome to BidHub, ${authData.user.full_name}!`,
+      title: "Xác thực thành công!",
+      description: `Chào mừng đến với BidHub, ${authData.user.full_name}!`,
     })
     
     // Redirect to home page
@@ -143,18 +143,18 @@ export function RegisterForm() {
       <Card className="w-full max-w-md">
         <div className="p-8">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold">Create Account</h1>
-            <p className="text-muted-foreground text-sm mt-2">Join BidHub to start bidding</p>
+            <h1 className="text-2xl font-bold">Tạo tài khoản</h1>
+            <p className="text-muted-foreground text-sm mt-2">Tham gia BidHub để bắt đầu đấu giá</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="full_name">Full Name</Label>
+              <Label htmlFor="full_name">Họ và tên</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
                   id="full_name" 
-                  placeholder="John Doe" 
+                  placeholder="Nguyễn Văn A" 
                   className="pl-10" 
                   value={formData.full_name}
                   onChange={handleChange}
@@ -186,12 +186,12 @@ export function RegisterForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
+              <Label htmlFor="address">Địa chỉ</Label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
                   id="address" 
-                  placeholder="Your address" 
+                  placeholder="Địa chỉ của bạn" 
                   className="pl-10" 
                   value={formData.address}
                   onChange={handleChange}
@@ -204,7 +204,7 @@ export function RegisterForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="date_of_birth">Date of Birth</Label>
+              <Label htmlFor="date_of_birth">Ngày sinh</Label>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
@@ -223,7 +223,7 @@ export function RegisterForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Mật khẩu</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
@@ -242,7 +242,7 @@ export function RegisterForm() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword">Xác nhận mật khẩu</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
@@ -264,18 +264,18 @@ export function RegisterForm() {
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Creating Account...
+                  Đang tạo tài khoản...
                 </>
               ) : (
-                "Create Account"
+                "Tạo tài khoản"
               )}
             </Button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground mt-6">
-            Already have an account?{" "}
+            Đã có tài khoản?{" "}
             <Link to="/login" className="text-primary font-semibold hover:underline">
-              Sign in
+              Đăng nhập
             </Link>
           </p>
         </div>

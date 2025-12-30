@@ -564,7 +564,7 @@ export default function PostItemPage() {
                   </label>
                 </div>
               ) : (
-                <div className="relative rounded-lg overflow-hidden border-2 border-primary">
+                <div className="relative group rounded-lg overflow-hidden border-2 border-primary">
                   <img
                     src={URL.createObjectURL(mainImage)}
                     alt="Ảnh chính"
@@ -573,7 +573,7 @@ export default function PostItemPage() {
                   <button
                     type="button"
                     onClick={removeMainImage}
-                    className="absolute top-2 right-2 bg-destructive hover:bg-destructive/90 text-white p-2 rounded-md shadow-lg"
+                    className="absolute top-2 right-2 bg-destructive/80 hover:bg-destructive text-white p-2 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition"
                   >
                     <X className="w-5 h-5" />
                   </button>

@@ -44,7 +44,7 @@ export function OTPVerificationDialog({
     e.preventDefault();
     
     if (otp.length !== 6) {
-      setError('Please enter a 6-digit OTP');
+      setError('Vui lòng nhập mã OTP 6 chữ số');
       return;
     }
 
@@ -57,10 +57,10 @@ export function OTPVerificationDialog({
       if (response.success && response.data) {
         onVerified(response.data);
       } else {
-        setError(response.message || 'Verification failed');
+        setError(response.message || 'Xác thực thất bại');
       }
     } catch (err: any) {
-      setError(err.message || 'Invalid OTP. Please try again.');
+      setError(err.message || 'Mã OTP không hợp lệ. Vui lòng thử lại.');
     } finally {
       setIsVerifying(false);
     }
@@ -77,10 +77,10 @@ export function OTPVerificationDialog({
         setCountdown(60); // 60 seconds cooldown
         setError(''); // Clear error
       } else {
-        setError(response.message || 'Failed to resend OTP');
+        setError(response.message || 'Không thể gửi lại mã OTP');
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to resend OTP. Please try again.');
+      setError(err.message || 'Không thể gửi lại mã OTP. Vui lòng thử lại.');
     } finally {
       setIsResending(false);
     }
@@ -98,16 +98,16 @@ export function OTPVerificationDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mail className="w-5 h-5" />
-            Verify Your Email
+            Xác thực Email
           </DialogTitle>
           <DialogDescription>
-            We've sent a 6-digit code to <strong>{email}</strong>
+            Chúng tôi đã gửi mã 6 chữ số đến <strong>{email}</strong>
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleVerify} className="space-y-4 mt-4">
           <div className="space-y-2">
-            <Label htmlFor="otp">Enter OTP Code</Label>
+            <Label htmlFor="otp">Nhập mã OTP</Label>
             <Input
               id="otp"
               type="text"
@@ -133,16 +133,16 @@ export function OTPVerificationDialog({
             {isVerifying ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Verifying...
+                Đang xác thực...
               </>
             ) : (
-              'Verify OTP'
+              'Xác thực OTP'
             )}
           </Button>
 
           <div className="text-center">
             <p className="text-sm text-muted-foreground mb-2">
-              Didn't receive the code?
+              Không nhận được mã?
             </p>
             <Button
               type="button"
@@ -154,12 +154,12 @@ export function OTPVerificationDialog({
               {isResending ? (
                 <>
                   <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                  Sending...
+                  Đang gửi...
                 </>
               ) : countdown > 0 ? (
-                `Resend in ${countdown}s`
+                `Gửi lại sau ${countdown}s`
               ) : (
-                'Resend OTP'
+                'Gửi lại OTP'
               )}
             </Button>
           </div>
