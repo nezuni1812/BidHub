@@ -216,16 +216,23 @@ export const formatPrice = (price: number): string => {
  * - Nếu < 3 ngày: hiển thị relative time (3 ngày nữa, 10 phút nữa)
  * - Nếu >= 3 ngày: hiển thị ngày tháng năm (dd/mm/yyyy HH:mm)
  */
-export const formatTimeRemaining = (seconds: number): string => {
+// Helper: convert UTC ISO string to Date in GMT+7
+export function toGmt7Date(dateStr: string) {
+  const d = new Date(dateStr);
+  // Lấy giờ UTC + 7
+  return new Date(d.getTime() + 7 * 60 * 60000);
+}
+
+export const formatTimeRemaining = (seconds: number, endTimeIso?: string): string => {
   if (seconds <= 0) return 'Đã kết thúc';
-  
+
   const days = Math.floor(seconds / (24 * 60 * 60));
   const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60));
   const minutes = Math.floor((seconds % (60 * 60)) / 60);
-  
-  // If >= 3 days, show end date/time (dd/mm/yyyy HH:mm)
-  if (days >= 3) {
-    const endTime = new Date(Date.now() + seconds * 1000);
+
+  // If >= 3 days, show end date/time (dd/mm/yyyy HH:mm) in GMT+7
+  if (days >= 3 && endTimeIso) {
+    const endTime = toGmt7Date(endTimeIso);
     const day = String(endTime.getDate()).padStart(2, '0');
     const month = String(endTime.getMonth() + 1).padStart(2, '0');
     const year = endTime.getFullYear();
@@ -233,7 +240,7 @@ export const formatTimeRemaining = (seconds: number): string => {
     const minute = String(endTime.getMinutes()).padStart(2, '0');
     return `${day}/${month}/${year} ${hour}:${minute}`;
   }
-  
+
   // If < 3 days, show relative format (with "nữa")
   if (days > 0) {
     if (hours > 0) {
@@ -241,14 +248,14 @@ export const formatTimeRemaining = (seconds: number): string => {
     }
     return `${days} ngày nữa`;
   }
-  
+
   if (hours > 0) {
     if (minutes > 0) {
       return `${hours} giờ ${minutes} phút nữa`;
     }
     return `${hours} giờ nữa`;
   }
-  
+
   return `${minutes} phút nữa`;
 };
 

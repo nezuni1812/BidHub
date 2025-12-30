@@ -721,7 +721,7 @@ export default function ProductDetail() {
 
                                 <div className="bg-accent/10 rounded-lg p-4 border border-accent/20">
                                     <p className="text-sm font-semibold text-accent mb-1">Thời gian còn lại</p>
-                                    <p className="text-lg font-bold text-foreground">{formatTimeRemaining(secondsRemaining)}</p>
+                                    <p className="text-lg font-bold text-foreground">{formatTimeRemaining(secondsRemaining, product.end_time)}</p>
                                 </div>
 
                                 <Button className="w-full" size="lg" onClick={() => setShowBidDialog(true)}>
@@ -898,7 +898,14 @@ export default function ProductDetail() {
                                     </div>
                                     <div>
                                         <p className="text-muted-foreground">Kết thúc</p>
-                                        <p className="font-semibold">{new Date(product.end_time).toLocaleString('vi-VN')}</p>
+                                                                                <p className="font-semibold">{
+                                                                                    (() => {
+                                                                                        const d = new Date(product.end_time);
+                                                                                        // Lấy giờ UTC + 7
+                                                                                        const gmt7 = new Date(d.getTime() + 7 * 60 * 60000);
+                                                                                        return gmt7.toLocaleString('vi-VN', { hour12: false });
+                                                                                    })()
+                                                                                }</p>
                                     </div>
                                     <div>
                                         <p className="text-muted-foreground">Danh mục</p>

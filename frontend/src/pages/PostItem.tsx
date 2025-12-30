@@ -51,6 +51,18 @@ export default function PostItemPage() {
   const navigate = useNavigate();
   const { toast } = useToast();
   
+  // Helper: get now in GMT+7 as yyyy-MM-ddTHH:mm
+  // Helper: get now in GMT+7 as yyyy-MM-ddTHH:mm (for input value)
+  function getNowGmt7LocalString() {
+    const now = new Date();
+    // Lấy giờ UTC + 7
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const gmt7 = new Date(utc + 7 * 3600000);
+    // Định dạng yyyy-MM-ddTHH:mm
+    const pad = (n) => n.toString().padStart(2, '0');
+    return `${gmt7.getFullYear()}-${pad(gmt7.getMonth()+1)}-${pad(gmt7.getDate())}T${pad(gmt7.getHours())}:${pad(gmt7.getMinutes())}`;
+  }
+
   const [formData, setFormData] = useState({
     title: "",
     category_id: "",
@@ -58,7 +70,7 @@ export default function PostItemPage() {
     startingBid: "",
     biddingIncrement: "",
     buyNowPrice: "",
-    duration: "7",
+    endDateTime: getNowGmt7LocalString(),
     autoExtend: false,
   })
   
@@ -306,10 +318,15 @@ export default function PostItemPage() {
       }
       formDataObj.append('auto_extend', formData.autoExtend.toString())
       
-      // Calculate end_time
-      const endTime = new Date()
-      endTime.setDate(endTime.getDate() + parseInt(formData.duration))
-      formDataObj.append('end_time', endTime.toISOString())
+      // Lấy thời gian kết thúc cụ thể từ input, đảm bảo là GMT+7
+      // Lưu đúng giờ user chọn, không cộng/trừ offset
+      if (formData.endDateTime) {
+        // Nếu thiếu giây, thêm :00
+        let dateStr = formData.endDateTime;
+        if (dateStr.length === 16) dateStr += ':00';
+        const endTime = new Date(dateStr);
+        formDataObj.append('end_time', endTime.toISOString());
+      }
 
       // Add images
       formDataObj.append('main_image', mainImage)
@@ -740,19 +757,16 @@ export default function PostItemPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="duration">Thời hạn đấu giá (Ngày) *</Label>
-                  <select
-                    id="duration"
-                    value={formData.duration}
-                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                    className="w-full mt-2 px-3 py-2 rounded-lg border border-border bg-background"
-                  >
-                    {[1, 3, 5, 7, 10, 14, 21, 30].map((day) => (
-                      <option key={day} value={day}>
-                        {day} ngày
-                      </option>
-                    ))}
-                  </select>
+                  <Label htmlFor="endDateTime">Thời gian kết thúc *</Label>
+                  <Input
+                    id="endDateTime"
+                    type="datetime-local"
+                    value={formData.endDateTime}
+                    onChange={e => setFormData({ ...formData, endDateTime: e.target.value })}
+                    className="mt-2"
+                    required
+                    step="60"
+                  />
                 </div>
                 <div className="flex items-end">
                   <label className="flex items-center gap-2 cursor-pointer">
