@@ -39,6 +39,7 @@ export default function ProductDetail() {
     const [selectedBidder, setSelectedBidder] = useState<{ id: number; name: string } | null>(null)
     const [socket, setSocket] = useState<Socket | null>(null)
     const [myMaxPrice, setMyMaxPrice] = useState<number | null>(null)
+    const [currentTime, setCurrentTime] = useState(Date.now())
     
     // Check if current user is winning
     const isWinning = user && product && product.winner_id && parseInt(product.winner_id as any) === parseInt(user.id as any);
@@ -272,7 +273,6 @@ export default function ProductDetail() {
         
         // Listen for new questions
         newSocket.on('new-question', (data: any) => {
-            console.log('❓ New question posted:', data);
             
             setProduct(prev => {
                 if (!prev) return prev;
@@ -355,7 +355,12 @@ export default function ProductDetail() {
     const currentPrice = parseFloat(product.current_price as any);
     const buyNowPrice = product.buy_now_price ? parseFloat(product.buy_now_price as any) : null;
     const bidStep = parseFloat(product.bid_step as any);
-    const secondsRemaining = parseFloat(product.seconds_remaining as any);
+    
+    // Calculate real-time seconds remaining with GMT+7
+    const endTimeUTC = new Date(product.end_time);
+    const endTime = new Date(endTimeUTC.getTime() + 7 * 60 * 60000); // GMT+7
+    const secondsRemaining = Math.max(0, Math.floor((endTime.getTime() - currentTime) / 1000));
+    
     const suggestedBid = currentPrice + bidStep;
 
     const handlePlaceBid = async (
@@ -711,7 +716,7 @@ export default function ProductDetail() {
                                     <p className="text-sm text-muted-foreground">{product.total_bids} lượt đặt giá</p>
                                 </div>
 
-                                {myMaxPrice && product.status === 'active' && (
+                                {myMaxPrice && secondsRemaining > 0 && (
                                     <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
                                         <p className="text-sm font-semibold text-blue-700 dark:text-blue-400 mb-1">Giá tối đa của bạn</p>
                                         <p className="text-lg font-bold text-blue-900 dark:text-blue-300">{formatPrice(myMaxPrice)}</p>
@@ -724,7 +729,7 @@ export default function ProductDetail() {
                                     <p className="text-lg font-bold text-foreground">{formatTimeRemaining(secondsRemaining, product.end_time)}</p>
                                 </div>
 
-                                {product.status === 'active' && (
+                                {secondsRemaining > 0 && (
                                     <>
                                         <Button className="w-full" size="lg" onClick={() => setShowBidDialog(true)}>
                                             Đặt giá
@@ -742,7 +747,7 @@ export default function ProductDetail() {
                                     </>
                                 )}
 
-                                {product.status !== 'active' && (
+                                {secondsRemaining <= 0 && (
                                     <div className="bg-muted rounded-lg p-4 text-center">
                                         <p className="text-sm font-semibold text-muted-foreground">Đấu giá đã kết thúc</p>
                                     </div>

@@ -67,7 +67,7 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
         // Response is wrapped format
         categoriesData = response.data
         console.log('Response has success wrapper')
-      } else if (Array.isArray((response as any).data)) {
+      } else if ((response as any).data && Array.isArray((response as any).data)) {
         // Fallback: check if response itself has data array
         categoriesData = (response as any).data
         console.log('Response.data is array')
@@ -180,8 +180,8 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
 
   return (
     <div className="space-y-4">
-      <Card className="p-6">
-        <h3 className="font-semibold mb-4">Bộ lọc</h3>
+      <Card className="p-5">
+        <h3 className="font-bold mb-4">Bộ lọc</h3>
 
         {/* Watchlist */}
         <div className="mb-6 pb-6 border-b border-border">
@@ -199,7 +199,7 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
         <div className="mb-6 pb-6 border-b border-border">
           <button
             onClick={() => toggleSection("category")}
-            className="flex justify-between items-center w-full mb-3 font-medium text-sm"
+            className="flex justify-between items-center w-full mb-3 font-bold text-sm"
           >
             Danh mục
             <ChevronDown className={`w-4 h-4 transition-transform ${expandedSections.category ? "" : "-rotate-90"}`} />
@@ -234,7 +234,7 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
                         onChange={() => handleParentToggle(parent)}
                         className="w-3.5 h-3.5 rounded border-border cursor-pointer flex-shrink-0"
                       />
-                      <span className="text-sm font-medium">
+                      <span className="text-sm font-semibold">
                         {parent.name}
                         {parent.children && parent.children.length > 0 && (
                           <span className="text-xs text-muted-foreground ml-1">({parent.children.length})</span>
@@ -275,7 +275,7 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
         <div className="mb-6 pb-6 border-b border-border">
           <button
             onClick={() => toggleSection("price")}
-            className="flex justify-between items-center w-full mb-3 font-medium text-sm"
+            className="flex justify-between items-center w-full mb-3 font-bold text-sm"
           >
             Khoảng giá
             <ChevronDown className={`w-4 h-4 transition-transform ${expandedSections.price ? "" : "-rotate-90"}`} />
@@ -333,7 +333,7 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
         <div>
           <button
             onClick={() => toggleSection("rating")}
-            className="flex justify-between items-center w-full mb-3 font-medium text-sm"
+            className="flex justify-between items-center w-full mb-3 font-bold text-sm"
           >
             Đánh giá người bán
             <ChevronDown className={`w-4 h-4 transition-transform ${expandedSections.rating ? "" : "-rotate-90"}`} />

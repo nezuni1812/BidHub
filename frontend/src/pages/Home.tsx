@@ -21,6 +21,7 @@ import {
   TrendingUp,
   Sparkles,
   Clock,
+  DollarSign,
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { SearchFilters } from "@/components/search-filters"
@@ -37,6 +38,28 @@ interface Filters {
   sortBy: string
   sellerRating: number
   showWatchlist: boolean
+}
+
+// Helper function to format time with detailed minutes/seconds for < 1 hour
+function formatDetailedTime(seconds: number): string {
+  if (seconds <= 0) return "Đã kết thúc"
+  
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const secs = Math.floor(seconds % 60)
+  
+  if (hours === 0) {
+    // Less than 1 hour - show minutes and seconds
+    return `${minutes} phút ${secs} giây`
+  } else if (hours < 24) {
+    // Less than 24 hours - show hours and minutes
+    return `${hours} giờ ${minutes} phút`
+  } else {
+    // More than 24 hours - show days and hours
+    const days = Math.floor(hours / 24)
+    const remainingHours = hours % 24
+    return `${days} ngày ${remainingHours} giờ`
+  }
 }
 
 export default function Home() {
@@ -68,6 +91,7 @@ export default function Home() {
   const [topMostBids, setTopMostBids] = useState<Product[]>([])
   const [topHighestPrice, setTopHighestPrice] = useState<Product[]>([])
   const [topLoading, setTopLoading] = useState(true)
+  const [currentTime, setCurrentTime] = useState(Date.now())
 
   // Debug: Log products state when it changes
   useEffect(() => {
@@ -76,6 +100,15 @@ export default function Home() {
       products: products.slice(0, 2), // Log first 2 products
     })
   }, [products])
+
+  // Real-time countdown updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now())
+    }, 1000) // Update every second for accurate countdown
+
+    return () => clearInterval(interval)
+  }, [])
 
   // Fetch top 5 lists on initial mount
   useEffect(() => {
@@ -86,17 +119,19 @@ export default function Home() {
         const endingSoonResponse = await searchProducts({
           sort_by: "end_time_asc",
           page: 1,
-          page_size: 5,
+          page_size: 10, // Fetch more to ensure we get 5 active auctions
         })
-        setTopEndingSoon(endingSoonResponse.data || [])
+        console.log('🔥 Ending soon response:', endingSoonResponse.data?.length)
+        setTopEndingSoon((endingSoonResponse.data || []).slice(0, 5))
 
         // Fetch top 5 highest price
         const highestPriceResponse = await searchProducts({
           sort_by: "price_desc",
           page: 1,
-          page_size: 5,
+          page_size: 10, // Fetch more to ensure we get 5
         })
-        setTopHighestPrice(highestPriceResponse.data || [])
+        console.log('💎 Highest price response:', highestPriceResponse.data?.length)
+        setTopHighestPrice((highestPriceResponse.data || []).slice(0, 5))
 
         // Fetch products for most bids (need larger set to sort)
         const mostBidsResponse = await searchProducts({
@@ -110,6 +145,7 @@ export default function Home() {
             return bidsB - bidsA
           })
           .slice(0, 5)
+        console.log('⭐ Most bids response:', sortedByBids.length)
         setTopMostBids(sortedByBids)
       } catch (err) {
         console.error("Error fetching top lists:", err)
@@ -332,7 +368,11 @@ export default function Home() {
 
           // Client-side sorting for most-bids if needed
           if (filters.sortBy === "most-bids") {
-            productList = [...productList].sort((a, b) => b.total_bids - a.total_bids)
+            productList = [...productList].sort(
+              (a, b) =>
+                (typeof b.total_bids === "string" ? Number.parseInt(b.total_bids) : b.total_bids) -
+                (typeof a.total_bids === "string" ? Number.parseInt(a.total_bids) : a.total_bids),
+            )
           }
 
           // If we have client-side filters, do manual pagination
@@ -524,7 +564,7 @@ export default function Home() {
                 <div className="p-2.5 rounded-xl bg-orange-500/10 text-orange-500 group-hover:scale-110 transition-transform">
                   <Flame className="w-6 h-6 fill-current" />
                 </div>
-                <h2 className="text-3xl font-black tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                <h2 className="text-2xl font-black tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                   Sắp kết thúc
                 </h2>
               </div>
@@ -591,12 +631,17 @@ export default function Home() {
                                 {formatPrice(Number.parseFloat(product.current_price as any))}
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5 text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-md w-fit">
-                              <Clock className="w-3 h-3" />
-                              {product.seconds_remaining
-                                ? formatTimeRemaining(Number.parseFloat(product.seconds_remaining as any))
-                                : "Đã kết thúc"}
-                            </div>
+                            {(() => {
+                              const endTimeUTC = new Date(product.end_time);
+                              const endTime = new Date(endTimeUTC.getTime() + 7 * 60 * 60000); // GMT+7
+                              const secondsRemaining = Math.max(0, Math.floor((endTime.getTime() - currentTime) / 1000));
+                              return (
+                                <div className="flex items-center gap-1.5 text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-md w-fit">
+                                  <Clock className="w-3 h-3" />
+                                  {secondsRemaining > 0 ? formatDetailedTime(secondsRemaining) : "Đã kết thúc"}
+                                </div>
+                              )
+                            })()}
                           </div>
                         </div>
                       </Card>
@@ -612,7 +657,7 @@ export default function Home() {
                 <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-500 group-hover:scale-110 transition-transform">
                   <TrendingUp className="w-6 h-6" />
                 </div>
-                <h2 className="text-3xl font-black tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                <h2 className="text-2xl font-black tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                   Sôi nổi nhất
                 </h2>
               </div>
@@ -694,10 +739,10 @@ export default function Home() {
             {/* Top 5 Highest Price */}
             <section>
               <div className="flex items-center gap-3 mb-8 group">
-                <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-500 group-hover:scale-110 transition-transform">
-                  <Diamond className="w-6 h-6" />
+                <div className="p-2.5 rounded-xl bg-green-500/10 text-green-500 group-hover:scale-110 transition-transform">
+                  <DollarSign className="w-6 h-6" />
                 </div>
-                <h2 className="text-3xl font-black tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                <h2 className="text-2xl font-black tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
                   Giá trị nhất
                 </h2>
               </div>
@@ -1018,13 +1063,13 @@ export default function Home() {
                               </div>
                             </div>
                             {(() => {
-                              const secondsRemaining = product.seconds_remaining 
-                                ? Number.parseFloat(product.seconds_remaining as any)
-                                : 0;
+                              const endTimeUTC = new Date(product.end_time);
+                              const endTime = new Date(endTimeUTC.getTime() + 7 * 60 * 60000); // GMT+7
+                              const secondsRemaining = Math.max(0, Math.floor((endTime.getTime() - currentTime) / 1000));
                               const threeDaysInSeconds = 259200;
                               
                               if (secondsRemaining > 0 && secondsRemaining < threeDaysInSeconds) {
-                                // Show countdown for < 3 days
+                                // Show real-time countdown for < 3 days
                                 return (
                                   <div
                                     className={`flex items-center justify-center gap-2 py-3 rounded-xl font-black text-sm tracking-widest transition-colors ${
@@ -1036,16 +1081,15 @@ export default function Home() {
                                     }`}
                                   >
                                     <Clock className="w-4 h-4" />
-                                    {formatTimeRemaining(secondsRemaining)}
+                                    {formatDetailedTime(secondsRemaining)}
                                   </div>
                                 );
                               } else if (secondsRemaining > 0) {
                                 // Just show end date for > 3 days
-                                const endDate = new Date(product.end_time);
                                 return (
                                   <div className="flex items-center justify-center gap-2 py-3 rounded-xl font-medium text-sm bg-muted/50 text-foreground/70">
                                     <Clock className="w-4 h-4" />
-                                    Kết thúc: {endDate.toLocaleDateString('vi-VN')}
+                                    Kết thúc: {endTime.toLocaleDateString('vi-VN')}
                                   </div>
                                 );
                               } else {

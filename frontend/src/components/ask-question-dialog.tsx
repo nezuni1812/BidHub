@@ -63,7 +63,7 @@ export function AskQuestionDialog({ isOpen, onClose, sellerName, onAsk }: AskQue
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <Card className="w-full max-w-md">
-        <div className="px-6">
+        <div className="p-6">
           {success ? (
             <div className="text-center py-8">
               <div className="flex justify-center mb-4">

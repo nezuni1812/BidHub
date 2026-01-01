@@ -403,7 +403,7 @@ export default function CheckoutPage() {
           {/* Sidebar */}
           <div className="lg:col-span-1 space-y-6">
             {/* Order Summary */}
-            <Card className="p-6 sticky top-20">
+            <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Tóm tắt đơn hàng</h3>
               <div className="space-y-4">
                 <div>
