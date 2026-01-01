@@ -124,10 +124,10 @@ export function Navigation() {
                     <User className="mr-2 h-4 w-4" />
                     <span>Hồ sơ</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/profile/settings')}>
+                  {/* <DropdownMenuItem onClick={() => navigate('/profile/settings')}>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Cài đặt</span>
-                  </DropdownMenuItem>
+                  </DropdownMenuItem> */}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                     <LogOut className="mr-2 h-4 w-4" />

@@ -228,7 +228,7 @@ export default function DashboardPage() {
                     <Button variant="outline">Quản lí đơn hàng</Button>
                   </Link>
                 )}
-                <Link to="/profile/settings">
+                <Link to={`/profile/${user.id}`}>
                   <Button>Chỉnh sửa hồ sơ</Button>
                 </Link>
               </div>
