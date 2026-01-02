@@ -102,7 +102,23 @@ module.exports = (io, socket) => {
       }
 
       const now = new Date();
-      if (new Date(product.end_time) <= now) {
+      // Ensure end_time is parsed as GMT+7 local time (handle both Date object and string)
+      const endTime = product.end_time instanceof Date ? product.end_time : new Date(product.end_time);
+      // Add 7 hours to current time to compare with GMT+7 end_time
+      
+      // 🕐 DEBUG: Log time comparison
+      console.log('⏰ [BID TIME CHECK]', {
+        productId,
+        now: now.toISOString(),
+        nowLocal: now.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+        endTime: endTime.toISOString(),
+        endTimeLocal: endTime.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }),
+        endTimeRaw: product.end_time,
+        isExpired: endTime <= now,
+        difference: Math.floor((endTime.getTime() - now.getTime()) / 1000) + 's'
+      });
+      
+      if (endTime <= now) {
         await releaseLock(lock);
         return socket.emit(EVENTS.BID_ERROR, { 
           message: 'Phiên đấu giá đã kết thúc',

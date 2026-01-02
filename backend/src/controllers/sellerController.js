@@ -424,7 +424,7 @@ exports.getActiveProducts = asyncHandler(async (req, res) => {
     LEFT JOIN bids b ON p.id = b.product_id
     WHERE p.seller_id = $1
       AND p.status = 'active'
-      AND p.end_time > CURRENT_TIMESTAMP
+      AND p.end_time > (CURRENT_TIMESTAMP + INTERVAL '7 hours')
     GROUP BY p.id, c.name, pi.url
     ORDER BY p.created_at DESC
     LIMIT $2 OFFSET $3
@@ -435,7 +435,7 @@ exports.getActiveProducts = asyncHandler(async (req, res) => {
     FROM products
     WHERE seller_id = $1
       AND status = 'active'
-      AND end_time > CURRENT_TIMESTAMP
+      AND end_time > (CURRENT_TIMESTAMP + INTERVAL '7 hours')
   `;
 
   const [dataResult, countResult] = await Promise.all([

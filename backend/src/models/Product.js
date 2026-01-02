@@ -10,12 +10,12 @@ class Product {
         u.rating as seller_rating,
         c.name as category_name,
         pi.url as main_image,
-        EXTRACT(EPOCH FROM (p.end_time - CURRENT_TIMESTAMP)) as seconds_remaining
+        EXTRACT(EPOCH FROM (p.end_time - (CURRENT_TIMESTAMP))) as seconds_remaining
       FROM products p
       INNER JOIN users u ON p.seller_id = u.id
       INNER JOIN categories c ON p.category_id = c.id
       LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_main = true
-      WHERE p.status = 'active' AND p.end_time > CURRENT_TIMESTAMP
+      WHERE p.status = 'active' AND p.end_time > (CURRENT_TIMESTAMP)
       ORDER BY p.end_time ASC
       LIMIT 5
     `;
@@ -33,7 +33,7 @@ class Product {
       INNER JOIN users u ON p.seller_id = u.id
       INNER JOIN categories c ON p.category_id = c.id
       LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_main = true
-      WHERE p.status = 'active' AND p.end_time > CURRENT_TIMESTAMP
+      WHERE p.status = 'active' AND p.end_time > (CURRENT_TIMESTAMP)
       ORDER BY p.total_bids DESC
       LIMIT 5
     `;
@@ -50,7 +50,7 @@ class Product {
       INNER JOIN users u ON p.seller_id = u.id
       INNER JOIN categories c ON p.category_id = c.id
       LEFT JOIN product_images pi ON p.id = pi.product_id AND pi.is_main = true
-      WHERE p.status = 'active' AND p.end_time > CURRENT_TIMESTAMP
+      WHERE p.status = 'active' AND p.end_time > (CURRENT_TIMESTAMP)
       ORDER BY p.current_price DESC
       LIMIT 5
     `;
@@ -79,7 +79,7 @@ class Product {
 
     const offset = (page - 1) * page_size;
     
-    let whereConditions = ["p.status = 'active'", "p.end_time > CURRENT_TIMESTAMP"];
+    let whereConditions = ["p.status = 'active'", "p.end_time > (CURRENT_TIMESTAMP)"];
     const params = [];
     let paramIndex = 1;
 
@@ -145,7 +145,7 @@ class Product {
           SELECT user_id FROM bids WHERE product_id = p.id ORDER BY bid_price DESC LIMIT 1
         )) as highest_bidder_name,
         EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - p.created_at)) / 60 as minutes_since_created,
-        EXTRACT(EPOCH FROM (p.end_time - CURRENT_TIMESTAMP)) as seconds_remaining
+        EXTRACT(EPOCH FROM (p.end_time - (CURRENT_TIMESTAMP))) as seconds_remaining
       FROM products p
       INNER JOIN users u ON p.seller_id = u.id
       INNER JOIN categories c ON p.category_id = c.id
@@ -195,7 +195,7 @@ class Product {
         winner.id as winner_id,
         winner.full_name as winner_name,
         winner.rating as winner_rating,
-        EXTRACT(EPOCH FROM (p.end_time - CURRENT_TIMESTAMP)) as seconds_remaining
+        EXTRACT(EPOCH FROM (p.end_time - (CURRENT_TIMESTAMP))) as seconds_remaining
       FROM products p
       INNER JOIN users u ON p.seller_id = u.id
       INNER JOIN categories c ON p.category_id = c.id
@@ -238,7 +238,7 @@ class Product {
       WHERE p.category_id = (SELECT category_id FROM products WHERE id = $1)
         AND p.id != $1
         AND p.status = 'active'
-        AND p.end_time > CURRENT_TIMESTAMP
+        AND p.end_time > (CURRENT_TIMESTAMP)
       ORDER BY p.end_time ASC
       LIMIT 5
     `;
@@ -518,7 +518,7 @@ class Product {
     const query = `
       SELECT COUNT(*) as count
       FROM products
-      WHERE status = 'active' AND end_time > CURRENT_TIMESTAMP
+      WHERE status = 'active' AND end_time > (CURRENT_TIMESTAMP)
     `;
     const result = await db.query(query);
     return parseInt(result.rows[0].count);
@@ -622,7 +622,9 @@ class Product {
         throw new Error('Product is not available for buy now');
       }
 
-      if (new Date(product.end_time) <= new Date()) {
+      // Handle end_time as both Date object and string, compare with GMT+7
+      const endTime = product.end_time instanceof Date ? product.end_time : new Date(product.end_time);
+      if (endTime <= new Date()) {
         throw new Error('Auction has already ended');
       }
 
