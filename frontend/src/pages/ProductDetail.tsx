@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Heart, Share2, Flag } from "lucide-react";
+import { Heart, Share2, Flag, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { BidDialog } from "@/components/bid-dialog";
 import { AskQuestionDialog } from "@/components/ask-question-dialog";
@@ -43,6 +43,14 @@ export default function ProductDetail() {
   const [error, setError] = useState<string | null>(null);
   const [isFavorited, setIsFavorited] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [prevImageIndex, setPrevImageIndex] = useState(0);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [fullScreenTransitioning, setFullScreenTransitioning] = useState(false);
+  const [fullScreenPrevIndex, setFullScreenPrevIndex] = useState(0);
+  const [fullScreenDirection, setFullScreenDirection] = useState<'next' | 'prev'>('next');
+  const [isPaused, setIsPaused] = useState(false);
+  const [slideDirection, setSlideDirection] = useState<'next' | 'prev' | null>(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [showBidDialog, setShowBidDialog] = useState(false);
   const [showQuestionDialog, setShowQuestionDialog] = useState(false);
   const [showAnswerDialog, setShowAnswerDialog] = useState(false);
@@ -371,6 +379,93 @@ export default function ProductDetail() {
     };
   }, [id, product?.id]);
 
+  // Auto-advance slideshow every 3 seconds
+  useEffect(() => {
+    if (!product?.images || product.images.length <= 1 || isPaused || isTransitioning || isFullScreen) return;
+
+    const interval = setInterval(() => {
+      setPrevImageIndex(currentImageIndex);
+      setSlideDirection('next');
+      setIsTransitioning(true);
+      setCurrentImageIndex((prev) => (prev + 1) % product.images.length);
+      
+      setTimeout(() => {
+        setIsTransitioning(false);
+        setSlideDirection(null);
+      }, 500);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [product?.images, isPaused, isTransitioning, currentImageIndex, isFullScreen]);
+
+  // Navigation functions for image gallery
+  const nextImage = () => {
+    if (!product?.images || isTransitioning) return;
+    setPrevImageIndex(currentImageIndex);
+    setSlideDirection('next');
+    setIsTransitioning(true);
+    setCurrentImageIndex((prev) => (prev + 1) % (product.images?.length ?? 1));
+    
+    setTimeout(() => {
+      setIsTransitioning(false);
+      setSlideDirection(null);
+    }, 500);
+    
+    setIsPaused(true);
+    setTimeout(() => setIsPaused(false), 5000);
+  };
+
+  const prevImage = () => {
+    if (!product?.images || isTransitioning) return;
+    setPrevImageIndex(currentImageIndex);
+    setSlideDirection('prev');
+    setIsTransitioning(true);
+    setCurrentImageIndex((prev) => 
+      prev === 0 ? (product.images?.length ?? 1) - 1 : prev - 1
+    );
+    
+    setTimeout(() => {
+      setIsTransitioning(false);
+      setSlideDirection(null);
+    }, 500);
+    
+    setIsPaused(true);
+    setTimeout(() => setIsPaused(false), 5000);
+  };
+
+  // Full-screen navigation with slide animation
+  const nextImageFullScreen = () => {
+    if (!product?.images || fullScreenTransitioning) return;
+    setFullScreenPrevIndex(currentImageIndex);
+    setFullScreenDirection('next'); // Next slides left
+    setFullScreenTransitioning(true);
+    setCurrentImageIndex((prev) => (prev + 1) % product.images.length);
+    
+    setTimeout(() => {
+      setFullScreenTransitioning(false);
+    }, 500);
+  };
+
+  const prevImageFullScreen = () => {
+    if (!product?.images || fullScreenTransitioning) return;
+    setFullScreenPrevIndex(currentImageIndex);
+    setFullScreenDirection('prev'); // Prev slides right
+    setFullScreenTransitioning(true);
+    setCurrentImageIndex((prev) => 
+      prev === 0 ? product.images.length - 1 : prev - 1
+    );
+    
+    setTimeout(() => {
+      setFullScreenTransitioning(false);
+    }, 500);
+  };
+
+  // Get initial transform for new image
+  const getInitialTransform = () => {
+    if (!isTransitioning) return 'translateX(0)';
+    return slideDirection === 'next' ? 'translateX(100%)' : 'translateX(-100%)';
+  };
+
   if (!id) {
     return <div>Không tìm thấy sản phẩm</div>;
   }
@@ -409,24 +504,8 @@ export default function ProductDetail() {
   const endTime = new Date(product.end_time);
   const secondsRemaining = Math.max(
     0,
-    Math.floor((endTime.getTime() - currentTime) / 1000)
+    Math.floor((endTime.getTime() - currentTime + 7 * 60 * 60 * 1000) / 1000)
   );
-
-  // 🕐 DEBUG: Log time calculation
-  if (secondsRemaining < 3600 && secondsRemaining % 10 === 0) {
-    // Log every 10 seconds when < 1 hour
-    console.log("⏰ [FRONTEND TIME CHECK]", {
-      productId: id,
-      currentTime: new Date(currentTime).toISOString(),
-      currentTimeLocal: new Date(currentTime).toLocaleString("vi-VN"),
-      endTime: endTime.toISOString(),
-      endTimeLocal: endTime.toLocaleString("vi-VN"),
-      endTimeRaw: product.end_time,
-      secondsRemaining,
-      minutesRemaining: Math.floor(secondsRemaining / 60),
-      canBid: secondsRemaining > 0,
-    });
-  }
 
   const suggestedBid = currentPrice + bidStep;
 
@@ -753,29 +832,100 @@ export default function ProductDetail() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Image Gallery */}
+          {/* Image Gallery with Slideshow */}
           <div className="lg:col-span-2">
             <div className="space-y-4">
-              <div className="bg-muted rounded-lg overflow-hidden">
-                <img
-                  src={
-                    product.images?.[currentImageIndex]?.url ||
-                    getImageUrl(product.main_image)
-                  }
-                  alt={product.title}
-                  className="w-full h-96 object-cover"
-                />
+              {/* Main Image with Navigation */}
+              <div className="relative bg-muted rounded-lg overflow-hidden group">
+                <div className="relative w-full h-96 overflow-hidden">
+                  {/* Previous Image (sliding out) */}
+                  {isTransitioning && (
+                    <div
+                      className="absolute inset-0 transition-transform duration-500 ease-out"
+                      style={{
+                        transform: slideDirection === 'next' 
+                          ? 'translateX(-100%)' 
+                          : 'translateX(100%)',
+                        zIndex: 1
+                      }}
+                    >
+                      <img
+                        src={
+                          product.images?.[prevImageIndex]?.url ||
+                          getImageUrl(product.main_image)
+                        }
+                        alt={product.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Current Image (sliding in) */}
+                  <div
+                    key={currentImageIndex}
+                    className="absolute inset-0 transition-transform duration-500 ease-out cursor-pointer"
+                    style={{
+                      transform: 'translateX(0)',
+                      zIndex: 2
+                    }}
+                    onClick={() => setIsFullScreen(true)}
+                    onMouseEnter={() => setIsPaused(true)}
+                    onMouseLeave={() => setIsPaused(false)}
+                  >
+                    <img
+                      src={
+                        product.images?.[currentImageIndex]?.url ||
+                        getImageUrl(product.main_image)
+                      }
+                      alt={product.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+                
+                {/* Navigation Arrows - Show when > 5 images */}
+                {product.images && product.images.length > 5 && (
+                  <>
+                    <button
+                      onClick={prevImage}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      aria-label="Previous image"
+                    >
+                      <ChevronLeft className="w-6 h-6" />
+                    </button>
+                    <button
+                      onClick={nextImage}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      aria-label="Next image"
+                    >
+                      <ChevronRight className="w-6 h-6" />
+                    </button>
+                  </>
+                )}
+
+                {/* Image Counter */}
+                {product.images && product.images.length > 1 && (
+                  <div className="absolute bottom-3 right-3 bg-black/60 text-white px-3 py-1 rounded-full text-sm">
+                    {currentImageIndex + 1} / {product.images.length}
+                  </div>
+                )}
               </div>
+
+              {/* Thumbnail Strip */}
               {product.images && product.images.length > 1 && (
-                <div className="flex gap-2">
+                <div className="flex gap-2 overflow-x-auto pb-2">
                   {product.images.map((img, idx) => (
                     <button
                       key={idx}
-                      onClick={() => setCurrentImageIndex(idx)}
-                      className={`w-20 h-20 rounded-lg overflow-hidden border-2 transition ${
+                      onClick={() => {
+                        setCurrentImageIndex(idx);
+                        setIsPaused(true);
+                        setTimeout(() => setIsPaused(false), 5000);
+                      }}
+                      className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
                         currentImageIndex === idx
-                          ? "border-primary"
-                          : "border-border"
+                          ? "border-primary scale-105 shadow-lg"
+                          : "border-border hover:border-primary/50"
                       }`}
                     >
                       <img
@@ -831,7 +981,7 @@ export default function ProductDetail() {
 
                 <div className="bg-accent/10 rounded-lg p-4 border border-accent/20">
                   <p className="text-sm font-semibold text-accent mb-1">
-                    Thời gian còn lại
+                    {secondsRemaining >= 259200 ? "Thời gian kết thúc" : "Thời gian còn lại"}
                   </p>
                   <p className="text-lg font-bold text-foreground">
                     {formatTimeRemaining(secondsRemaining, product.end_time)}
@@ -1334,6 +1484,99 @@ export default function ProductDetail() {
           productId={parseInt(id!)}
           onDeny={handleDenyBidder}
         />
+      )}
+
+      {/* Full-Screen Image Viewer */}
+      {isFullScreen && product && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+          onClick={() => setIsFullScreen(false)}
+        >
+          {/* Close Button */}
+          <button
+            onClick={() => setIsFullScreen(false)}
+            className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors p-2 bg-black/50 rounded-full"
+            aria-label="Close full-screen"
+          >
+            <X className="w-8 h-8" />
+          </button>
+
+          {/* Navigation Arrows */}
+          {product.images && product.images.length > 1 && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  prevImageFullScreen();
+                }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors p-3 bg-black/50 rounded-full"
+                aria-label="Previous image"
+              >
+                <ChevronLeft className="w-10 h-10" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  nextImageFullScreen();
+                }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors p-3 bg-black/50 rounded-full"
+                aria-label="Next image"
+              >
+                <ChevronRight className="w-10 h-10" />
+              </button>
+            </>
+          )}
+
+          {/* Image Container with Slide Animation */}
+          <div className="relative w-[90vw] h-[90vh] overflow-hidden">
+            {/* Previous Image (sliding out) */}
+            {fullScreenTransitioning && (
+              <div
+                className="absolute inset-0 flex items-center justify-center transition-transform duration-500 ease-out"
+                style={{
+                  transform: fullScreenDirection === 'next' ? 'translateX(-100%)' : 'translateX(100%)',
+                  zIndex: 1
+                }}
+              >
+                <img
+                  src={
+                    product.images?.[fullScreenPrevIndex]?.url ||
+                    getImageUrl(product.main_image)
+                  }
+                  alt={product.title}
+                  className="max-w-full max-h-full object-contain"
+                />
+              </div>
+            )}
+            
+            {/* Current Image (sliding in) */}
+            <div
+              key={`fullscreen-${currentImageIndex}`}
+              className="absolute inset-0 flex items-center justify-center transition-transform duration-500 ease-out"
+              style={{
+                transform: 'translateX(0)',
+                zIndex: 2
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img
+                src={
+                  product.images?.[currentImageIndex]?.url ||
+                  getImageUrl(product.main_image)
+                }
+                alt={product.title}
+                className="max-w-full max-h-full object-contain"
+              />
+            </div>
+          </div>
+
+          {/* Image Counter */}
+          {product.images && product.images.length > 1 && (
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-full text-lg">
+              {currentImageIndex + 1} / {product.images.length}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

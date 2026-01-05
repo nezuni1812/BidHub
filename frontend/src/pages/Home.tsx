@@ -733,7 +733,7 @@ export default function Home() {
                               const secondsRemaining = Math.max(
                                 0,
                                 Math.floor(
-                                  (endTimeUTC.getTime() - currentTime) / 1000
+                                  (endTimeUTC.getTime() - currentTime + 7 * 60 * 60 * 1000) / 1000
                                 )
                               );
                               return (
@@ -1260,7 +1260,7 @@ export default function Home() {
                               const secondsRemaining = Math.max(
                                 0,
                                 Math.floor(
-                                  (endTimeUTC.getTime() - currentTime) / 1000
+                                  (endTimeUTC.getTime() - currentTime + 7 * 60 * 60 * 1000) / 1000
                                 )
                               );
                               const threeDaysInSeconds = 259200;
@@ -1290,7 +1290,7 @@ export default function Home() {
                                   <div className="flex items-center justify-center gap-2 py-3 rounded-xl font-medium text-sm bg-muted/50 text-foreground/70">
                                     <Clock className="w-4 h-4" />
                                     Kết thúc:{" "}
-                                    {endTime.toLocaleDateString("vi-VN")}
+                                    {endTimeUTC.toLocaleDateString("vi-VN")}
                                   </div>
                                 );
                               } else {
