@@ -4,6 +4,11 @@
 -- Kết nối vào database auction_app
 -- \c auction_app;
 
+-- Set timezone to GMT+7 (Asia/Ho_Chi_Minh) for all timestamps
+SET timezone = 'Asia/Ho_Chi_Minh';
+
+ALTER DATABASE auction_app SET timezone TO 'Asia/Ho_Chi_Minh';
+
 -- Bảng Category
 CREATE TABLE categories (
     id BIGSERIAL PRIMARY KEY,

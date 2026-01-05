@@ -16,9 +16,10 @@ const pool = new Pool({
 });
 
 pool.on('connect', (client) => {
-  // Set encoding for each connection
+  // Set encoding and timezone for each connection
   client.query("SET client_encoding TO 'UTF8'");
-  console.log('✓ Database connected');
+  client.query("SET timezone TO 'Asia/Ho_Chi_Minh'");
+  console.log('✓ Database connected (GMT+7)');
 });
 
 pool.on('error', (err) => {

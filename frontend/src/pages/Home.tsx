@@ -733,7 +733,7 @@ export default function Home() {
                               const secondsRemaining = Math.max(
                                 0,
                                 Math.floor(
-                                  (endTimeUTC.getTime() - currentTime + 7 * 60 * 60 * 1000) / 1000
+                                  (endTimeUTC.getTime() - currentTime) / 1000
                                 )
                               );
                               return (
@@ -1260,7 +1260,7 @@ export default function Home() {
                               const secondsRemaining = Math.max(
                                 0,
                                 Math.floor(
-                                  (endTimeUTC.getTime() - currentTime + 7 * 60 * 60 * 1000) / 1000
+                                  (endTimeUTC.getTime() - currentTime) / 1000
                                 )
                               );
                               const threeDaysInSeconds = 259200;
