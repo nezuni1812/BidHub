@@ -5,7 +5,14 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Heart, Share2, Flag, ChevronLeft, ChevronRight, X } from "lucide-react";
+import {
+  Heart,
+  Share2,
+  Flag,
+  ChevronLeft,
+  ChevronRight,
+  X,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { BidDialog } from "@/components/bid-dialog";
 import { AskQuestionDialog } from "@/components/ask-question-dialog";
@@ -47,9 +54,13 @@ export default function ProductDetail() {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [fullScreenTransitioning, setFullScreenTransitioning] = useState(false);
   const [fullScreenPrevIndex, setFullScreenPrevIndex] = useState(0);
-  const [fullScreenDirection, setFullScreenDirection] = useState<'next' | 'prev'>('next');
+  const [fullScreenDirection, setFullScreenDirection] = useState<
+    "next" | "prev"
+  >("next");
   const [isPaused, setIsPaused] = useState(false);
-  const [slideDirection, setSlideDirection] = useState<'next' | 'prev' | null>(null);
+  const [slideDirection, setSlideDirection] = useState<"next" | "prev" | null>(
+    null
+  );
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showBidDialog, setShowBidDialog] = useState(false);
   const [showQuestionDialog, setShowQuestionDialog] = useState(false);
@@ -381,14 +392,21 @@ export default function ProductDetail() {
 
   // Auto-advance slideshow every 3 seconds
   useEffect(() => {
-    if (!product?.images || product.images.length <= 1 || isPaused || isTransitioning || isFullScreen) return;
+    if (
+      !product?.images ||
+      product.images.length <= 1 ||
+      isPaused ||
+      isTransitioning ||
+      isFullScreen
+    )
+      return;
 
     const interval = setInterval(() => {
       setPrevImageIndex(currentImageIndex);
-      setSlideDirection('next');
+      setSlideDirection("next");
       setIsTransitioning(true);
       setCurrentImageIndex((prev) => (prev + 1) % product.images.length);
-      
+
       setTimeout(() => {
         setIsTransitioning(false);
         setSlideDirection(null);
@@ -396,21 +414,27 @@ export default function ProductDetail() {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [product?.images, isPaused, isTransitioning, currentImageIndex, isFullScreen]);
+  }, [
+    product?.images,
+    isPaused,
+    isTransitioning,
+    currentImageIndex,
+    isFullScreen,
+  ]);
 
   // Navigation functions for image gallery
   const nextImage = () => {
     if (!product?.images || isTransitioning) return;
     setPrevImageIndex(currentImageIndex);
-    setSlideDirection('next');
+    setSlideDirection("next");
     setIsTransitioning(true);
     setCurrentImageIndex((prev) => (prev + 1) % (product.images?.length ?? 1));
-    
+
     setTimeout(() => {
       setIsTransitioning(false);
       setSlideDirection(null);
     }, 500);
-    
+
     setIsPaused(true);
     setTimeout(() => setIsPaused(false), 5000);
   };
@@ -418,17 +442,17 @@ export default function ProductDetail() {
   const prevImage = () => {
     if (!product?.images || isTransitioning) return;
     setPrevImageIndex(currentImageIndex);
-    setSlideDirection('prev');
+    setSlideDirection("prev");
     setIsTransitioning(true);
-    setCurrentImageIndex((prev) => 
+    setCurrentImageIndex((prev) =>
       prev === 0 ? (product.images?.length ?? 1) - 1 : prev - 1
     );
-    
+
     setTimeout(() => {
       setIsTransitioning(false);
       setSlideDirection(null);
     }, 500);
-    
+
     setIsPaused(true);
     setTimeout(() => setIsPaused(false), 5000);
   };
@@ -437,10 +461,10 @@ export default function ProductDetail() {
   const nextImageFullScreen = () => {
     if (!product?.images || fullScreenTransitioning) return;
     setFullScreenPrevIndex(currentImageIndex);
-    setFullScreenDirection('next'); // Next slides left
+    setFullScreenDirection("next"); // Next slides left
     setFullScreenTransitioning(true);
     setCurrentImageIndex((prev) => (prev + 1) % product.images.length);
-    
+
     setTimeout(() => {
       setFullScreenTransitioning(false);
     }, 500);
@@ -449,12 +473,12 @@ export default function ProductDetail() {
   const prevImageFullScreen = () => {
     if (!product?.images || fullScreenTransitioning) return;
     setFullScreenPrevIndex(currentImageIndex);
-    setFullScreenDirection('prev'); // Prev slides right
+    setFullScreenDirection("prev"); // Prev slides right
     setFullScreenTransitioning(true);
-    setCurrentImageIndex((prev) => 
+    setCurrentImageIndex((prev) =>
       prev === 0 ? product.images.length - 1 : prev - 1
     );
-    
+
     setTimeout(() => {
       setFullScreenTransitioning(false);
     }, 500);
@@ -462,8 +486,8 @@ export default function ProductDetail() {
 
   // Get initial transform for new image
   const getInitialTransform = () => {
-    if (!isTransitioning) return 'translateX(0)';
-    return slideDirection === 'next' ? 'translateX(100%)' : 'translateX(-100%)';
+    if (!isTransitioning) return "translateX(0)";
+    return slideDirection === "next" ? "translateX(100%)" : "translateX(-100%)";
   };
 
   if (!id) {
@@ -500,11 +524,11 @@ export default function ProductDetail() {
     : null;
   const bidStep = parseFloat(product.bid_step as any);
 
-  // Calculate real-time seconds remaining (compare UTC time directly)
+  // Calculate real-time seconds remaining
   const endTime = new Date(product.end_time);
   const secondsRemaining = Math.max(
     0,
-    Math.floor((endTime.getTime() - currentTime + 7 * 60 * 60 * 1000) / 1000)
+    Math.floor((endTime.getTime() - currentTime) / 1000)
   );
 
   const suggestedBid = currentPrice + bidStep;
@@ -843,10 +867,11 @@ export default function ProductDetail() {
                     <div
                       className="absolute inset-0 transition-transform duration-500 ease-out"
                       style={{
-                        transform: slideDirection === 'next' 
-                          ? 'translateX(-100%)' 
-                          : 'translateX(100%)',
-                        zIndex: 1
+                        transform:
+                          slideDirection === "next"
+                            ? "translateX(-100%)"
+                            : "translateX(100%)",
+                        zIndex: 1,
                       }}
                     >
                       <img
@@ -859,14 +884,14 @@ export default function ProductDetail() {
                       />
                     </div>
                   )}
-                  
+
                   {/* Current Image (sliding in) */}
                   <div
                     key={currentImageIndex}
                     className="absolute inset-0 transition-transform duration-500 ease-out cursor-pointer"
                     style={{
-                      transform: 'translateX(0)',
-                      zIndex: 2
+                      transform: "translateX(0)",
+                      zIndex: 2,
                     }}
                     onClick={() => setIsFullScreen(true)}
                     onMouseEnter={() => setIsPaused(true)}
@@ -882,7 +907,7 @@ export default function ProductDetail() {
                     />
                   </div>
                 </div>
-                
+
                 {/* Navigation Arrows - Show when > 5 images */}
                 {product.images && product.images.length > 5 && (
                   <>
@@ -981,7 +1006,9 @@ export default function ProductDetail() {
 
                 <div className="bg-accent/10 rounded-lg p-4 border border-accent/20">
                   <p className="text-sm font-semibold text-accent mb-1">
-                    {secondsRemaining >= 259200 ? "Thời gian kết thúc" : "Thời gian còn lại"}
+                    {secondsRemaining >= 259200
+                      ? "Thời gian kết thúc"
+                      : "Thời gian còn lại"}
                   </p>
                   <p className="text-lg font-bold text-foreground">
                     {formatTimeRemaining(secondsRemaining, product.end_time)}
@@ -1217,9 +1244,7 @@ export default function ProductDetail() {
                     <p className="font-semibold">
                       {(() => {
                         const d = new Date(product.end_time);
-                        // Lấy giờ UTC + 7
-                        const gmt7 = new Date(d.getTime() + 7 * 60 * 60000);
-                        return gmt7.toLocaleString("vi-VN", { hour12: false });
+                        return d.toLocaleString("vi-VN", { hour12: false });
                       })()}
                     </p>
                   </div>
@@ -1488,7 +1513,7 @@ export default function ProductDetail() {
 
       {/* Full-Screen Image Viewer */}
       {isFullScreen && product && (
-        <div 
+        <div
           className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
           onClick={() => setIsFullScreen(false)}
         >
@@ -1534,8 +1559,11 @@ export default function ProductDetail() {
               <div
                 className="absolute inset-0 flex items-center justify-center transition-transform duration-500 ease-out"
                 style={{
-                  transform: fullScreenDirection === 'next' ? 'translateX(-100%)' : 'translateX(100%)',
-                  zIndex: 1
+                  transform:
+                    fullScreenDirection === "next"
+                      ? "translateX(-100%)"
+                      : "translateX(100%)",
+                  zIndex: 1,
                 }}
               >
                 <img
@@ -1548,14 +1576,14 @@ export default function ProductDetail() {
                 />
               </div>
             )}
-            
+
             {/* Current Image (sliding in) */}
             <div
               key={`fullscreen-${currentImageIndex}`}
               className="absolute inset-0 flex items-center justify-center transition-transform duration-500 ease-out"
               style={{
-                transform: 'translateX(0)',
-                zIndex: 2
+                transform: "translateX(0)",
+                zIndex: 2,
               }}
               onClick={(e) => e.stopPropagation()}
             >

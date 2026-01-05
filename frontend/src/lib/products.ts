@@ -216,13 +216,6 @@ export const formatPrice = (price: number): string => {
  * - Nếu < 3 ngày: hiển thị relative time (3 ngày nữa, 10 phút nữa)
  * - Nếu >= 3 ngày: hiển thị ngày tháng năm (dd/mm/yyyy HH:mm)
  */
-// Helper: convert UTC ISO string to Date in GMT+7
-export function toGmt7Date(dateStr: string) {
-  const d = new Date(dateStr);
-  // Lấy giờ UTC + 7
-  return new Date(d.getTime() + 7 * 60 * 60000);
-}
-
 export const formatTimeRemaining = (seconds: number, endTimeIso?: string): string => {
   if (seconds <= 0) return 'Đã kết thúc';
 
@@ -230,9 +223,9 @@ export const formatTimeRemaining = (seconds: number, endTimeIso?: string): strin
   const hours = Math.floor((seconds % (24 * 60 * 60)) / (60 * 60));
   const minutes = Math.floor((seconds % (60 * 60)) / 60);
 
-  // If >= 3 days, show end date/time (dd/mm/yyyy HH:mm) in GMT+7
+  // If >= 3 days, show end date/time (dd/mm/yyyy HH:mm)
   if (days >= 3 && endTimeIso) {
-    const endTime = toGmt7Date(endTimeIso);
+    const endTime = new Date(endTimeIso);
     const day = String(endTime.getDate()).padStart(2, '0');
     const month = String(endTime.getMonth() + 1).padStart(2, '0');
     const year = endTime.getFullYear();

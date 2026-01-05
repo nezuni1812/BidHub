@@ -102,11 +102,9 @@ module.exports = (io, socket) => {
       }
 
       const now = new Date();
-      // Ensure end_time is parsed as GMT+7 local time (handle both Date object and string)
       const endTime = product.end_time instanceof Date ? product.end_time : new Date(product.end_time);
-      // Add 7 hours to current time to compare with GMT+7 end_time
       
-      // 🕐 DEBUG: Log time comparison
+      // 🕐 DEBUG: Log time comparison (DB now stores GMT+7)
       console.log('⏰ [BID TIME CHECK]', {
         productId,
         now: now.toISOString(),
