@@ -479,6 +479,37 @@ const buyNow = asyncHandler(async (req, res) => {
 
   console.log(`[BUY NOW] User ${buyerId} attempting to buy product ${productId}`);
 
+  // Check user rating (80% positive rating requirement)
+  const ratingStats = await Rating.getUserRatingStats(buyerId);
+  const totalRatings = parseInt(ratingStats.total_ratings) || 0;
+  const positivePercentage = parseFloat(ratingStats.positive_percentage) || 0;
+
+  if (totalRatings > 0 && positivePercentage < 80) {
+    throw new ForbiddenError(`Bạn cần có tối thiểu 80% đánh giá tích cực để mua ngay. Đánh giá hiện tại: ${positivePercentage.toFixed(1)}%`);
+  }
+
+  // For unrated users, check system setting AND seller permission
+  if (totalRatings === 0) {
+    // Get product to check seller permissions
+    const productCheck = await Product.getById(productId);
+    if (!productCheck) {
+      throw new NotFoundError('Product not found');
+    }
+
+    const settingResult = await db.query(
+      "SELECT setting_value FROM system_settings WHERE setting_key = 'allow_unrated_bidders'"
+    );
+    const systemAllowsUnrated = settingResult.rows.length > 0 && 
+                                settingResult.rows[0].setting_value === 'true';
+
+    // Check if seller has denied this bidder
+    const isDenied = await DeniedBidder.isDenied(productId, buyerId);
+
+    if (!systemAllowsUnrated || isDenied) {
+      throw new ForbiddenError('Bạn cần có ít nhất một đánh giá để tham gia mua ngay sản phẩm này');
+    }
+  }
+
   // Execute buy now (ends auction, sets winner, updates product)
   const product = await Product.buyNowInstant(productId, buyerId);
   console.log(`[BUY NOW] Product ${productId} purchased successfully. Winner: ${buyerId}, Price: ${product.buy_now_price}`);
