@@ -832,41 +832,39 @@ export default function ProductDetail() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Image Gallery with Slideshow */}
           <div className="lg:col-span-2">
             <div className="space-y-4">
-              {/* Main Image with Navigation */}
               <div className="relative bg-muted rounded-lg overflow-hidden group">
                 <div className="relative w-full h-96 overflow-hidden">
-                  {/* Previous Image (sliding out) */}
-                  {isTransitioning && (
-                    <div
-                      className="absolute inset-0 transition-transform duration-500 ease-out"
-                      style={{
-                        transform: slideDirection === 'next' 
-                          ? 'translateX(-100%)' 
-                          : 'translateX(100%)',
-                        zIndex: 1
-                      }}
-                    >
-                      <img
-                        src={
-                          product.images?.[prevImageIndex]?.url ||
-                          getImageUrl(product.main_image)
-                        }
-                        alt={product.title}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )}
-                  
-                  {/* Current Image (sliding in) */}
                   <div
-                    key={currentImageIndex}
-                    className="absolute inset-0 transition-transform duration-500 ease-out cursor-pointer"
+                    className="absolute inset-0"
                     style={{
-                      transform: 'translateX(0)',
-                      zIndex: 2
+                      transform: isTransitioning 
+                        ? (slideDirection === 'next' ? 'translateX(-100%)' : 'translateX(100%)')
+                        : 'translateX(0)',
+                      transition: 'transform 0.5s ease-in-out',
+                      zIndex: isTransitioning ? 2 : 1,
+                      pointerEvents: isTransitioning ? 'none' : 'auto'
+                    }}
+                  >
+                    <img
+                      src={
+                        product.images?.[prevImageIndex]?.url ||
+                        getImageUrl(product.main_image)
+                      }
+                      alt={product.title}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  
+                  <div
+                    className="absolute inset-0 cursor-pointer"
+                    style={{
+                      transform: isTransitioning 
+                        ? 'translateX(0)'
+                        : (slideDirection === 'next' ? 'translateX(100%)' : slideDirection === 'prev' ? 'translateX(-100%)' : 'translateX(0)'),
+                      transition: 'transform 0.5s ease-in-out',
+                      zIndex: isTransitioning ? 1 : 2
                     }}
                     onClick={() => setIsFullScreen(true)}
                     onMouseEnter={() => setIsPaused(true)}
@@ -878,7 +876,7 @@ export default function ProductDetail() {
                         getImageUrl(product.main_image)
                       }
                       alt={product.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                   </div>
                 </div>
@@ -924,7 +922,7 @@ export default function ProductDetail() {
                       }}
                       className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all duration-300 ${
                         currentImageIndex === idx
-                          ? "border-primary scale-105 shadow-lg"
+                          ? "border-primary scale-101 shadow-lg"
                           : "border-border hover:border-primary/50"
                       }`}
                     >
