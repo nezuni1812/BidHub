@@ -9,8 +9,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import { Edit } from "lucide-react"
+import { RichTextEditor } from "@/components/rich-text-editor"
 
 interface AppendDescriptionDialogProps {
   productId: number
@@ -30,7 +30,9 @@ export function AppendDescriptionDialog({ onAppend, isSeller }: AppendDescriptio
     e.preventDefault()
     setError("")
 
-    if (!newText.trim()) {
+    const plainText = newText.replace(/<[^>]+>/g, "").trim()
+
+    if (!plainText) {
       setError("Vui lòng nhập nội dung bổ sung")
       return
     }
@@ -66,12 +68,11 @@ export function AppendDescriptionDialog({ onAppend, isSeller }: AppendDescriptio
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="text-sm font-medium">Nội dung bổ sung</label>
-            <Textarea
+            <RichTextEditor
               value={newText}
-              onChange={(e) => setNewText(e.target.value)}
               placeholder="Nhập thông tin bổ sung cho mô tả sản phẩm..."
-              className="mt-2 min-h-[150px]"
               disabled={isLoading}
+              onChange={(html) => setNewText(html)}
             />
             {error && <p className="text-xs text-destructive mt-1">{error}</p>}
             <p className="text-xs text-muted-foreground mt-1">

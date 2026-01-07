@@ -7,7 +7,6 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useState, useEffect } from "react";
 import { Upload, X, Users } from "lucide-react";
@@ -15,6 +14,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { RichTextEditor } from "@/components/rich-text-editor"
 
 interface AvailableBidder {
   id: string;
@@ -237,6 +237,9 @@ export default function PostItemPage() {
     setAdditionalImages((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const getPlainTextFromHtml = (html: string) => html.replace(/<[^>]+>/g, "").trim();
+
+
   const validateForm = () => {
     const newErrors: typeof errors = {};
 
@@ -255,11 +258,13 @@ export default function PostItemPage() {
     }
 
     // Validate description
-    if (!formData.description.trim()) {
+    const plainDescription = getPlainTextFromHtml(formData.description);
+
+    if (!plainDescription) {
       newErrors.description = "Vui lòng nhập mô tả sản phẩm";
-    } else if (formData.description.trim().length < 10) {
+    } else if (plainDescription.length < 10) {
       newErrors.description = "Mô tả phải có ít nhất 10 ký tự";
-    } else if (formData.description.trim().length > 5000) {
+    } else if (plainDescription.length > 5000) {
       newErrors.description = "Mô tả không được quá 5000 ký tự";
     }
 
@@ -586,19 +591,14 @@ export default function PostItemPage() {
 
               <div>
                 <Label htmlFor="description">Mô tả *</Label>
-                <Textarea
-                  id="description"
+                <RichTextEditor
                   value={formData.description}
-                  onChange={(e) => {
-                    setFormData({ ...formData, description: e.target.value });
-                    if (errors.description)
-                      setErrors({ ...errors, description: undefined });
-                  }}
                   placeholder="Mô tả chi tiết sản phẩm của bạn..."
-                  className={`mt-2 min-h-32 ${
-                    errors.description ? "border-destructive" : ""
-                  }`}
-                  required
+                  onChange={(html) => {
+                    setFormData({ ...formData, description: html })
+                    if (errors.description)
+                      setErrors({ ...errors, description: undefined })
+                  }}
                 />
                 {errors.description && (
                   <p className="text-xs text-destructive mt-1">

@@ -1191,9 +1191,15 @@ export default function ProductDetail() {
                     />
                   )}
                 </div>
-                <p className="text-muted-foreground whitespace-pre-wrap">
+                {product.description && (
+                  <div
+                    className="text-muted-foreground whitespace-pre-wrap prose max-w-none"
+                    dangerouslySetInnerHTML={{ __html: product.description }}
+                  />
+                )}  
+                {/* <p className="text-muted-foreground whitespace-pre-wrap">
                   {product.description}
-                </p>
+                </p> */}
 
                 {product.description_history &&
                   product.description_history.length > 0 && (
@@ -1220,9 +1226,15 @@ export default function ProductDetail() {
                                   })}
                                 </span>
                               </div>
-                              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                              { history.additional_description && (
+                              <div className="text-sm text-muted-foreground whitespace-pre-wrap prose max-w-none"
+                                dangerouslySetInnerHTML={{
+                                  __html: history.additional_description,
+                                }}
+                              /> )}
+                              {/* <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                                 {history.additional_description}
-                              </p>
+                              </p> */}
                             </div>
                           )
                         )}

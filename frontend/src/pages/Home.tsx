@@ -1103,7 +1103,7 @@ export default function Home() {
                   <Search className="w-10 h-10 text-muted-foreground/30" />
                 </div>
                 <h3 className="text-xl font-black mb-2">
-                  KHÔNG TÌM THẤY SẢN PHẨM
+                  Không Tìm Thấy Sản Phẩm
                 </h3>
                 <p className="text-muted-foreground mb-8 max-w-xs mx-auto">
                   Thử điều chỉnh bộ lọc hoặc từ khóa tìm kiếm để khám phá những

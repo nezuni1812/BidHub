@@ -4,6 +4,7 @@ import { ChevronDown, ChevronRight, Heart } from "lucide-react"
 import { useState, useEffect } from "react"
 import { api } from "@/lib/api"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/contexts/AuthContext"
 
 interface Category {
   id: string
@@ -39,6 +40,7 @@ const parseFormattedNumber = (str: string): number => {
 }
 
 export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
+  const { user } = useAuth()
   const [categories, setCategories] = useState<Category[]>([])
   const [expandedSections, setExpandedSections] = useState({
     category: true,
@@ -184,16 +186,23 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
         <h3 className="font-bold mb-4">Bộ lọc</h3>
 
         {/* Watchlist */}
-        <div className="mb-6 pb-6 border-b border-border">
-          <Button
-            variant={filters.showWatchlist ? "default" : "outline"}
-            className="w-full justify-start gap-2"
-            onClick={() => onChange({ ...filters, showWatchlist: !filters.showWatchlist })}
-          >
-            <Heart className={`w-4 h-4 ${filters.showWatchlist ? 'fill-current' : ''}`} />
-            Danh sách yêu thích
-          </Button>
-        </div>
+        {user && (
+          <div className="mb-6 pb-6 border-b border-border">
+            <Button
+              variant={filters.showWatchlist ? "default" : "outline"}
+              className="w-full justify-start gap-2"
+              onClick={() =>
+                onChange({
+                  ...filters,
+                  showWatchlist: !filters.showWatchlist,
+                })
+              }
+            >
+              <Heart className={`w-4 h-4 ${filters.showWatchlist ? "fill-current" : ""}`} />
+              Danh sách yêu thích
+            </Button>
+          </div>
+        )}
 
         {/* Category */}
         <div className="mb-6 pb-6 border-b border-border">
