@@ -429,7 +429,7 @@ exports.resetUserPassword = asyncHandler(async (req, res) => {
       email: user.email
     }
   });
-
+});
 // ================================================
 // 4.3.1 UPGRADE REQUEST MANAGEMENT
 // ================================================
