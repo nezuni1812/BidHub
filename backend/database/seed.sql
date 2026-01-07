@@ -505,6 +505,412 @@ VALUES (
     'active',
     false,
     13
+),
+
+-- ĐIỆN THOẠI (category 9) - 8 products
+(
+    16,
+    2,
+    9,
+    'Samsung Galaxy S24 Ultra 512GB - Titanium Gray',
+    'Samsung S24 Ultra màu Titanium Gray, bộ nhớ 512GB. Máy mới 99%, fullbox nguyên seal. Màn hình 6.8 inch Dynamic AMOLED, S-Pen tích hợp. Bảo hành chính hãng 12 tháng.',
+    28000000,
+    30000000,
+    33000000,
+    500000,
+    CURRENT_TIMESTAMP - INTERVAL '2 days',
+    CURRENT_TIMESTAMP + INTERVAL '5 days',
+    'active',
+    true,
+    8
+),
+(
+    17,
+    3,
+    9,
+    'iPhone 14 Pro 256GB - Deep Purple',
+    'iPhone 14 Pro màu Deep Purple, dung lượng 256GB. Máy like new 98%, pin 100%. Dynamic Island, camera 48MP. Fullbox, bảo hành Apple Care+ còn 8 tháng.',
+    22000000,
+    24500000,
+    27000000,
+    500000,
+    CURRENT_TIMESTAMP - INTERVAL '3 days',
+    CURRENT_TIMESTAMP + INTERVAL '4 days',
+    'active',
+    false,
+    11
+),
+(
+    18,
+    4,
+    9,
+    'Xiaomi 14 Ultra 16GB/512GB - Black',
+    'Xiaomi 14 Ultra phiên bản cao cấp 16GB RAM, 512GB ROM. Camera Leica 50MP. Máy mới nguyên seal chưa kích hoạt. Màu đen, fullbox, bảo hành Xiaomi 18 tháng.',
+    20000000,
+    21500000,
+    24000000,
+    500000,
+    CURRENT_TIMESTAMP - INTERVAL '1 day',
+    CURRENT_TIMESTAMP + INTERVAL '6 days',
+    'active',
+    true,
+    5
+),
+(
+    19,
+    2,
+    9,
+    'Google Pixel 8 Pro 256GB - Porcelain',
+    'Google Pixel 8 Pro màu Porcelain, 256GB. Máy mới 100%, chưa active. Camera AI xịn sò, Tensor G3. Fullbox, bảo hành Google 24 tháng. Hỗ trợ cập nhật 7 năm.',
+    18000000,
+    19500000,
+    22000000,
+    500000,
+    CURRENT_TIMESTAMP - INTERVAL '2 days',
+    CURRENT_TIMESTAMP + INTERVAL '7 days',
+    'active',
+    false,
+    7
+),
+(
+    20,
+    3,
+    9,
+    'OPPO Find X7 Ultra 16GB/512GB - Ocean Blue',
+    'OPPO Find X7 Ultra màu Ocean Blue. 16GB RAM, 512GB ROM. Camera Hasselblad 50MP x4. Màn hình AMOLED 120Hz. Mới 99%, fullbox, bảo hành 12 tháng.',
+    19000000,
+    20500000,
+    23000000,
+    500000,
+    CURRENT_TIMESTAMP - INTERVAL '4 days',
+    CURRENT_TIMESTAMP + INTERVAL '3 days',
+    'active',
+    true,
+    9
+),
+(
+    21,
+    4,
+    9,
+    'iPhone 13 Pro Max 512GB - Sierra Blue',
+    'iPhone 13 Pro Max màu Sierra Blue, 512GB. Máy zin all, pin 95%. ProMotion 120Hz, camera macro. Fullbox, phụ kiện đầy đủ. Bảo hành còn 3 tháng.',
+    20000000,
+    22000000,
+    25000000,
+    500000,
+    CURRENT_TIMESTAMP - INTERVAL '3 days',
+    CURRENT_TIMESTAMP + INTERVAL '8 days',
+    'active',
+    false,
+    10
+),
+(
+    22,
+    2,
+    9,
+    'Samsung Galaxy Z Fold 5 512GB - Phantom Black',
+    'Samsung Z Fold 5 màu Phantom Black, 512GB. Điện thoại gập cao cấp, màn hình 7.6 inch. Mới 98%, không nếp gấp. Fullbox, S-Pen Fold Edition. Bảo hành 10 tháng.',
+    35000000,
+    38000000,
+    42000000,
+    1000000,
+    CURRENT_TIMESTAMP - INTERVAL '5 days',
+    CURRENT_TIMESTAMP + INTERVAL '2 days',
+    'active',
+    true,
+    12
+),
+(
+    23,
+    3,
+    9,
+    'Vivo X100 Pro 16GB/512GB - Asteroid Black',
+    'Vivo X100 Pro màu Asteroid Black. 16GB RAM, 512GB ROM. Camera Zeiss Vario-Tessar 50MP. Chip Dimensity 9300. Mới 100%, nguyên seal. Bảo hành Vivo 18 tháng.',
+    22000000,
+    23500000,
+    26000000,
+    500000,
+    CURRENT_TIMESTAMP - INTERVAL '1 day',
+    CURRENT_TIMESTAMP + INTERVAL '9 days',
+    'active',
+    false,
+    6
+),
+
+-- LAPTOP (category 10) - 8 products
+(
+    24,
+    4,
+    10,
+    'Dell XPS 15 9530 - Intel Core i7 13700H',
+    'Dell XPS 15 9530, CPU i7-13700H, RAM 32GB DDR5, SSD 1TB. Màn hình 15.6 inch 3.5K OLED. RTX 4050 6GB. Mới 99%, bảo hành Dell 20 tháng. Fullbox.',
+    42000000,
+    45000000,
+    50000000,
+    1000000,
+    CURRENT_TIMESTAMP - INTERVAL '3 days',
+    CURRENT_TIMESTAMP + INTERVAL '5 days',
+    'active',
+    true,
+    9
+),
+(
+    25,
+    2,
+    10,
+    'MacBook Air M2 15 inch 16GB/512GB - Midnight',
+    'MacBook Air M2 15 inch màu Midnight. RAM 16GB, SSD 512GB. Màn hình Liquid Retina 15.3 inch. Mới 100%, chưa active. Fullbox, bảo hành Apple 12 tháng.',
+    32000000,
+    34500000,
+    38000000,
+    500000,
+    CURRENT_TIMESTAMP - INTERVAL '2 days',
+    CURRENT_TIMESTAMP + INTERVAL '6 days',
+    'active',
+    false,
+    8
+),
+(
+    26,
+    3,
+    10,
+    'ASUS ROG Zephyrus G16 - RTX 4070',
+    'ASUS ROG Zephyrus G16 2024. Intel Core Ultra 9, RAM 32GB, SSD 1TB. RTX 4070 8GB. Màn hình 16 inch 2.5K 240Hz. Gaming laptop cao cấp. Mới 98%, bảo hành 22 tháng.',
+    55000000,
+    58000000,
+    65000000,
+    1000000,
+    CURRENT_TIMESTAMP - INTERVAL '4 days',
+    CURRENT_TIMESTAMP + INTERVAL '4 days',
+    'active',
+    true,
+    11
+),
+(
+    27,
+    4,
+    10,
+    'Lenovo ThinkPad X1 Carbon Gen 11',
+    'Lenovo ThinkPad X1 Carbon Gen 11. i7-1365U, RAM 32GB, SSD 1TB. Màn hình 14 inch 2.8K OLED. Siêu mỏng nhẹ 1.12kg. Doanh nhân cao cấp. Mới 99%, bảo hành 18 tháng.',
+    38000000,
+    41000000,
+    46000000,
+    1000000,
+    CURRENT_TIMESTAMP - INTERVAL '5 days',
+    CURRENT_TIMESTAMP + INTERVAL '3 days',
+    'active',
+    false,
+    7
+),
+(
+    28,
+    2,
+    10,
+    'HP Spectre x360 16 - 2-in-1 OLED',
+    'HP Spectre x360 16 inch 2-in-1. i7-13700H, RAM 16GB, SSD 1TB. Màn hình 16 inch 3K OLED cảm ứng xoay 360°. Intel Arc A370M. Mới 97%, bảo hành HP 15 tháng.',
+    40000000,
+    43000000,
+    48000000,
+    1000000,
+    CURRENT_TIMESTAMP - INTERVAL '3 days',
+    CURRENT_TIMESTAMP + INTERVAL '7 days',
+    'active',
+    true,
+    10
+),
+(
+    29,
+    3,
+    10,
+    'Acer Predator Helios 16 - RTX 4060',
+    'Acer Predator Helios 16. i7-13700HX, RAM 16GB DDR5, SSD 512GB. RTX 4060 8GB. Màn hình 16 inch WQXGA 165Hz. Gaming laptop tầm trung. Mới 98%, bảo hành 20 tháng.',
+    35000000,
+    37500000,
+    42000000,
+    1000000,
+    CURRENT_TIMESTAMP - INTERVAL '2 days',
+    CURRENT_TIMESTAMP + INTERVAL '8 days',
+    'active',
+    false,
+    6
+),
+(
+    30,
+    4,
+    10,
+    'Microsoft Surface Laptop Studio 2',
+    'Surface Laptop Studio 2. i7-13700H, RAM 32GB, SSD 1TB. RTX 4050 6GB. Màn hình 14.4 inch PixelSense cảm ứng. Thiết kế độc đáo 3 chế độ. Mới 99%, bảo hành 16 tháng.',
+    48000000,
+    51000000,
+    56000000,
+    1000000,
+    CURRENT_TIMESTAMP - INTERVAL '4 days',
+    CURRENT_TIMESTAMP + INTERVAL '5 days',
+    'active',
+    true,
+    8
+),
+(
+    31,
+    2,
+    10,
+    'LG Gram 17 2024 - Siêu nhẹ 1.35kg',
+    'LG Gram 17 inch 2024. Intel Core Ultra 7, RAM 32GB, SSD 1TB. Màn hình 17 inch WQXGA IPS. Siêu nhẹ chỉ 1.35kg. Pin 90Wh cực khủng. Mới 100%, bảo hành LG 24 tháng.',
+    38000000,
+    40500000,
+    45000000,
+    1000000,
+    CURRENT_TIMESTAMP - INTERVAL '1 day',
+    CURRENT_TIMESTAMP + INTERVAL '9 days',
+    'active',
+    false,
+    5
+),
+
+-- Ô TÔ (category 24) - 9 products
+(
+    32,
+    3,
+    24,
+    'Toyota Camry 2.5Q 2023 - Trắng Ngọc Trai',
+    'Toyota Camry 2.5Q 2023 màu trắng ngọc trai. Xe lướt 12.000km, 1 chủ từ đầu. Full option: cửa hít, ghế da, cửa sổ trời, camera 360. Bảo hành Toyota 28 tháng.',
+    1150000000,
+    1200000000,
+    1300000000,
+    20000000,
+    CURRENT_TIMESTAMP - INTERVAL '6 days',
+    CURRENT_TIMESTAMP + INTERVAL '4 days',
+    'active',
+    true,
+    8
+),
+(
+    33,
+    4,
+    24,
+    'Honda CR-V L 2024 - 7 chỗ - Đen',
+    'Honda CR-V L 2024, màu đen, 7 chỗ. Xe mới chưa đăng ký, 0km. Full option cao cấp nhất: Honda Sensing, cửa sổ trời toàn cảnh, nội thất da. Bảo hành Honda 3 năm.',
+    1250000000,
+    1280000000,
+    1350000000,
+    20000000,
+    CURRENT_TIMESTAMP - INTERVAL '3 days',
+    CURRENT_TIMESTAMP + INTERVAL '6 days',
+    'active',
+    false,
+    6
+),
+(
+    34,
+    2,
+    24,
+    'Mazda CX-5 Signature Premium 2023',
+    'Mazda CX-5 Signature Premium 2023 màu đỏ Soul Red. Xe đi 15.000km. Full option: ghế Nappa, Bose, HUD, cửa sổ trời. Biển số đẹp. Bảo hành Mazda 24 tháng.',
+    980000000,
+    1020000000,
+    1100000000,
+    20000000,
+    CURRENT_TIMESTAMP - INTERVAL '5 days',
+    CURRENT_TIMESTAMP + INTERVAL '5 days',
+    'active',
+    true,
+    9
+),
+(
+    35,
+    3,
+    24,
+    'BMW 530i M Sport 2022 - Xanh Phytonic Blue',
+    'BMW 530i M Sport 2022 màu Phytonic Blue. Xe lướt 18.000km, 1 đời chủ. Full option M Sport: ghế thể thao, la-zăng 19 inch, HUD, Harman Kardon. Bảo hành BMW 18 tháng.',
+    2100000000,
+    2200000000,
+    2400000000,
+    50000000,
+    CURRENT_TIMESTAMP - INTERVAL '7 days',
+    CURRENT_TIMESTAMP + INTERVAL '3 days',
+    'active',
+    false,
+    7
+),
+(
+    36,
+    4,
+    24,
+    'Audi Q7 45 TFSI 2023 - 7 chỗ - Trắng',
+    'Audi Q7 45 TFSI 2023, màu trắng, 7 chỗ. Xe lướt 8.000km. Full option: Matrix LED, Virtual Cockpit Plus, Bang & Olufsen 3D, ghế massage. Bảo hành Audi 30 tháng.',
+    3200000000,
+    3350000000,
+    3600000000,
+    50000000,
+    CURRENT_TIMESTAMP - INTERVAL '8 days',
+    CURRENT_TIMESTAMP + INTERVAL '2 days',
+    'active',
+    true,
+    5
+),
+(
+    37,
+    2,
+    24,
+    'Vinfast VF8 Plus 2023 - Xanh Đại Dương',
+    'VinFast VF8 Plus 2023 màu Xanh Đại Dương. Xe điện, pin thuê. Đi 10.000km. Full option: ADAS Level 2, ghế da Nappa, cửa sổ trời. Bảo hành VinFast 32 tháng.',
+    850000000,
+    900000000,
+    980000000,
+    20000000,
+    CURRENT_TIMESTAMP - INTERVAL '4 days',
+    CURRENT_TIMESTAMP + INTERVAL '7 days',
+    'active',
+    false,
+    11
+),
+(
+    38,
+    3,
+    24,
+    'Hyundai Tucson 1.6T Turbo 2023 - Đỏ',
+    'Hyundai Tucson 1.6T Turbo 2023 màu đỏ. Xe lướt 14.000km. Full option: Smartsense, cửa sổ trời toàn cảnh, ghế da, 2 màn hình 10.25 inch. Bảo hành Hyundai 26 tháng.',
+    950000000,
+    990000000,
+    1080000000,
+    20000000,
+    CURRENT_TIMESTAMP - INTERVAL '5 days',
+    CURRENT_TIMESTAMP + INTERVAL '6 days',
+    'active',
+    true,
+    8
+),
+(
+    39,
+    4,
+    24,
+    'Kia Sorento Signature 2024 - 7 chỗ - Xám',
+    'Kia Sorento Signature 2024 màu xám, 7 chỗ. Xe mới 100%, chưa đăng ký. Full option cao cấp: ghế da Nappa, Bose, HUD, cửa sổ trời. Bảo hành Kia 3 năm.',
+    1180000000,
+    1220000000,
+    1300000000,
+    20000000,
+    CURRENT_TIMESTAMP - INTERVAL '2 days',
+    CURRENT_TIMESTAMP + INTERVAL '8 days',
+    'active',
+    false,
+    7
+),
+(
+    40,
+    2,
+    24,
+    'Ford Ranger Raptor 2023 - Đỏ Performance',
+    'Ford Ranger Raptor 2023 màu đỏ Performance. Bán tải hiệu suất cao, động cơ twin-turbo 3.0L. Xe đi 9.000km. Full option: FOX Racing, ghế Recaro. Bảo hành Ford 27 tháng.',
+    1450000000,
+    1520000000,
+    1650000000,
+    30000000,
+    CURRENT_TIMESTAMP - INTERVAL '6 days',
+    CURRENT_TIMESTAMP + INTERVAL '4 days',
+    'active',
+    true,
+    10
 );
 
 -- Reset sequence for products
@@ -748,6 +1154,421 @@ VALUES
 (
     15,
     'https://picsum.photos/seed/money2/800/600',
+    false
+),
+
+-- Samsung Galaxy S24 Ultra
+(
+    16,
+    'https://picsum.photos/seed/s24ultra1/800/600',
+    true
+),
+(
+    16,
+    'https://picsum.photos/seed/s24ultra2/800/600',
+    false
+),
+(
+    16,
+    'https://picsum.photos/seed/s24ultra3/800/600',
+    false
+),
+
+-- iPhone 14 Pro
+(
+    17,
+    'https://picsum.photos/seed/iphone14pro1/800/600',
+    true
+),
+(
+    17,
+    'https://picsum.photos/seed/iphone14pro2/800/600',
+    false
+),
+
+-- Xiaomi 14 Ultra
+(
+    18,
+    'https://picsum.photos/seed/xiaomi14ultra1/800/600',
+    true
+),
+(
+    18,
+    'https://picsum.photos/seed/xiaomi14ultra2/800/600',
+    false
+),
+(
+    18,
+    'https://picsum.photos/seed/xiaomi14ultra3/800/600',
+    false
+),
+
+-- Google Pixel 8 Pro
+(
+    19,
+    'https://picsum.photos/seed/pixel8pro1/800/600',
+    true
+),
+(
+    19,
+    'https://picsum.photos/seed/pixel8pro2/800/600',
+    false
+),
+
+-- OPPO Find X7 Ultra
+(
+    20,
+    'https://picsum.photos/seed/oppofindx71/800/600',
+    true
+),
+(
+    20,
+    'https://picsum.photos/seed/oppofindx72/800/600',
+    false
+),
+(
+    20,
+    'https://picsum.photos/seed/oppofindx73/800/600',
+    false
+),
+
+-- iPhone 13 Pro Max
+(
+    21,
+    'https://picsum.photos/seed/iphone13promax1/800/600',
+    true
+),
+(
+    21,
+    'https://picsum.photos/seed/iphone13promax2/800/600',
+    false
+),
+
+-- Samsung Galaxy Z Fold 5
+(
+    22,
+    'https://picsum.photos/seed/zfold51/800/600',
+    true
+),
+(
+    22,
+    'https://picsum.photos/seed/zfold52/800/600',
+    false
+),
+(
+    22,
+    'https://picsum.photos/seed/zfold53/800/600',
+    false
+),
+
+-- Vivo X100 Pro
+(
+    23,
+    'https://picsum.photos/seed/vivox100pro1/800/600',
+    true
+),
+(
+    23,
+    'https://picsum.photos/seed/vivox100pro2/800/600',
+    false
+),
+
+-- Dell XPS 15
+(
+    24,
+    'https://picsum.photos/seed/dellxps151/800/600',
+    true
+),
+(
+    24,
+    'https://picsum.photos/seed/dellxps152/800/600',
+    false
+),
+(
+    24,
+    'https://picsum.photos/seed/dellxps153/800/600',
+    false
+),
+
+-- MacBook Air M2 15
+(
+    25,
+    'https://picsum.photos/seed/macbookairm151/800/600',
+    true
+),
+(
+    25,
+    'https://picsum.photos/seed/macbookairm152/800/600',
+    false
+),
+
+-- ASUS ROG Zephyrus G16
+(
+    26,
+    'https://picsum.photos/seed/rogg161/800/600',
+    true
+),
+(
+    26,
+    'https://picsum.photos/seed/rogg162/800/600',
+    false
+),
+(
+    26,
+    'https://picsum.photos/seed/rogg163/800/600',
+    false
+),
+
+-- Lenovo ThinkPad X1 Carbon
+(
+    27,
+    'https://picsum.photos/seed/thinkpadx11/800/600',
+    true
+),
+(
+    27,
+    'https://picsum.photos/seed/thinkpadx12/800/600',
+    false
+),
+
+-- HP Spectre x360
+(
+    28,
+    'https://picsum.photos/seed/spectx3601/800/600',
+    true
+),
+(
+    28,
+    'https://picsum.photos/seed/spectx3602/800/600',
+    false
+),
+(
+    28,
+    'https://picsum.photos/seed/spectx3603/800/600',
+    false
+),
+
+-- Acer Predator Helios
+(
+    29,
+    'https://picsum.photos/seed/predatorhelios1/800/600',
+    true
+),
+(
+    29,
+    'https://picsum.photos/seed/predatorhelios2/800/600',
+    false
+),
+
+-- Surface Laptop Studio 2
+(
+    30,
+    'https://picsum.photos/seed/surfacestudio1/800/600',
+    true
+),
+(
+    30,
+    'https://picsum.photos/seed/surfacestudio2/800/600',
+    false
+),
+(
+    30,
+    'https://picsum.photos/seed/surfacestudio3/800/600',
+    false
+),
+
+-- LG Gram 17
+(
+    31,
+    'https://picsum.photos/seed/lggram171/800/600',
+    true
+),
+(
+    31,
+    'https://picsum.photos/seed/lggram172/800/600',
+    false
+),
+
+-- Toyota Camry
+(
+    32,
+    'https://picsum.photos/seed/camry1/800/600',
+    true
+),
+(
+    32,
+    'https://picsum.photos/seed/camry2/800/600',
+    false
+),
+(
+    32,
+    'https://picsum.photos/seed/camry3/800/600',
+    false
+),
+(
+    32,
+    'https://picsum.photos/seed/camry4/800/600',
+    false
+),
+
+-- Honda CR-V
+(
+    33,
+    'https://picsum.photos/seed/crv1/800/600',
+    true
+),
+(
+    33,
+    'https://picsum.photos/seed/crv2/800/600',
+    false
+),
+(
+    33,
+    'https://picsum.photos/seed/crv3/800/600',
+    false
+),
+
+-- Mazda CX-5
+(
+    34,
+    'https://picsum.photos/seed/cx51/800/600',
+    true
+),
+(
+    34,
+    'https://picsum.photos/seed/cx52/800/600',
+    false
+),
+(
+    34,
+    'https://picsum.photos/seed/cx53/800/600',
+    false
+),
+(
+    34,
+    'https://picsum.photos/seed/cx54/800/600',
+    false
+),
+
+-- BMW 530i
+(
+    35,
+    'https://picsum.photos/seed/bmw530i1/800/600',
+    true
+),
+(
+    35,
+    'https://picsum.photos/seed/bmw530i2/800/600',
+    false
+),
+(
+    35,
+    'https://picsum.photos/seed/bmw530i3/800/600',
+    false
+),
+(
+    35,
+    'https://picsum.photos/seed/bmw530i4/800/600',
+    false
+),
+
+-- Audi Q7
+(
+    36,
+    'https://picsum.photos/seed/audiq71/800/600',
+    true
+),
+(
+    36,
+    'https://picsum.photos/seed/audiq72/800/600',
+    false
+),
+(
+    36,
+    'https://picsum.photos/seed/audiq73/800/600',
+    false
+),
+(
+    36,
+    'https://picsum.photos/seed/audiq74/800/600',
+    false
+),
+
+-- VinFast VF8
+(
+    37,
+    'https://picsum.photos/seed/vf81/800/600',
+    true
+),
+(
+    37,
+    'https://picsum.photos/seed/vf82/800/600',
+    false
+),
+(
+    37,
+    'https://picsum.photos/seed/vf83/800/600',
+    false
+),
+
+-- Hyundai Tucson
+(
+    38,
+    'https://picsum.photos/seed/tucson1/800/600',
+    true
+),
+(
+    38,
+    'https://picsum.photos/seed/tucson2/800/600',
+    false
+),
+(
+    38,
+    'https://picsum.photos/seed/tucson3/800/600',
+    false
+),
+(
+    38,
+    'https://picsum.photos/seed/tucson4/800/600',
+    false
+),
+
+-- Kia Sorento
+(
+    39,
+    'https://picsum.photos/seed/sorento1/800/600',
+    true
+),
+(
+    39,
+    'https://picsum.photos/seed/sorento2/800/600',
+    false
+),
+(
+    39,
+    'https://picsum.photos/seed/sorento3/800/600',
+    false
+),
+
+-- Ford Ranger Raptor
+(
+    40,
+    'https://picsum.photos/seed/raptor1/800/600',
+    true
+),
+(
+    40,
+    'https://picsum.photos/seed/raptor2/800/600',
+    false
+),
+(
+    40,
+    'https://picsum.photos/seed/raptor3/800/600',
+    false
+),
+(
+    40,
+    'https://picsum.photos/seed/raptor4/800/600',
     false
 );
 
