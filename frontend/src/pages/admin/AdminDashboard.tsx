@@ -204,6 +204,67 @@ export default function AdminDashboard() {
     navigate(`/profile/${username}`)
   }
 
+  const handleDeleteUser = async (userId: number, username: string) => {
+    if (!confirm(`Bạn có chắc chắn muốn xóa người dùng "${username}"?\nHành động này không thể hoàn tác.`)) {
+      return;
+    }
+
+    try {
+      await api.delete(`/admin/users/${userId}`);
+      toast({
+        title: "Thành công",
+        description: `Người dùng ${username} đã được xóa.`,
+      });
+      fetchDashboardData();
+    } catch (error: any) {
+      toast({
+        title: "Lỗi",
+        description: error.response?.data?.message || error.message || "Không thể xóa người dùng này.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleResetPassword = async (userId: number, username: string) => {
+    if (!confirm(`Bạn có chắc chắn muốn đặt lại mật khẩu cho người dùng "${username}"?\nMật khẩu mới sẽ được gửi qua email.`)) {
+      return;
+    }
+
+    try {
+      await api.post(`/admin/users/${userId}/reset-password`);
+
+      toast({
+        title: "Thành công",
+        description: `Mật khẩu của ${username} đã được đặt lại thành công và gửi qua email.`,
+      });
+
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.warning ||
+        error.message ||
+        "Không thể đặt lại mật khẩu. Vui lòng thử lại.";
+
+      let description = errorMessage;
+
+      if (error.response?.data?.warning) {
+        description = `Mật khẩu đã được đặt lại, nhưng không gửi được email thông báo.\n(${errorMessage})`;
+      }
+
+      if (error.response?.status === 400) {
+        if (errorMessage.includes('admin')) {
+          description = "Không thể đặt lại mật khẩu cho tài khoản quản trị viên.";
+        }
+      }
+
+      toast({
+        title: "Lỗi",
+        description,
+        variant: "destructive",
+      });
+    }
+  };
+
   // Filtered data
   const filteredUsers = users.filter(user => {
     const matchesSearch = !userSearchTerm || 
@@ -403,7 +464,7 @@ export default function AdminDashboard() {
                     <th className="text-left py-3 px-4 font-semibold">Ngày tham gia</th>
                     <th className="text-left py-3 px-4 font-semibold">Trạng thái</th>
                     <th className="text-left py-3 px-4 font-semibold">Đánh giá</th>
-                    <th className="text-left py-3 px-4 font-semibold"></th>
+                    <th className="text-left py-3 px-4 font-semibold">Hành động</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -420,30 +481,55 @@ export default function AdminDashboard() {
                       </td>
                     </tr>
                   ) : (
-                    filteredUsers.slice(0, 10).map((user) => (
-                      <tr key={user.user_id} className="border-b border-border hover:bg-muted/50">
-                        <td className="py-4 px-4">{user.full_name || user.username}</td>
-                        <td className="py-4 px-4 text-muted-foreground">{user.email}</td>
-                        <td className="py-4 px-4 text-muted-foreground">
-                          {new Date(user.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="py-4 px-4">
-                          <Badge variant={user.is_active ? "default" : "outline"}>
-                            {user.is_active ? "Hoạt động" : "Không hoạt động"}
-                          </Badge>
-                        </td>
-                        <td className="py-4 px-4">
-                          {user.rating !== null && user.rating !== undefined && user.rating !== "0.00"
-                            ? `${(parseFloat(user.rating) * 100).toFixed(0)}%` 
-                            : "N/A"}
-                        </td>
-                        <td className="py-4 px-4">
-                          <Button variant="ghost" size="sm" onClick={() => handleViewUser(user.username)}>
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
+                    <> {filteredUsers.slice(0, 10).map((user) => (
+                        <tr key={user.user_id} className="border-b border-border hover:bg-muted/50">
+                          <td className="py-4 px-4">{user.full_name || user.username}</td>
+                          <td className="py-4 px-4 text-muted-foreground">{user.email}</td>
+                          <td className="py-4 px-4 text-muted-foreground">
+                            {new Date(user.created_at).toLocaleDateString('vi-VN')}
+                          </td>
+                          <td className="py-4 px-4">
+                            <Badge variant={user.is_active ? "default" : "outline"}>
+                              {user.is_active ? "Hoạt động" : "Không hoạt động"}
+                            </Badge>
+                          </td>
+                          <td className="py-4 px-4">
+                            {user.rating !== null && user.rating !== undefined && user.rating !== "0.00"
+                              ? `${(parseFloat(user.rating) * 100).toFixed(0)}%`
+                              : "N/A"}
+                          </td>
+                          <td className="py-4 px-4">
+                            <div className="flex gap-2">
+                              <Button variant="ghost" size="sm" onClick={() => handleViewUser(user.username)}>
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
+                                onClick={() => handleResetPassword(user.user_id, user.username || user.full_name)}
+                                title="Đặt lại mật khẩu"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                    d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                </svg>
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => handleDeleteUser(user.user_id, user.username || user.full_name)}
+                                title="Xóa người dùng"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </>
                   )}
                 </tbody>
               </table>

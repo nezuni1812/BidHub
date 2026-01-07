@@ -54,28 +54,54 @@ const sendOTPEmail = async (email, otp, fullName) => {
   return sendEmail({ to: email, subject, html, text });
 };
 
-const sendPasswordResetEmail = async (email, otp, fullName) => {
-  const subject = 'BidHub - Khôi phục mật khẩu';
-  const html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #333;">Xin chào ${fullName},</h2>
-      <p>Bạn đã yêu cầu khôi phục mật khẩu tài khoản BidHub.</p>
-      <p>Mã OTP xác nhận của bạn là:</p>
-      <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
-        ${otp}
+const sendPasswordResetEmail = async (email, otp, fullName, newPassword = null) => {
+  let subject, html, text;
+
+  if (newPassword) {
+    subject = 'BidHub - Mật khẩu của bạn đã được đặt lại';
+
+    html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Xin chào ${fullName},</h2>
+        <p>Quản trị viên đã đặt lại mật khẩu cho tài khoản BidHub của bạn.</p>
+        <p><strong>Mật khẩu mới của bạn là:</strong></p>
+        <div style="background-color: #fff3cd; padding: 20px; text-align: center; font-size: 26px; font-weight: bold; letter-spacing: 3px; margin: 20px 0; border: 2px dashed #ffc107; border-radius: 8px;">
+          ${newPassword}
+        </div>
+        <p><strong>Vui lòng đăng nhập ngay và thay đổi mật khẩu mới để bảo mật tài khoản.</strong></p>
+        <p>Nếu bạn không yêu cầu thay đổi này, vui lòng liên hệ hỗ trợ ngay lập tức.</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        <p style="color: #999; font-size: 12px;">
+          Email này được gửi tự động từ hệ thống quản trị.<br>
+          © 2025 BidHub. All rights reserved.
+        </p>
       </div>
-      <p>Mã OTP này có hiệu lực trong ${config.otp.expiresInMinutes} phút.</p>
-      <p>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.</p>
-      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-      <p style="color: #999; font-size: 12px;">
-        Email này được gửi tự động, vui lòng không reply.<br>
-        © 2025 BidHub. All rights reserved.
-      </p>
-    </div>
-  `;
-  
-  const text = `Xin chào ${fullName},\n\nMã OTP khôi phục mật khẩu: ${otp}\n\nMã có hiệu lực trong ${config.otp.expiresInMinutes} phút.`;
-  
+    `;
+
+    text = `Xin chào ${fullName},\n\nMật khẩu tài khoản BidHub của bạn đã được quản trị viên đặt lại.\n\nMật khẩu mới: ${newPassword}\n\nVui lòng đăng nhập và thay đổi mật khẩu ngay lập tức.\n\nNếu bạn không yêu cầu, hãy liên hệ hỗ trợ ngay.`;
+  } else {
+    subject = 'BidHub - Khôi phục mật khẩu';
+    html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #333;">Xin chào ${fullName},</h2>
+        <p>Bạn đã yêu cầu khôi phục mật khẩu tài khoản BidHub.</p>
+        <p>Mã OTP xác nhận của bạn là:</p>
+        <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
+          ${otp}
+        </div>
+        <p>Mã OTP này có hiệu lực trong ${config.otp.expiresInMinutes} phút.</p>
+        <p>Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email này.</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+        <p style="color: #999; font-size: 12px;">
+          Email này được gửi tự động, vui lòng không reply.<br>
+          © 2025 BidHub. All rights reserved.
+        </p>
+      </div>
+    `;
+    
+    text = `Xin chào ${fullName},\n\nMã OTP khôi phục mật khẩu: ${otp}\n\nMã có hiệu lực trong ${config.otp.expiresInMinutes} phút.`;
+  }
+
   return sendEmail({ to: email, subject, html, text });
 };
 

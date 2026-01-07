@@ -155,6 +155,14 @@ const deleteUser = [
     .isInt({ min: 1 }).withMessage('Invalid user ID')
 ];
 
+const resetUserPassword = [
+  param('id')
+    .exists({ checkNull: true, checkFalsy: true })
+    .withMessage('User ID is required')
+    .isInt({ min: 1 })
+    .withMessage('Invalid user ID')
+];
+
 // ================================================
 // UPGRADE REQUEST VALIDATION
 // ================================================
@@ -247,6 +255,7 @@ module.exports = {
   getUserById,
   updateUser,
   deleteUser,
+  resetUserPassword,
 
   // Upgrade Request
   getUpgradeRequests,

@@ -405,6 +405,55 @@ router.delete(
   adminController.deleteUser
 );
 
+/**
+ * @swagger
+ * /admin/users/{id}/reset-password:
+ *   post:
+ *     summary: Admin reset user password
+ *     description: Admin đặt lại mật khẩu cho người dùng. Hệ thống sẽ tạo mật khẩu mới ngẫu nhiên và gửi qua email.
+ *     tags: [Admin]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: Mật khẩu đã được đặt lại thành công và email thông báo đã được gửi
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Password reset successfully. New password has been sent to user email."
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user_id:
+ *                       type: integer
+ *                     email:
+ *                       type: string
+ *       400:
+ *         description: Không thể reset mật khẩu (ví dụ: tài khoản admin)
+ *       404:
+ *         description: Không tìm thấy người dùng
+ */
+router.post(
+  '/users/:id/reset-password',
+  adminValidator.resetUserPassword,
+  validate,
+  adminController.resetUserPassword
+);
+
 // ================================================
 // UPGRADE REQUEST ROUTES
 // ================================================
