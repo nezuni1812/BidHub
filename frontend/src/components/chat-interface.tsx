@@ -160,7 +160,7 @@ export function ChatInterface({ initialConversationId, className = "" }: ChatInt
                         <MessageSquare className="w-5 h-5 text-primary" />
                         Tin nhắn
                     </h2>
-                    <div className="relative">
+                    <div className="pt-3 relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <input
                             type="text"

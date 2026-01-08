@@ -306,12 +306,12 @@ export default function ChatPage() {
     <div className="min-h-screen bg-background">
       <Navigation />
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">Tin nhắn</h1>
+        <h1 className="text-2xl font-bold mb-4">Tin nhắn</h1>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
           {/* Conversations List */}
           <Card className="lg:col-span-1 overflow-hidden">
-            <div className="px-4 pb-4 border-b border-border">
+            <div className="p-4 border-b border-border">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
@@ -373,7 +373,7 @@ export default function ChatPage() {
             {selectedConversation ? (
               <>
                 {/* Chat Header */}
-                <div className="pb-4 px-4 border-b border-border">
+                <div className="p-4 border-b border-border">
                   <div className="flex items-center justify-between">
                     <div>
                       <h3 className="font-semibold">{selectedConversation.other_user_name}</h3>

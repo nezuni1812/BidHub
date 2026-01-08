@@ -83,11 +83,10 @@ class Product {
     const params = [];
     let paramIndex = 1;
 
-    // Full-text search cho tiếng Việt không dấu
     if (keyword) {
       whereConditions.push(`(
-        LOWER(unaccent(p.title)) LIKE LOWER(unaccent($${paramIndex}))
-        OR LOWER(unaccent(p.description)) LIKE LOWER(unaccent($${paramIndex}))
+        LOWER(p.title) LIKE LOWER($${paramIndex})
+        OR LOWER(p.description) LIKE LOWER($${paramIndex})
       )`);
       params.push(`%${keyword}%`);
       paramIndex++;
