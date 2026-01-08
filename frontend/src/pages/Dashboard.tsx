@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
+import { ChangePasswordDialog } from "@/components/change-password-dialog"
 
 interface SellerProduct {
   id: number
@@ -229,7 +230,7 @@ export default function DashboardPage() {
                   </Link>
                 )}
                 <Link to={`/profile/${user.id}`}>
-                  <Button>Chỉnh sửa hồ sơ</Button>
+                  <Button>Xem hồ sơ</Button>
                 </Link>
               </div>
             </div>

@@ -20,6 +20,28 @@ class User {
     return result.rows[0];
   }
 
+  static async findByIdWithAuth(id) {
+    const query = `
+      SELECT 
+        id, role, full_name, email, address, date_of_birth, 
+        rating, is_active, created_at, updated_at, auth_provider
+      FROM users 
+      WHERE id = $1
+    `;
+    const result = await db.query(query, [id]);
+    return result.rows[0];
+  }
+
+  static async findByIdWithPassword(id) {
+    const query = `
+      SELECT id, password_hash, auth_provider 
+      FROM users 
+      WHERE id = $1
+    `;
+    const result = await db.query(query, [id]);
+    return result.rows[0];
+  }
+
   static async create(data) {
     const hashedPassword = await bcrypt.hash(data.password, 10);
     const query = `
@@ -91,8 +113,7 @@ class User {
     return result.rows[0];
   }
 
-  static async updatePassword(userId, newPassword) {
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+  static async updatePassword(userId, hashedPassword) {
     const query = `
       UPDATE users 
       SET password_hash = $1, updated_at = CURRENT_TIMESTAMP

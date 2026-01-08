@@ -200,8 +200,8 @@ export default function AdminDashboard() {
     navigate(`/product/${productId}`)
   }
 
-  const handleViewUser = (username: string) => {
-    navigate(`/profile/${username}`)
+  const handleViewUser = (userId: number) => {
+    navigate(`/profile/${userId}`)
   }
 
   const handleDeleteUser = async (userId: number, username: string) => {
@@ -482,7 +482,7 @@ export default function AdminDashboard() {
                     </tr>
                   ) : (
                     <> {filteredUsers.slice(0, 10).map((user) => (
-                        <tr key={user.user_id} className="border-b border-border hover:bg-muted/50">
+                        <tr key={user.id} className="border-b border-border hover:bg-muted/50">
                           <td className="py-4 px-4">{user.full_name || user.username}</td>
                           <td className="py-4 px-4 text-muted-foreground">{user.email}</td>
                           <td className="py-4 px-4 text-muted-foreground">
@@ -500,14 +500,14 @@ export default function AdminDashboard() {
                           </td>
                           <td className="py-4 px-4">
                             <div className="flex gap-2">
-                              <Button variant="ghost" size="sm" onClick={() => handleViewUser(user.username)}>
+                              <Button variant="ghost" size="sm" onClick={() => handleViewUser(user.id)}>
                                 <Eye className="w-4 h-4" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 className="text-amber-600 hover:text-amber-700 hover:bg-amber-50"
-                                onClick={() => handleResetPassword(user.user_id, user.username || user.full_name)}
+                                onClick={() => handleResetPassword(user.id, user.username || user.full_name)}
                                 title="Đặt lại mật khẩu"
                               >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -520,7 +520,7 @@ export default function AdminDashboard() {
                                 variant="ghost"
                                 size="sm"
                                 className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                onClick={() => handleDeleteUser(user.user_id, user.username || user.full_name)}
+                                onClick={() => handleDeleteUser(user.id, user.username || user.full_name)}
                                 title="Xóa người dùng"
                               >
                                 <Trash2 className="w-4 h-4" />

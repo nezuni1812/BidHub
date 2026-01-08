@@ -8,6 +8,8 @@ import { EditProfileDialog } from "@/components/edit-profile-dialog"
 import { useState, useEffect } from "react"
 import { useParams } from "react-router-dom"
 import { useAuth } from "@/contexts/AuthContext"
+import { ChangePasswordDialog } from "@/components/change-password-dialog"
+import { useToast } from "@/components/ui/use-toast"
 
 interface Rating {
   id: number
@@ -34,11 +36,13 @@ interface UserProfile {
   role: string
   rating: number | null
   created_at: string
+  auth_provider?: string
 }
 
 export default function ProfilePage() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [ratings, setRatings] = useState<Rating[]>([])
   const [ratingStats, setRatingStats] = useState<RatingStats | null>(null)
@@ -99,7 +103,11 @@ export default function ProfilePage() {
     try {
       const token = localStorage.getItem('access_token')
       if (!token) {
-        alert('Vui lòng đăng nhập lại')
+        toast({
+          title: "Lỗi",
+          description: "Vui lòng đăng nhập lại",
+          variant: "destructive"
+        })
         return
       }
 
@@ -124,19 +132,93 @@ export default function ProfilePage() {
         const result = await response.json()
         // Backend returns data directly, not data.user
         setProfile(result.data)
-        alert('Cập nhật hồ sơ thành công!')
+        toast({
+          title: "Thành công",
+          description: "Cập nhật hồ sơ thành công!"
+        })
       } else if (response.status === 401) {
-        alert('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.')
-        // Optionally redirect to login
-        window.location.href = '/auth/login'
+        toast({
+          title: "Lỗi",
+          description: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+          variant: "destructive"
+        })
       } else {
         throw new Error('Không thể cập nhật hồ sơ')
       }
     } catch (err) {
       console.error('Error updating profile:', err)
-      alert('Không thể cập nhật hồ sơ. Vui lòng thử lại.')
+      toast({
+        title: "Lỗi",
+        description: "Không thể cập nhật hồ sơ. Vui lòng thử lại.",
+        variant: "destructive"
+      })
     }
   }
+
+  const handleChangePassword = async (data: { oldPassword: string; newPassword: string }) => {
+    try {
+      const token = localStorage.getItem('access_token')
+      if (!token) {
+        toast({
+          title: "Lỗi",
+          description: "Vui lòng đăng nhập lại",
+          variant: "destructive"
+        })
+        return
+      }
+
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1'
+      const response = await fetch(`${API_URL}/bidder/change-password`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          old_password: data.oldPassword,
+          new_password: data.newPassword
+        })
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Thành công",
+          description: "Mật khẩu đã được thay đổi thành công!"
+        })
+      } else if (response.status === 401) {
+        toast({
+          title: "Lỗi",
+          description: "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.",
+          variant: "destructive"
+        })
+      } else if (response.status === 400) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Mật khẩu cũ không đúng')
+      } else {
+        throw new Error('Không thể đổi mật khẩu')
+      }
+    } catch (err) {
+      console.error('Error changing password:', err)
+      toast({
+        title: "Lỗi",
+        description: err instanceof Error ? err.message : 'Không thể đổi mật khẩu. Vui lòng kiểm tra lại mật khẩu cũ.',
+        variant: "destructive"
+      })
+      throw err
+    }
+  };
+
+  const handleChangePasswordClick = () => {
+    if (profile?.auth_provider === 'google') {
+      toast({
+        title: "Lỗi",
+        description: "Tài khoản đăng nhập qua Google không thể đổi mật khẩu",
+        variant: "destructive"
+      })
+      return false
+    }
+    return true
+  };
 
   if (loading) {
     return (
@@ -187,12 +269,18 @@ export default function ProfilePage() {
                   <div className="flex items-center gap-3 mb-1">
                     <h1 className="text-3xl font-bold">{profile.full_name}</h1>
                     {isOwnProfile && (
-                      <EditProfileDialog
-                        currentName={profile.full_name}
-                        currentAddress={profile.address || ''}
-                        currentDateOfBirth={profile.date_of_birth || undefined}
-                        onSave={handleProfileUpdate}
-                      />
+                      <>
+                        <EditProfileDialog
+                          currentName={profile.full_name}
+                          currentAddress={profile.address || ''}
+                          currentDateOfBirth={profile.date_of_birth || undefined}
+                          onSave={handleProfileUpdate}
+                        />
+                        <ChangePasswordDialog 
+                          onSave={handleChangePassword}
+                          onBeforeOpen={handleChangePasswordClick}
+                        />
+                      </>
                     )}
                   </div>
                   <p className="text-muted-foreground">{profile.email}</p>

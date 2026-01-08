@@ -173,7 +173,7 @@ const getWonProducts = asyncHandler(async (req, res) => {
  * @access  Private (Bidder)
  */
 const getProfile = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user.id);
+  const user = await User.findByIdWithAuth(req.user.id);
   const ratings = await Rating.getUserRatings(req.user.id);
   const ratingStats = await Rating.getUserRatingStats(req.user.id);
   
@@ -188,7 +188,8 @@ const getProfile = asyncHandler(async (req, res) => {
         date_of_birth: user.date_of_birth,
         role: user.role,
         rating: user.rating,
-        created_at: user.created_at
+        created_at: user.created_at,
+        auth_provider: user.auth_provider
       },
       rating_stats: ratingStats,
       ratings
@@ -310,23 +311,16 @@ const getUpgradeRequest = asyncHandler(async (req, res) => {
 const updateProfile = asyncHandler(async (req, res) => {
   const { full_name, address, date_of_birth } = req.body;
   
-  const query = `
-    UPDATE users
-    SET 
-      full_name = COALESCE($1, full_name),
-      address = COALESCE($2, address),
-      date_of_birth = COALESCE($3, date_of_birth),
-      updated_at = CURRENT_TIMESTAMP
-    WHERE id = $4
-    RETURNING *
-  `;
-  
-  const result = await db.query(query, [full_name, address, date_of_birth, req.user.id]);
+  const updatedUser = await User.updateProfile(req.user.id, {
+    full_name,
+    address,
+    date_of_birth
+  });
   
   res.json({
     success: true,
     message: 'Profile updated successfully',
-    data: result.rows[0]
+    data: updatedUser
   });
 });
 
@@ -338,13 +332,23 @@ const updateProfile = asyncHandler(async (req, res) => {
 const changePassword = asyncHandler(async (req, res) => {
   const { old_password, new_password } = req.body;
   
-  // Get user with password
-  const user = await User.findById(req.user.id);
+  // Get user with password and auth_provider
+  const user = await User.findByIdWithPassword(req.user.id);
+  
+  // Check if user uses OAuth (Google login)
+  if (user.auth_provider === 'google') {
+    throw new BadRequestError('Tài khoản đăng nhập qua Google không thể đổi mật khẩu');
+  }
+  
+  // Check if user has a password
+  if (!user.password_hash) {
+    throw new BadRequestError('Tài khoản chưa có mật khẩu');
+  }
   
   // Verify old password
   const isValid = await User.comparePassword(old_password, user.password_hash);
   if (!isValid) {
-    throw new BadRequestError('Current password is incorrect');
+    throw new BadRequestError('Mật khẩu cũ không đúng');
   }
   
   // Hash new password
@@ -352,12 +356,7 @@ const changePassword = asyncHandler(async (req, res) => {
   const hashedPassword = await bcrypt.hash(new_password, 10);
   
   // Update password
-  const query = `
-    UPDATE users
-    SET password_hash = $1, updated_at = CURRENT_TIMESTAMP
-    WHERE id = $2
-  `;
-  await db.query(query, [hashedPassword, req.user.id]);
+  await User.updatePassword(req.user.id, hashedPassword);
   
   res.json({
     success: true,

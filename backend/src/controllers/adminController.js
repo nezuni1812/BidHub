@@ -5,6 +5,7 @@ const UpgradeRequest = require('../models/UpgradeRequest');
 const Bid = require('../models/Bid');
 const { BadRequestError, NotFoundError } = require('../utils/errors');
 const asyncHandler = require('../middleware/asyncHandler');
+const { sendPasswordResetEmail } = require('../utils/email');
 
 // ================================================
 // 4.1 CATEGORY MANAGEMENT
@@ -388,18 +389,14 @@ exports.resetUserPassword = asyncHandler(async (req, res) => {
     throw new NotFoundError('User not found');
   }
 
-  // Không cho admin reset mật khẩu của admin khác (tùy chính sách, bạn có thể bỏ nếu muốn)
   if (user.role === 'admin') {
     throw new BadRequestError('Cannot reset password for admin accounts');
   }
 
-  // Tạo mật khẩu mới ngẫu nhiên (8 ký tự)
   const newPassword = Math.random().toString(36).slice(-8) + 'A1!';
 
-  // Cập nhật mật khẩu (hash tự động trong model)
   await User.updatePassword(user.id, newPassword);
 
-  // Gửi email thông báo mật khẩu mới
   try {
     await sendPasswordResetEmail(
       user.email,
@@ -409,7 +406,6 @@ exports.resetUserPassword = asyncHandler(async (req, res) => {
     );
   } catch (error) {
     console.error('Failed to send password reset email:', error);
-    // Vẫn trả success vì mật khẩu đã được đổi, chỉ email lỗi
     return res.json({
       success: true,
       message: 'Password reset successfully, but failed to send email notification.',
@@ -552,57 +548,6 @@ exports.rejectUpgradeRequest = asyncHandler(async (req, res) => {
   res.json({
     success: true,
     message: 'Upgrade request rejected'
-  });
-});
-
-/**
- * @desc    Admin reset user password
- * @route   POST /api/v1/admin/users/:id/reset-password
- * @access  Private/Admin
- */
-exports.resetUserPassword = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-
-  const user = await User.findById(id);
-  if (!user) {
-    throw new NotFoundError('User not found');
-  }
-
-  if (user.role === 'admin') {
-    throw new BadRequestError('Cannot reset password for admin accounts');
-  }
-
-  const newPassword = Math.random().toString(36).slice(-8) + 'A1!';
-
-  await User.updatePassword(user.id, newPassword);
-
-  try {
-    await sendPasswordResetEmail(
-      user.email,
-      null,
-      user.full_name,
-      newPassword
-    );
-  } catch (error) {
-    console.error('Failed to send password reset email:', error);
-    return res.json({
-      success: true,
-      message: 'Password reset successfully, but failed to send email notification.',
-      data: {
-        user_id: user.id,
-        email: user.email,
-        warning: 'Email delivery failed'
-      }
-    });
-  }
-
-  res.json({
-    success: true,
-    message: 'Password reset successfully. New password has been sent to user email.',
-    data: {
-      user_id: user.id,
-      email: user.email
-    }
   });
 });
 
