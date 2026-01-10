@@ -369,10 +369,23 @@ module.exports = (io, socket) => {
         });
       }
 
-      // STEP 10: Winner/price changed - Create bid with actualBidPrice
+      // STEP 10: Winner/price changed - Create bid records
       const Bid = require('../../models/Bid');
+      
+      // STEP 10.1: Create bid for the losing bidder FIRST (if different from winner)
+      // This ensures we have a record of their max price attempt
+      if (userId !== winnerId && allAutoBids.length > 1) {
+        const losingBidder = allAutoBids.find(ab => ab.user_id === userId);
+        if (losingBidder) {
+          const loserMaxPrice = parseFloat(losingBidder.max_price);
+          const loserBid = await Bid.create(productId, userId, loserMaxPrice, true);
+          console.log(`[AUTO-BID] Losing bid recorded: ID ${loserBid.id}, User ${userId}, Price ${loserMaxPrice}`);
+        }
+      }
+      
+      // STEP 10.2: Create bid for the winner with actualBidPrice
       const newBid = await Bid.create(productId, winnerId, actualBidPrice, true);
-      console.log(`[AUTO-BID] Bid created: ID ${newBid.id}, Winner ${winnerId}, Price ${actualBidPrice}`);
+      console.log(`[AUTO-BID] Winning bid created: ID ${newBid.id}, Winner ${winnerId}, Price ${actualBidPrice}`);
       
       // STEP 11: Check if Buy Now price is reached or exceeded
       const buyNowPrice = product.buy_now_price ? parseFloat(product.buy_now_price) : null;
