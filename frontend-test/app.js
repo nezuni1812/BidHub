@@ -1,5 +1,5 @@
 /**
- * BidHub Real-time Bidding Test Client
+ * Bido Real-time Bidding Test Client
  * Pure JavaScript with Socket.IO
  */
 

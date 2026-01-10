@@ -1,7 +1,7 @@
 {
   "name": "bidhub-backend",
   "version": "1.0.0",
-  "description": "BidHub Auction Platform Backend API",
+  "description": "Bido Auction Platform Backend API",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",

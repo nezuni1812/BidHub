@@ -112,7 +112,7 @@ VALUES
     (
         1,
         'admin',
-        'Admin BidHub',
+        'Admin Bido',
         'admin@bidhub.com',
         '$2b$10$CNsCCMjsbKv67mDI6OX/p.3PbZ80j8d.tf.cRkuyMIlYTtA77o5d2',
         'Hà Nội, Việt Nam',

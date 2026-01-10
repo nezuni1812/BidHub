@@ -4,11 +4,11 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'BidHub API Documentation',
+      title: 'Bido API Documentation',
       version: '1.0.0',
-      description: 'API documentation for BidHub Auction Platform',
+      description: 'API documentation for Bido Auction Platform',
       contact: {
-        name: 'BidHub Team',
+        name: 'Bido Team',
         email: 'support@bidhub.com'
       }
     },

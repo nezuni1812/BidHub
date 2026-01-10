@@ -1,4 +1,4 @@
-# BidHub Backend - Database Setup
+# Bido Backend - Database Setup
 
 ## Cấu trúc Database đã được cải thiện
 

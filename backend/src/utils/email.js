@@ -30,11 +30,11 @@ const sendEmail = async ({ to, subject, html, text }) => {
 };
 
 const sendOTPEmail = async (email, otp, fullName) => {
-  const subject = 'BidHub - Xác nhận đăng ký tài khoản';
+  const subject = 'Bido - Xác nhận đăng ký tài khoản';
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #333;">Xin chào ${fullName},</h2>
-      <p>Cảm ơn bạn đã đăng ký tài khoản tại BidHub!</p>
+      <p>Cảm ơn bạn đã đăng ký tài khoản tại Bido!</p>
       <p>Mã OTP của bạn là:</p>
       <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
         ${otp}
@@ -44,7 +44,7 @@ const sendOTPEmail = async (email, otp, fullName) => {
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
       <p style="color: #999; font-size: 12px;">
         Email này được gửi tự động, vui lòng không reply.<br>
-        © 2025 BidHub. All rights reserved.
+        © 2025 Bido. All rights reserved.
       </p>
     </div>
   `;
@@ -58,12 +58,12 @@ const sendPasswordResetEmail = async (email, otp, fullName, newPassword = null) 
   let subject, html, text;
 
   if (newPassword) {
-    subject = 'BidHub - Mật khẩu của bạn đã được đặt lại';
+    subject = 'Bido - Mật khẩu của bạn đã được đặt lại';
 
     html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #333;">Xin chào ${fullName},</h2>
-        <p>Quản trị viên đã đặt lại mật khẩu cho tài khoản BidHub của bạn.</p>
+        <p>Quản trị viên đã đặt lại mật khẩu cho tài khoản Bido của bạn.</p>
         <p><strong>Mật khẩu mới của bạn là:</strong></p>
         <div style="background-color: #fff3cd; padding: 20px; text-align: center; font-size: 26px; font-weight: bold; letter-spacing: 3px; margin: 20px 0; border: 2px dashed #ffc107; border-radius: 8px;">
           ${newPassword}
@@ -73,18 +73,18 @@ const sendPasswordResetEmail = async (email, otp, fullName, newPassword = null) 
         <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
         <p style="color: #999; font-size: 12px;">
           Email này được gửi tự động từ hệ thống quản trị.<br>
-          © 2025 BidHub. All rights reserved.
+          © 2025 Bido. All rights reserved.
         </p>
       </div>
     `;
 
-    text = `Xin chào ${fullName},\n\nMật khẩu tài khoản BidHub của bạn đã được quản trị viên đặt lại.\n\nMật khẩu mới: ${newPassword}\n\nVui lòng đăng nhập và thay đổi mật khẩu ngay lập tức.\n\nNếu bạn không yêu cầu, hãy liên hệ hỗ trợ ngay.`;
+    text = `Xin chào ${fullName},\n\nMật khẩu tài khoản Bido của bạn đã được quản trị viên đặt lại.\n\nMật khẩu mới: ${newPassword}\n\nVui lòng đăng nhập và thay đổi mật khẩu ngay lập tức.\n\nNếu bạn không yêu cầu, hãy liên hệ hỗ trợ ngay.`;
   } else {
-    subject = 'BidHub - Khôi phục mật khẩu';
+    subject = 'Bido - Khôi phục mật khẩu';
     html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #333;">Xin chào ${fullName},</h2>
-        <p>Bạn đã yêu cầu khôi phục mật khẩu tài khoản BidHub.</p>
+        <p>Bạn đã yêu cầu khôi phục mật khẩu tài khoản Bido.</p>
         <p>Mã OTP xác nhận của bạn là:</p>
         <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
           ${otp}
@@ -94,7 +94,7 @@ const sendPasswordResetEmail = async (email, otp, fullName, newPassword = null) 
         <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
         <p style="color: #999; font-size: 12px;">
           Email này được gửi tự động, vui lòng không reply.<br>
-          © 2025 BidHub. All rights reserved.
+          © 2025 Bido. All rights reserved.
         </p>
       </div>
     `;
@@ -107,7 +107,7 @@ const sendPasswordResetEmail = async (email, otp, fullName, newPassword = null) 
 
 const sendQuestionNotificationEmail = async (sellerEmail, sellerName, productTitle, productId, question, askerName) => {
   const productLink = `${config.frontendUrl}/product/${productId}`;
-  const subject = `BidHub - Câu hỏi mới về sản phẩm "${productTitle}"`;
+  const subject = `Bido - Câu hỏi mới về sản phẩm "${productTitle}"`;
   
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -135,7 +135,7 @@ const sendQuestionNotificationEmail = async (sellerEmail, sellerName, productTit
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
       <p style="color: #999; font-size: 12px;">
         Email này được gửi tự động, vui lòng không reply.<br>
-        © 2025 BidHub. All rights reserved.
+        © 2025 Bido. All rights reserved.
       </p>
     </div>
   `;
@@ -149,8 +149,8 @@ const sendQuestionNotificationEmail = async (sellerEmail, sellerName, productTit
 const sendBidPlacedEmail = async (toEmail, userName, productTitle, productId, bidPrice, isOutbid = false) => {
   const productLink = `${config.frontendUrl}/product/${productId}`;
   const subject = isOutbid 
-    ? `BidHub - Bạn đã bị trả giá cho "${productTitle}"`
-    : `BidHub - Có lượt đặt giá mới cho "${productTitle}"`;
+    ? `Bido - Bạn đã bị trả giá cho "${productTitle}"`
+    : `Bido - Có lượt đặt giá mới cho "${productTitle}"`;
   
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -182,7 +182,7 @@ const sendBidPlacedEmail = async (toEmail, userName, productTitle, productId, bi
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
       <p style="color: #999; font-size: 12px;">
         Email này được gửi tự động, vui lòng không reply.<br>
-        © 2025 BidHub. All rights reserved.
+        © 2025 Bido. All rights reserved.
       </p>
     </div>
   `;
@@ -193,7 +193,7 @@ const sendBidPlacedEmail = async (toEmail, userName, productTitle, productId, bi
 
 // Bidder denied
 const sendBidderDeniedEmail = async (bidderEmail, bidderName, productTitle, productId, reason) => {
-  const subject = `BidHub - Bạn đã bị từ chối đấu giá "${productTitle}"`;
+  const subject = `Bido - Bạn đã bị từ chối đấu giá "${productTitle}"`;
   
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -206,7 +206,7 @@ const sendBidderDeniedEmail = async (bidderEmail, bidderName, productTitle, prod
         </div>
       ` : ''}
       
-      <p>Bạn có thể tìm các sản phẩm tương tự khác trên BidHub.</p>
+      <p>Bạn có thể tìm các sản phẩm tương tự khác trên Bido.</p>
       
       <div style="text-align: center; margin: 30px 0;">
         <a href="${config.frontendUrl}/products" 
@@ -218,7 +218,7 @@ const sendBidderDeniedEmail = async (bidderEmail, bidderName, productTitle, prod
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
       <p style="color: #999; font-size: 12px;">
         Email này được gửi tự động, vui lòng không reply.<br>
-        © 2025 BidHub. All rights reserved.
+        © 2025 Bido. All rights reserved.
       </p>
     </div>
   `;
@@ -230,7 +230,7 @@ const sendBidderDeniedEmail = async (bidderEmail, bidderName, productTitle, prod
 // Auction ended - no winner
 const sendAuctionEndedNoWinnerEmail = async (sellerEmail, sellerName, productTitle, productId) => {
   const productLink = `${config.frontendUrl}/product/${productId}`;
-  const subject = `BidHub - Đấu giá kết thúc: "${productTitle}" (Không có người mua)`;
+  const subject = `Bido - Đấu giá kết thúc: "${productTitle}" (Không có người mua)`;
   
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -260,7 +260,7 @@ const sendAuctionEndedNoWinnerEmail = async (sellerEmail, sellerName, productTit
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
       <p style="color: #999; font-size: 12px;">
         Email này được gửi tự động, vui lòng không reply.<br>
-        © 2025 BidHub. All rights reserved.
+        © 2025 Bido. All rights reserved.
       </p>
     </div>
   `;
@@ -273,8 +273,8 @@ const sendAuctionEndedNoWinnerEmail = async (sellerEmail, sellerName, productTit
 const sendAuctionEndedWinnerEmail = async (toEmail, userName, productTitle, productId, finalPrice, isWinner = false) => {
   const productLink = `${config.frontendUrl}/product/${productId}`;
   const subject = isWinner
-    ? `BidHub - Chúc mừng! Bạn đã thắng đấu giá "${productTitle}"`
-    : `BidHub - Đấu giá kết thúc: "${productTitle}"`;
+    ? `Bido - Chúc mừng! Bạn đã thắng đấu giá "${productTitle}"`
+    : `Bido - Đấu giá kết thúc: "${productTitle}"`;
   
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -306,7 +306,7 @@ const sendAuctionEndedWinnerEmail = async (toEmail, userName, productTitle, prod
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
       <p style="color: #999; font-size: 12px;">
         Email này được gửi tự động, vui lòng không reply.<br>
-        © 2025 BidHub. All rights reserved.
+        © 2025 Bido. All rights reserved.
       </p>
     </div>
   `;
@@ -318,7 +318,7 @@ const sendAuctionEndedWinnerEmail = async (toEmail, userName, productTitle, prod
 // Question answered - notify asker and other watchers
 const sendQuestionAnsweredEmail = async (toEmail, userName, productTitle, productId, question, answer) => {
   const productLink = `${config.frontendUrl}/product/${productId}`;
-  const subject = `BidHub - Câu hỏi của bạn về "${productTitle}" đã được trả lời`;
+  const subject = `Bido - Câu hỏi của bạn về "${productTitle}" đã được trả lời`;
   
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -345,7 +345,7 @@ const sendQuestionAnsweredEmail = async (toEmail, userName, productTitle, produc
       <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
       <p style="color: #999; font-size: 12px;">
         Email này được gửi tự động, vui lòng không reply.<br>
-        © 2025 BidHub. All rights reserved.
+        © 2025 Bido. All rights reserved.
       </p>
     </div>
   `;

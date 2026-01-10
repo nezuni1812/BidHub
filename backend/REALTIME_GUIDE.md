@@ -1,4 +1,4 @@
-# 🚀 BidHub Real-time Bidding System - Complete Documentation
+# 🚀 Bido Real-time Bidding System - Complete Documentation
 
 ## 📋 Table of Contents
 
@@ -16,7 +16,7 @@
 
 ### What's New?
 
-BidHub now supports **real-time bidding** with:
+Bido now supports **real-time bidding** with:
 
 - ✅ Instant bid updates (no polling required)
 - ✅ Distributed locking to prevent race conditions
@@ -938,4 +938,4 @@ Expected capacity per server:
 
 **Documentation Version**: 1.0.0  
 **Last Updated**: 2025-11-29  
-**Author**: BidHub Development Team
+**Author**: Bido Development Team
