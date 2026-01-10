@@ -148,27 +148,29 @@ module.exports = (io, socket) => {
       const totalRatings = parseInt(ratingStats.total_ratings) || 0;
       const positivePercentage = parseFloat(ratingStats.positive_percentage) || 0;
 
-      if (totalRatings > 0 && positivePercentage < 80) {
+      // Check if seller has granted special permission for this bidder
+      const permissionResult = await db.query(
+        'SELECT id FROM unrated_bidder_permissions WHERE product_id = $1 AND bidder_id = $2',
+        [productId, userId]
+      );
+      const hasSellerPermission = permissionResult.rows.length > 0;
+
+      // If rating < 80% AND no seller permission, deny
+      if (totalRatings > 0 && positivePercentage < 80 && !hasSellerPermission) {
         await releaseLock(lock);
         return socket.emit(EVENTS.BID_ERROR, { 
-          message: 'Bạn cần có tối thiểu 80% đánh giá tích cực để đấu giá',
+          message: 'Bạn cần có tối thiểu 80% đánh giá tích cực hoặc được người bán cho phép để đấu giá',
           code: 'RATING_TOO_LOW',
           rating: positivePercentage
         });
       }
 
-      // For unrated users, check system setting AND seller permission
+      // For unrated users (0 ratings), check system setting OR seller permission
       if (totalRatings === 0) {
         const settingResult = await db.query(
           "SELECT setting_value FROM system_settings WHERE setting_key = 'allow_unrated_bidders'"
         );
         const allowUnrated = settingResult.rows[0]?.setting_value === 'true';
-        
-        const permissionResult = await db.query(
-          'SELECT id FROM unrated_bidder_permissions WHERE product_id = $1 AND bidder_id = $2',
-          [productId, userId]
-        );
-        const hasSellerPermission = permissionResult.rows.length > 0;
 
         if (!allowUnrated && !hasSellerPermission) {
           await releaseLock(lock);

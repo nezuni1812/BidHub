@@ -483,13 +483,21 @@ const buyNow = asyncHandler(async (req, res) => {
   const totalRatings = parseInt(ratingStats.total_ratings) || 0;
   const positivePercentage = parseFloat(ratingStats.positive_percentage) || 0;
 
-  if (totalRatings > 0 && positivePercentage < 80) {
-    throw new ForbiddenError(`Bạn cần có tối thiểu 80% đánh giá tích cực để mua ngay. Đánh giá hiện tại: ${positivePercentage.toFixed(1)}%`);
+  // Check if seller has granted special permission for this bidder
+  const permissionResult = await db.query(
+    'SELECT id FROM unrated_bidder_permissions WHERE product_id = $1 AND bidder_id = $2',
+    [productId, buyerId]
+  );
+  const hasSellerPermission = permissionResult.rows.length > 0;
+
+  // If rating < 80% AND no seller permission, deny
+  if (totalRatings > 0 && positivePercentage < 80 && !hasSellerPermission) {
+    throw new ForbiddenError(`Bạn cần có tối thiểu 80% đánh giá tích cực hoặc được người bán cho phép để mua ngay. Đánh giá hiện tại: ${positivePercentage.toFixed(1)}%`);
   }
 
-  // For unrated users, check system setting AND seller permission
+  // For unrated users (0 ratings), check system setting OR seller permission
   if (totalRatings === 0) {
-    // Get product to check seller permissions
+    // Get product to check denied status
     const productCheck = await Product.getById(productId);
     if (!productCheck) {
       throw new NotFoundError('Product not found');
@@ -504,8 +512,8 @@ const buyNow = asyncHandler(async (req, res) => {
     // Check if seller has denied this bidder
     const isDenied = await DeniedBidder.isDenied(productId, buyerId);
 
-    if (!systemAllowsUnrated || isDenied) {
-      throw new ForbiddenError('Bạn cần có ít nhất một đánh giá để tham gia mua ngay sản phẩm này');
+    if ((!systemAllowsUnrated && !hasSellerPermission) || isDenied) {
+      throw new ForbiddenError('Bạn cần có ít nhất một đánh giá hoặc được người bán cho phép để tham gia mua ngay sản phẩm này');
     }
   }
 
