@@ -140,9 +140,16 @@ class Product {
         u.full_name as seller_name,
         u.rating as seller_rating,
         pi.url as main_image,
-        (SELECT full_name FROM users WHERE id = (
-          SELECT user_id FROM bids WHERE product_id = p.id ORDER BY bid_price DESC LIMIT 1
-        )) as highest_bidder_name,
+        (
+          SELECT CONCAT(LEFT(u2.full_name, 4), REPEAT('*', GREATEST(LENGTH(u2.full_name) - 4, 0)))
+          FROM users u2
+          INNER JOIN bids b2 ON u2.id = b2.user_id
+          LEFT JOIN denied_bidders db ON db.product_id = b2.product_id AND db.user_id = b2.user_id
+          WHERE b2.product_id = p.id 
+            AND db.id IS NULL
+          ORDER BY b2.bid_price DESC 
+          LIMIT 1
+        ) as highest_bidder_name,
         EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - p.created_at)) / 60 as minutes_since_created,
         EXTRACT(EPOCH FROM (p.end_time - (CURRENT_TIMESTAMP))) as seconds_remaining
       FROM products p

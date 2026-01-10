@@ -1086,7 +1086,18 @@ export default function ProductDetail() {
               <h3 className="font-semibold mb-4">Thông tin người bán</h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="font-semibold">{product.seller_name}</p>
+                  {!isSeller ? (
+                    <Link
+                      to={`/profile/${product.seller_id}`}
+                      className="font-semibold hover:text-primary transition-colors underline-offset-4 hover:underline"
+                    >
+                      {(product as any).masked_seller_name || product.seller_name}
+                    </Link>
+                  ) : (
+                    <p className="font-semibold">
+                      {(product as any).masked_seller_name || product.seller_name}
+                    </p>
+                  )}
                   {(() => {
                     const rating =
                       parseFloat(product.seller_rating as any) * 100;
@@ -1137,7 +1148,9 @@ export default function ProductDetail() {
               <Card className="p-6">
                 <h3 className="font-semibold mb-4">Người đặt giá cao nhất</h3>
                 <div className="flex items-center justify-between gap-2">
-                  <p className="font-semibold">{product.winner_name}</p>
+                  <p className="font-semibold">
+                    {(product as any).masked_winner_name || product.winner_name}
+                  </p>
                   {product.winner_rating &&
                     (() => {
                       const rating =
@@ -1305,15 +1318,28 @@ export default function ProductDetail() {
                         >
                           <div className="flex-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <span
-                                className={`font-semibold ${
-                                  isDenied
-                                    ? "line-through text-muted-foreground"
-                                    : ""
-                                }`}
-                              >
-                                {bid.masked_bidder_name}
-                              </span>
+                              {isSeller && (bid as any).user_id ? (
+                                <Link
+                                  to={`/profile/${(bid as any).user_id}`}
+                                  className={`font-semibold hover:text-primary transition-colors underline-offset-4 hover:underline ${
+                                    isDenied
+                                      ? "line-through text-muted-foreground"
+                                      : ""
+                                  }`}
+                                >
+                                  {bid.masked_bidder_name}
+                                </Link>
+                              ) : (
+                                <span
+                                  className={`font-semibold ${
+                                    isDenied
+                                      ? "line-through text-muted-foreground"
+                                      : ""
+                                  }`}
+                                >
+                                  {bid.masked_bidder_name}
+                                </span>
+                              )}
                               {bid.is_auto && (
                                 <Badge variant="secondary" className="text-xs">
                                   Auto

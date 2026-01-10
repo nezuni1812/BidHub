@@ -1192,41 +1192,23 @@ export default function Home() {
                           <h3 className="font-black text-lg line-clamp-2 mb-3 leading-tight group-hover:text-primary transition-colors h-[3rem] overflow-hidden text-ellipsis">
                             {product.title}
                           </h3>
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-black text-primary">
-                              {product.seller_name
-                                ?.substring(0, 2)
-                                .toUpperCase()}
+                          {product.highest_bidder_name && (
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-black text-primary">
+                                {product.highest_bidder_name
+                                  ?.substring(0, 2)
+                                  .toUpperCase()}
+                              </div>
+                              <div className="flex flex-col">
+                                <p className="text-xs font-bold text-muted-foreground tracking-tighter">
+                                  Đang dẫn đầu
+                                </p>
+                                <p className="text-sm font-black">
+                                  {product.highest_bidder_name}
+                                </p>
+                              </div>
                             </div>
-                            <div className="flex flex-col">
-                              <p className="text-xs font-bold text-muted-foreground tracking-tighter">
-                                Người bán
-                              </p>
-                              <p className="text-sm font-black">
-                                {product.seller_name}
-                              </p>
-                            </div>
-                            {/* Rating badge ... existing rating logic ... */}
-                            {(() => {
-                              const rating =
-                                Number.parseFloat(
-                                  product.seller_rating as any
-                                ) * 100;
-                              let colorClass = "text-green-600 bg-green-50";
-                              if (rating < 80)
-                                colorClass = "text-blue-600 bg-blue-50";
-                              if (rating < 60)
-                                colorClass = "text-yellow-600 bg-yellow-50";
-
-                              return (
-                                <span
-                                  className={`ml-auto inline-flex items-center px-2.5 py-1 ${colorClass} rounded-lg text-xs font-black shadow-sm`}
-                                >
-                                  {rating.toFixed(0)}%
-                                </span>
-                              );
-                            })()}
-                          </div>
+                          )}
                           <div className="mt-auto pt-3 border-t border-muted-foreground/10">
                             <div className="flex justify-between items-start mb-4">
                               <div>

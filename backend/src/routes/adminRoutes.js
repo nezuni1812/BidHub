@@ -443,7 +443,7 @@ router.delete(
  *                     email:
  *                       type: string
  *       400:
- *         description: Không thể reset mật khẩu (ví dụ: tài khoản admin)
+ *         description: "Không thể reset mật khẩu (ví dụ: tài khoản admin)"
  *       404:
  *         description: Không tìm thấy người dùng
  */
