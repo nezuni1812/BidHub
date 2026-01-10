@@ -174,17 +174,6 @@ export default function SellingPage() {
             ))}
           </div>
         </div>
-
-        {/* CTA */}
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Sẵn sàng bắt đầu bán hàng?</h2>
-          <p className="text-muted-foreground mb-8">Tiếp cận hàng triệu người mua tiềm năng</p>
-          <Link to="/register">
-            <Button size="lg" className="gap-2">
-              Tạo tài khoản miễn phí
-            </Button>
-          </Link>
-        </div>
       </div>
 
       {/* Upgrade Request Dialog */}

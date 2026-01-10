@@ -53,8 +53,9 @@ class Bid {
   static async getUserBiddingProducts(userId, page = 1, pageSize = 20) {
     const offset = (page - 1) * pageSize;
     
+    // Query from auto_bid_configs to show all products user is bidding on
     const query = `
-      SELECT DISTINCT ON (p.id)
+      SELECT 
         p.id,
         p.id as product_id,
         p.title,
@@ -63,24 +64,25 @@ class Bid {
         p.end_time,
         p.status,
         p.total_bids,
+        p.winner_id,
         EXTRACT(EPOCH FROM (p.end_time - NOW())) as seconds_remaining,
         (SELECT url FROM product_images WHERE product_id = p.id AND is_main = true LIMIT 1) as main_image,
-        b.bid_price as my_bid_price,
-        b.bid_price as my_last_bid,
-        b.created_at as my_bid_time,
-        CASE WHEN b.user_id = p.winner_id THEN true ELSE false END as is_winning
-      FROM bids b
-      JOIN products p ON b.product_id = p.id
-      WHERE b.user_id = $1 AND p.status = 'active'
-      ORDER BY p.id, b.created_at DESC
+        abc.max_price as my_bid_price,
+        abc.max_price as my_last_bid,
+        abc.created_at as my_bid_time,
+        CASE WHEN abc.user_id = p.winner_id THEN true ELSE false END as is_winning
+      FROM auto_bid_configs abc
+      JOIN products p ON abc.product_id = p.id
+      WHERE abc.user_id = $1 AND abc.is_active = true AND p.status = 'active'
+      ORDER BY abc.created_at DESC
       LIMIT $2 OFFSET $3
     `;
     
     const countQuery = `
-      SELECT COUNT(DISTINCT p.id) as total
-      FROM bids b
-      JOIN products p ON b.product_id = p.id
-      WHERE b.user_id = $1 AND p.status = 'active'
+      SELECT COUNT(*) as total
+      FROM auto_bid_configs abc
+      JOIN products p ON abc.product_id = p.id
+      WHERE abc.user_id = $1 AND abc.is_active = true AND p.status = 'active'
     `;
     
     const [dataResult, countResult] = await Promise.all([

@@ -7,6 +7,17 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { AlertCircle, Check, Info } from "lucide-react"
 
+// Format number with commas
+const formatNumber = (value: string): string => {
+  const number = value.replace(/\D/g, "");
+  return number.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
+
+// Parse formatted number back to plain number
+const parseNumber = (value: string): string => {
+  return value.replace(/,/g, "");
+};
+
 interface BidDialogProps {
   isOpen: boolean
   onClose: () => void
@@ -26,7 +37,7 @@ export function BidDialog({ isOpen, onClose, currentBid, minIncrement, suggested
   // Validate bid increment
   const validateBidIncrement = (amount: number): boolean => {
     if (amount < suggestedBid) {
-      setValidationError(`Giá tối thiểu phải từ ${(suggestedBid / 1000000).toFixed(1)}M VND`)
+      setValidationError(`Giá tối thiểu phải từ ${suggestedBid.toLocaleString('vi-VN')} ₫`)
       return false
     }
 
@@ -38,8 +49,8 @@ export function BidDialog({ isOpen, onClose, currentBid, minIncrement, suggested
       const roundedUp = currentBid + (Math.ceil(priceIncrement / minIncrement) * minIncrement)
       
       setValidationError(
-        `Giá phải là bội số của ${(minIncrement / 1000000).toFixed(1)}M VND. ` +
-        `Gợi ý: ${(roundedDown / 1000000).toFixed(1)}M hoặc ${(roundedUp / 1000000).toFixed(1)}M VND`
+        `Giá phải là bội số của ${minIncrement.toLocaleString('vi-VN')} ₫. ` +
+        `Gợi ý: ${roundedDown.toLocaleString('vi-VN')} ₫ hoặc ${roundedUp.toLocaleString('vi-VN')} ₫`
       )
       return false
     }
@@ -75,7 +86,7 @@ export function BidDialog({ isOpen, onClose, currentBid, minIncrement, suggested
       // Handle backend validation errors
       if (err?.code === 'INVALID_BID_INCREMENT' && err?.suggestedPrices) {
         const suggestions = err.suggestedPrices
-          .map((p: number) => `${(p / 1000000).toFixed(1)}M`)
+          .map((p: number) => `${p.toLocaleString('vi-VN')} ₫`)
           .join(' hoặc ')
         setError(`${err.message}\nGợi ý: ${suggestions}`)
       } else {
@@ -108,7 +119,7 @@ export function BidDialog({ isOpen, onClose, currentBid, minIncrement, suggested
               </div>
               <h2 className="text-xl font-bold mb-2">Đặt giá thành công!</h2>
               <p className="text-muted-foreground">
-                Auto-bid đã được đặt lên tới {(maxBidAmount / 1000000).toFixed(1)}M VND
+                Auto-bid đã được đặt lên tới {maxBidAmount.toLocaleString('vi-VN')} ₫
               </p>
             </div>
           ) : (
@@ -128,9 +139,9 @@ export function BidDialog({ isOpen, onClose, currentBid, minIncrement, suggested
 
                 <div className="bg-muted/50 rounded-lg p-4">
                   <p className="text-sm text-muted-foreground mb-1">Giá hiện tại</p>
-                  <p className="text-2xl font-bold text-primary">{(currentBid / 1000000).toFixed(1)}M VND</p>
+                  <p className="text-2xl font-bold text-primary">{currentBid.toLocaleString('vi-VN')} ₫</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Bước nhảy: {(minIncrement / 1000000).toFixed(1)}M VND
+                    Bước nhảy: {minIncrement.toLocaleString('vi-VN')} ₫
                   </p>
                 </div>
 
@@ -139,20 +150,25 @@ export function BidDialog({ isOpen, onClose, currentBid, minIncrement, suggested
                   <div className="relative mt-2">
                     <Input
                       id="max-bid"
-                      type="number"
-                      value={(maxBidAmount / 1000000).toFixed(1)}
-                      onChange={(e) => handleBidChange(Number.parseFloat(e.target.value) * 1000000)}
-                      className={`pr-12 ${validationError ? 'border-destructive' : ''}`}
+                      type="text"
+                      value={formatNumber(maxBidAmount.toString())}
+                      onChange={(e) => {
+                        const parsed = parseNumber(e.target.value);
+                        if (parsed === '' || !isNaN(Number(parsed))) {
+                          handleBidChange(parsed === '' ? 0 : Number(parsed));
+                        }
+                      }}
+                      className={`pr-8 ${validationError ? 'border-destructive' : ''}`}
                       disabled={isLoading}
-                      step={(minIncrement / 1000000).toFixed(1)}
+                      placeholder="VD: 5,000,000"
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">M VND</span>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₫</span>
                   </div>
                   {validationError && (
                     <p className="text-xs text-destructive mt-1">{validationError}</p>
                   )}
                   <p className="text-xs text-muted-foreground mt-2">
-                    Tối thiểu: {(suggestedBid / 1000000).toFixed(1)}M VND
+                    Tối thiểu: {suggestedBid.toLocaleString('vi-VN')} ₫
                   </p>
                 </div>
 
@@ -177,7 +193,7 @@ export function BidDialog({ isOpen, onClose, currentBid, minIncrement, suggested
 
                 <div className="bg-muted/50 rounded-lg p-3">
                   <p className="text-xs text-muted-foreground mb-1">Giá bắt đầu đấu</p>
-                  <p className="text-lg font-bold">{(suggestedBid / 1000000).toFixed(1)}M VND</p>
+                  <p className="text-lg font-bold">{suggestedBid.toLocaleString('vi-VN')} ₫</p>
                 </div>
               </div>
 

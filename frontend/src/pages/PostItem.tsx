@@ -638,7 +638,7 @@ export default function PostItemPage() {
             <h2 className="text-xl font-bold mb-6">Thông tin sản phẩm</h2>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="title">Tên sản phẩm *</Label>
+                <Label htmlFor="title">Tên sản phẩm <span className="text-red-500">*</span></Label>
                 <Input
                   id="title"
                   value={formData.title}
@@ -658,7 +658,7 @@ export default function PostItemPage() {
               </div>
 
               <div>
-                <Label htmlFor="category">Danh mục *</Label>
+                <Label htmlFor="category">Danh mục <span className="text-red-500">*</span></Label>
                 {loadingCategories ? (
                   <div className="w-full mt-2 px-3 py-2 text-sm text-muted-foreground">
                     Đang tải danh mục...
@@ -703,7 +703,7 @@ export default function PostItemPage() {
               </div>
 
               <div>
-                <Label htmlFor="description">Mô tả *</Label>
+                <Label htmlFor="description">Mô tả <span className="text-red-500">*</span></Label>
                 <RichTextEditor
                   value={formData.description}
                   placeholder="Mô tả chi tiết sản phẩm của bạn..."
@@ -733,7 +733,7 @@ export default function PostItemPage() {
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-3">
                 <div className="bg-primary text-primary-foreground px-3 py-1 rounded-md text-sm font-semibold">
-                  Ảnh chính *
+                  Ảnh chính <span className="text-red-200">*</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Ảnh đại diện cho sản phẩm
@@ -788,7 +788,7 @@ export default function PostItemPage() {
             <div>
               <div className="flex items-center gap-2 mb-3">
                 <div className="bg-secondary text-secondary-foreground px-3 py-1 rounded-md text-sm font-semibold">
-                  Ảnh phụ *
+                  Ảnh phụ <span className="text-red-500">*</span>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Tối thiểu 3 ảnh, tối đa 9 ảnh
@@ -941,7 +941,7 @@ export default function PostItemPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="startBid">Giá khởi điểm (VND) *</Label>
+                  <Label htmlFor="startBid">Giá khởi điểm (VND) <span className="text-red-500">*</span></Label>
                   <Input
                     id="startBid"
                     type="text"
@@ -964,7 +964,7 @@ export default function PostItemPage() {
                   )}
                 </div>
                 <div>
-                  <Label htmlFor="increment">Bước giá (VND) *</Label>
+                  <Label htmlFor="increment">Bước giá (VND) <span className="text-red-500">*</span></Label>
                   <Input
                     id="increment"
                     type="text"
@@ -1014,7 +1014,7 @@ export default function PostItemPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="endDateTime">Thời gian kết thúc *</Label>
+                  <Label htmlFor="endDateTime">Thời gian kết thúc <span className="text-red-500">*</span></Label>
                   <Input
                     id="endDateTime"
                     type="datetime-local"

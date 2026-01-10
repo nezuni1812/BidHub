@@ -233,7 +233,8 @@ module.exports = (io, socket) => {
       allAutoBids.sort((a, b) => {
         const diff = parseFloat(b.max_price) - parseFloat(a.max_price);
         if (diff !== 0) return diff;
-        return new Date(a.created_at) - new Date(b.created_at);
+        // Dùng updated_at để so sánh lần đặt giá MỚI NHẤT (không phải created_at)
+        return new Date(a.updated_at) - new Date(b.updated_at);
       });
 
       const winner = allAutoBids[0];
@@ -243,32 +244,85 @@ module.exports = (io, socket) => {
       let actualBidPrice = currentPrice;
       let bidPlacedByUserId = winnerId;
 
+      console.log(`[PROXY-BID] 📊 Starting calculation:`, {
+        productId,
+        currentPrice,
+        bidStep,
+        previousWinnerId,
+        totalBidders: allAutoBids.length,
+        newBidder: userId,
+        newMaxPrice: maxPrice,
+        allBidders: allAutoBids.map(ab => ({
+          userId: ab.user_id,
+          maxPrice: parseFloat(ab.max_price),
+          createdAt: new Date(ab.created_at).toISOString(),
+          updatedAt: new Date(ab.updated_at).toISOString()
+        }))
+      });
+
       // TRƯỜNG HỢP DUY NHẤT: CHỈ CÓ 1 NGƯỜI ĐẶT AUTO-BID
       if (allAutoBids.length === 1) {
         // Người đầu tiên → KHÔNG TĂNG GIÁ, giữ nguyên current_price
         // (Chỉ tăng khi có đối thủ)
         actualBidPrice = currentPrice;
+        console.log(`[PROXY-BID] ✅ Case 1: Single bidder - Keep current price`, {
+          winnerId,
+          actualBidPrice,
+          reason: 'Chỉ có 1 người, giữ nguyên giá hiện tại'
+        });
 
       } else {
         // CÓ TỪ 2 NGƯỜI TRỞ LÊN → mới tính proxy bidding
         const secondHighest = allAutoBids[1];
         const secondMaxPrice = parseFloat(secondHighest.max_price);
-        const secondTimestamp = new Date(secondHighest.created_at);
-        const firstTimestamp = new Date(winner.created_at);
+        const secondTimestamp = new Date(secondHighest.updated_at); // Dùng updated_at
+        const firstTimestamp = new Date(winner.updated_at); // Dùng updated_at
+
+        console.log(`[PROXY-BID] 🔄 Case 2: Multiple bidders`, {
+          winner: {
+            id: winnerId,
+            maxPrice: winnerMaxPrice,
+            createdAt: new Date(winner.created_at).toISOString(),
+            updatedAt: firstTimestamp.toISOString()
+          },
+          secondPlace: {
+            id: secondHighest.user_id,
+            maxPrice: secondMaxPrice,
+            createdAt: new Date(secondHighest.created_at).toISOString(),
+            updatedAt: secondTimestamp.toISOString()
+          },
+          timeDiff: `${firstTimestamp < secondTimestamp ? 'Winner came FIRST' : 'Winner came AFTER'} (diff: ${Math.abs(firstTimestamp - secondTimestamp)}ms)`,
+          note: 'Dùng updated_at để xác định ai đặt giá mới nhất'
+        });
 
         if (winnerMaxPrice === secondMaxPrice) {
           // Bằng giá → người đến trước thắng, giá = max đó
           actualBidPrice = winnerMaxPrice;
+          console.log(`[PROXY-BID] ⚖️ Same max price → Winner by timestamp`, {
+            actualBidPrice,
+            formula: 'winnerMaxPrice',
+            reason: 'Cả 2 cùng giá, người đến trước thắng'
+          });
         } else {
           if (firstTimestamp < secondTimestamp) {
             // Người thắng đến trước
             bidPlacedByUserId = winnerId;
             actualBidPrice = secondMaxPrice;
+            console.log(`[PROXY-BID] 🥇 Winner came FIRST → Price = secondMaxPrice`, {
+              actualBidPrice,
+              formula: `${secondMaxPrice} (max của người thứ 2)`,
+              reason: 'Người thắng đến trước, chỉ cần bằng max người thứ 2'
+            });
 
           } else {
             // Người thắng đến sau
             bidPlacedByUserId = winnerId;
             actualBidPrice = secondMaxPrice + bidStep;
+            console.log(`[PROXY-BID] 🥈 Winner came AFTER → Price = secondMaxPrice + step`, {
+              actualBidPrice,
+              formula: `${secondMaxPrice} + ${bidStep} = ${actualBidPrice}`,
+              reason: 'Người thắng đến sau, phải bid cao hơn người thứ 2'
+            });
           }
         }
       }
@@ -277,9 +331,29 @@ module.exports = (io, socket) => {
       const priceChanged = Math.abs(actualBidPrice - currentPrice) > 0.0001;
       const winnerChanged = winnerId !== previousWinnerId;
 
+      console.log(`[PROXY-BID] 🎯 Final calculation result:`, {
+        actualBidPrice,
+        currentPrice,
+        priceChanged,
+        priceChangeAmount: actualBidPrice - currentPrice,
+        winnerChanged,
+        previousWinnerId,
+        newWinnerId: winnerId,
+        willCreateBid: priceChanged || winnerChanged,
+        reason: !priceChanged && !winnerChanged 
+          ? 'KHÔNG TẠO BID - Giá không đổi và winner không đổi' 
+          : priceChanged && winnerChanged 
+          ? 'TẠO BID - Cả giá và winner đều thay đổi'
+          : priceChanged 
+          ? 'TẠO BID - Giá thay đổi'
+          : 'TẠO BID - Winner thay đổi'
+      });
+
       if (!priceChanged && !winnerChanged) {
-        // No change needed
+        // No change needed - user set max price but is losing
         console.log(`[AUTO-BID] No change: Winner ${winnerId} still winning at ${actualBidPrice}`);
+        console.log(`[AUTO-BID] User ${userId} set max ${maxPrice} but is losing`);
+        
         await releaseLock(lock);
         
         return socket.emit(EVENTS.BID_SUCCESS, {
@@ -295,26 +369,33 @@ module.exports = (io, socket) => {
         });
       }
 
-      // STEP 10: Create bid in database (placed by the winner)
-      const bid = await Bid.create(productId, bidPlacedByUserId, actualBidPrice, true); // is_auto = true
-      console.log(`[AUTO-BID] Bid placed: ${bid.id} by User ${bidPlacedByUserId} at ${actualBidPrice}`);
-
+      // STEP 10: Winner/price changed - Create bid with actualBidPrice
+      const Bid = require('../../models/Bid');
+      const newBid = await Bid.create(productId, winnerId, actualBidPrice, true);
+      console.log(`[AUTO-BID] Bid created: ID ${newBid.id}, Winner ${winnerId}, Price ${actualBidPrice}`);
+      
       // STEP 11: Check if Buy Now price is reached or exceeded
       const buyNowPrice = product.buy_now_price ? parseFloat(product.buy_now_price) : null;
       const isBuyNow = buyNowPrice && actualBidPrice >= buyNowPrice;
 
-      // STEP 11.5: Update product with winner
+      // STEP 11.5: Update product with winner and total_bids from bids table
+      const totalBidsResult = await db.query(
+        'SELECT COUNT(*) as count FROM bids WHERE product_id = $1',
+        [productId]
+      );
+      const totalBids = parseInt(totalBidsResult.rows[0].count);
+      
       if (isBuyNow) {
         // Buy Now triggered - end auction immediately
         await db.query(
           `UPDATE products 
            SET current_price = $1, 
-               total_bids = total_bids + 1,
-               winner_id = $2,
+               total_bids = $2,
+               winner_id = $3,
                status = 'completed',
                updated_at = CURRENT_TIMESTAMP
-           WHERE id = $3`,
-          [actualBidPrice, winnerId, productId]
+           WHERE id = $4`,
+          [actualBidPrice, totalBids, winnerId, productId]
         );
         console.log(`[BUY NOW] Product ${productId} sold via Buy Now to user ${winnerId} at ${actualBidPrice}`);
         
@@ -327,13 +408,15 @@ module.exports = (io, socket) => {
         await db.query(
           `UPDATE products 
            SET current_price = $1, 
-               total_bids = total_bids + 1,
-               winner_id = $2,
+               total_bids = $2,
+               winner_id = $3,
                updated_at = CURRENT_TIMESTAMP
-           WHERE id = $3`,
-          [actualBidPrice, winnerId, productId]
+           WHERE id = $4`,
+          [actualBidPrice, totalBids, winnerId, productId]
         );
       }
+      
+      console.log(`[AUTO-BID] Product updated: price=${actualBidPrice}, total_bids=${totalBids}, winner=${winnerId}`);
 
       // STEP 12: Check auto-extend (if bid placed within 5 minutes of end time)
       // Skip auto-extend if Buy Now was triggered
@@ -505,10 +588,10 @@ module.exports = (io, socket) => {
           isBuyNow
         },
         bid: {
-          id: bid.id,
+          id: newBid.id,
           productId,
           bidPrice: actualBidPrice,
-          createdAt: bid.created_at
+          createdAt: newBid.created_at
         },
         product: {
           id: productId,

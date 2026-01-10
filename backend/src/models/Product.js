@@ -122,6 +122,9 @@ class Product {
       case 'price_desc':
         orderBy = 'p.current_price DESC';
         break;
+      case 'created_desc':
+        orderBy = 'p.created_at DESC';
+        break;
       default:
         orderBy = 'p.end_time ASC';
     }
@@ -280,13 +283,14 @@ class Product {
   static async getBidHistory(productId, page = 1, page_size = 20, includeUserId = false) {
     const offset = (page - 1) * page_size;
     
+    // Query bids table only - all participants have bid entries now
     const query = `
       SELECT 
         b.id,
+        ${includeUserId ? 'b.user_id,' : ''}
         b.bid_price,
         b.is_auto,
         b.created_at,
-        ${includeUserId ? 'b.user_id,' : ''}
         CONCAT(LEFT(u.full_name, 4), REPEAT('*', GREATEST(LENGTH(u.full_name) - 4, 0))) as masked_bidder_name,
         CASE WHEN db.id IS NOT NULL THEN true ELSE false END as is_denied
       FROM bids b

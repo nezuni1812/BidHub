@@ -288,11 +288,12 @@ export default function Home() {
           | "end_time_desc"
           | "price_asc"
           | "price_desc"
+          | "created_desc"
           | undefined;
 
         switch (filters.sortBy) {
           case "newest":
-            sort_by = undefined; // Default
+            sort_by = "created_desc";
             break;
           case "ending-soon":
             sort_by = "end_time_asc";
