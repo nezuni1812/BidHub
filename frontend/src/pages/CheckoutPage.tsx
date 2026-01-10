@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useState, useEffect } from "react"
-import { Check, MapPin, Package, CreditCard } from "lucide-react"
+import { Check, MapPin, Package, CreditCard, CheckCircle, Star } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useParams, useNavigate } from "react-router-dom"
 import { api } from "@/lib/api"
@@ -13,6 +13,8 @@ import { useToast } from "@/components/ui/use-toast"
 import { Elements } from "@stripe/react-stripe-js"
 import { loadStripe } from "@stripe/stripe-js"
 import { StripePaymentForm } from "@/components/stripe-payment-form"
+import { confirmDelivery, rateSeller } from "@/lib/dashboard"
+import { RatingDialog } from "@/components/rating-dialog"
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY)
 
@@ -35,6 +37,7 @@ interface OrderData {
   seller_name: string
   seller_id: number
   buyer_id: number
+  buyer_rating?: number | null
 }
 
 export default function CheckoutPage() {
@@ -50,6 +53,8 @@ export default function CheckoutPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [clientSecret, setClientSecret] = useState("")
   const [paymentIntentId, setPaymentIntentId] = useState("")
+  const [ratingDialogOpen, setRatingDialogOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const steps: OrderStep[] = [
     { id: 1, title: "Thanh toán", status: currentStep === 1 ? "current" : currentStep > 1 ? "completed" : "pending" },
@@ -63,7 +68,11 @@ export default function CheckoutPage() {
       title: "Xác nhận người bán",
       status: currentStep === 3 ? "current" : currentStep > 3 ? "completed" : "pending",
     },
-    { id: 4, title: "Giao hàng", status: currentStep === 4 ? "current" : currentStep > 4 ? "completed" : "pending" },
+    { 
+      id: 4, 
+      title: "Giao hàng", 
+      status: currentStep === 4 ? (order?.order_status === 'delivered' || order?.order_status === 'completed' ? "completed" : "current") : currentStep > 4 ? "completed" : "pending" 
+    },
   ]
 
   // Fetch order data
@@ -85,7 +94,7 @@ export default function CheckoutPage() {
             setCurrentStep(2);
           } else if (response.data.order_status === 'paid' && response.data.shipping_address) {
             setCurrentStep(3);
-          } else if (response.data.order_status === 'shipping' || response.data.order_status === 'delivered') {
+          } else if (response.data.order_status === 'shipping' || response.data.order_status === 'delivered' || response.data.order_status === 'completed') {
             setCurrentStep(4);
           }
         }
@@ -177,7 +186,7 @@ export default function CheckoutPage() {
       try {
         setIsLoading(true);
         await api.put(`/orders/${order.id}/shipping-address`, {
-          shipping_address: `${address} | Phone: ${phoneNumber}`
+          shipping_address: `${address} | ${phoneNumber}`
         });
         
         toast({
@@ -197,6 +206,95 @@ export default function CheckoutPage() {
       }
     }
   }
+
+  const handleConfirmDelivery = async () => {
+    if (!order) return;
+    
+    try {
+      setIsSubmitting(true);
+      
+      await confirmDelivery(order.id);
+      
+      toast({
+        title: "Thành công",
+        description: "Đã xác nhận nhận hàng",
+      });
+      
+      // Refresh order data
+      const response = await api.get(`/orders/${order.id}`);
+      if (response.data) {
+        setOrder(response.data);
+        setCurrentStep(4);
+      }
+    } catch (error: any) {
+      console.error('Error confirming delivery:', error);
+      toast({
+        title: "Lỗi",
+        description: error.response?.data?.message || "Không thể xác nhận nhận hàng",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const openRatingDialog = () => {
+    setRatingDialogOpen(true);
+  };
+
+  const submitRating = async (rating: 1 | -1, comment: string) => {
+    if (!order) return;
+    
+    try {
+      setIsSubmitting(true);
+      
+      await rateSeller(order.id, rating, comment);
+      
+      toast({
+        title: "Thành công",
+        description: rating === 1 ? "Đã gửi đánh giá tích cực" : "Đã gửi đánh giá tiêu cực",
+      });
+      
+      setRatingDialogOpen(false);
+      
+      // Refresh order data
+      const response = await api.get(`/orders/${order.id}`);
+      if (response.data) {
+        setOrder(response.data);
+      }
+    } catch (error: any) {
+      console.error('Error rating seller:', error);
+      toast({
+        title: "Lỗi",
+        description: error.response?.data?.message || "Không thể gửi đánh giá",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getOrderStatusText = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'pending_payment': 'Chờ thanh toán',
+      'paid': 'Đã thanh toán',
+      'shipping': 'Đang giao hàng',
+      'delivered': 'Đã giao hàng',
+      'completed': 'Hoàn thành',
+      'cancelled': 'Đã hủy'
+    };
+    return statusMap[status] || status;
+  };
+
+  const getPaymentStatusText = (status: string) => {
+    const statusMap: Record<string, string> = {
+      'pending': 'Chờ thanh toán',
+      'completed': 'Đã thanh toán',
+      'failed': 'Thất bại',
+      'refunded': 'Đã hoàn tiền'
+    };
+    return statusMap[status] || status;
+  };
 
   if (isLoading && !order) {
     return (
@@ -388,14 +486,74 @@ export default function CheckoutPage() {
 
             {currentStep === 4 && (
               <Card className="p-8">
-                <div className="text-center py-8">
-                  <MapPin className="w-16 h-16 text-accent mx-auto mb-4" />
-                  <h2 className="text-2xl font-bold mb-2">Đang giao hàng</h2>
-                  <p className="text-muted-foreground mb-4">
-                    Sản phẩm của bạn đã được gửi đi và đang trên đường giao hàng. Bạn có thể theo dõi trạng thái giao hàng bằng mã vận đơn do người bán cung cấp.
-                  </p>
-                  <Button className="mt-4">Xem thông tin vận chuyển</Button>
-                </div>
+                {order.order_status === 'shipping' && (
+                  <div className="text-center py-8">
+                    <MapPin className="w-16 h-16 text-accent mx-auto mb-4" />
+                    <h2 className="text-2xl font-bold mb-2">Đang giao hàng</h2>
+                    <p className="text-muted-foreground mb-4">
+                      Sản phẩm của bạn đã được gửi đi và đang trên đường giao hàng. Bạn có thể theo dõi trạng thái giao hàng bằng mã vận đơn do người bán cung cấp.
+                    </p>
+                    <Button 
+                      size="lg" 
+                      className="bg-green-600 hover:bg-green-700 mt-4"
+                      onClick={handleConfirmDelivery}
+                      disabled={isSubmitting}
+                    >
+                      <CheckCircle className="w-5 h-5 mr-2" />
+                      {isSubmitting ? 'Đang xác nhận...' : 'Xác nhận đã nhận hàng'}
+                    </Button>
+                  </div>
+                )}
+                
+                {order.order_status === 'delivered' && (
+                  <div className="text-center py-8">
+                    <CheckCircle className="w-16 h-16 text-green-600 mx-auto mb-4" />
+                    <h2 className="text-2xl font-bold mb-2">Đã giao hàng</h2>
+                    <p className="text-muted-foreground mb-4">
+                      Bạn đã xác nhận nhận hàng thành công. Vui lòng đánh giá người bán để hoàn tất giao dịch.
+                    </p>
+                    <div className="mt-4">
+                      {!order.buyer_rating ? (
+                        <Button 
+                          size="lg" 
+                          variant="outline"
+                          className="border-yellow-600 text-yellow-600 hover:bg-yellow-600 hover:text-white transition-colors"
+                          onClick={openRatingDialog}
+                          disabled={isSubmitting}
+                        >
+                          <Star className="w-5 h-5 mr-2" />
+                          Đánh giá người bán
+                        </Button>
+                      ) : (
+                        <Badge className={order.buyer_rating === 1 ? "bg-green-600 text-lg py-2 px-4" : "bg-red-600 text-lg py-2 px-4"}>
+                          <Star className="w-5 h-5 mr-2" />
+                          Đã đánh giá: {order.buyer_rating === 1 ? 'Tích cực' : 'Tiêu cực'}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {order.order_status === 'completed' && (
+                  <div className="text-center py-8">
+                    <Check className="w-16 h-16 text-green-700 mx-auto mb-4" />
+                    <h2 className="text-2xl font-bold mb-2">Hoàn thành</h2>
+                    <p className="text-muted-foreground mb-4">
+                      Giao dịch đã hoàn thành. Cảm ơn bạn đã sử dụng dịch vụ của chúng tôi!
+                    </p>
+                    <Badge className="bg-green-700 text-lg py-2 px-4">
+                      Đơn hàng hoàn thành
+                    </Badge>
+                    {order.buyer_rating && (
+                      <div className="mt-4">
+                        <Badge className={order.buyer_rating === 1 ? "bg-green-600 text-lg py-2 px-4" : "bg-red-600 text-lg py-2 px-4"}>
+                          <Star className="w-5 h-5 mr-2" />
+                          Đã đánh giá: {order.buyer_rating === 1 ? 'Tích cực' : 'Tiêu cực'}
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                )}
               </Card>
             )}
           </div>
@@ -423,12 +581,12 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Trạng thái đơn</span>
-                    <Badge variant="outline">{order.order_status}</Badge>
+                    <Badge variant="outline">{getOrderStatusText(order.order_status)}</Badge>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Trạng thái thanh toán</span>
                     <Badge variant={order.payment_status === 'completed' ? 'default' : 'outline'}>
-                      {order.payment_status}
+                      {getPaymentStatusText(order.payment_status)}
                     </Badge>
                   </div>
                   {order.shipping_address && (
@@ -437,10 +595,6 @@ export default function CheckoutPage() {
                       <p className="text-sm">{order.shipping_address}</p>
                     </div>
                   )}
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Phí vận chuyển</span>
-                    <span className="font-medium">Chưa xác định</span>
-                  </div>
                 </div>
                 <div className="pt-4 border-t border-border">
                   <div className="flex justify-between font-bold">
@@ -466,6 +620,14 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+
+      {/* Rating Dialog */}
+      <RatingDialog
+        open={ratingDialogOpen}
+        onOpenChange={setRatingDialogOpen}
+        onSubmit={submitRating}
+        isSubmitting={isSubmitting}
+      />
     </div>
   )
 }

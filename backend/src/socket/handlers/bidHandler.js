@@ -546,8 +546,8 @@ module.exports = (io, socket) => {
           totalBids: parseInt(product.total_bids) + 1,
           bidder: {
             id: winnerId,
-            // Mask name: "Nguyen Van A" → "N***"
-            name: winnerUser ? `${winnerUser.full_name.charAt(0)}${'*'.repeat(winnerUser.full_name.length - 4)}` : 'Anonymous'
+            // Mask name: "Nguyen Van A" → "Nguy***"
+            name: winnerUser ? `${winnerUser.full_name.substring(0, 4)}${'*'.repeat(Math.max(0, winnerUser.full_name.length - 4))}` : 'Anonymous'
           },
           timestamp: new Date(),
           wasExtended,

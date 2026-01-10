@@ -14,10 +14,7 @@ import { getWatchlist } from "@/lib/watchlist"
 import { formatPrice, formatTimeRemaining, getImageUrl, type Product } from "@/lib/products"
 import { api } from "@/lib/api"
 import { useToast } from "@/components/ui/use-toast"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Textarea } from "@/components/ui/textarea"
+import { RatingDialog } from "@/components/rating-dialog"
 import { ChangePasswordDialog } from "@/components/change-password-dialog"
 
 interface SellerProduct {
@@ -43,8 +40,9 @@ export default function DashboardPage() {
   const [actionLoading, setActionLoading] = useState<Record<number, string>>({});
   const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
-  const [ratingType, setRatingType] = useState<'1' | '-1'>('1');
-  const [ratingComment, setRatingComment] = useState('');
+  const [ratingType, setRatingType] = useState<string>('1');
+  const [ratingComment, setRatingComment] = useState<string>('');
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -279,7 +277,7 @@ export default function DashboardPage() {
                         <div className="flex items-center gap-3 mb-2">
                           <h3 className="font-semibold text-lg line-clamp-1">{bid.title}</h3>
                           {bid.is_winning ? (
-                            <Badge className="bg-green-600">✓ Đang thắng</Badge>
+                            <Badge className="bg-green-600">Đang thắng</Badge>
                           ) : (
                             <Badge variant="outline">Bị vượt giá</Badge>
                           )}
@@ -379,6 +377,9 @@ export default function DashboardPage() {
                         {item.order_status === 'completed' && (
                           <Badge className="bg-green-800">Hoàn thành</Badge>
                         )}
+                        {item.order_status === 'cancelled' && (
+                          <Badge variant="destructive">Đã hủy</Badge>
+                        )}
                       </div>
                       <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-3">
                         <span>Giá thắng: {formatPrice(parseFloat(item.final_price))}</span>
@@ -451,12 +452,13 @@ export default function DashboardPage() {
                             {!item.buyer_rating ? (
                               <Button 
                                 size="sm" 
-                                className="bg-yellow-600 hover:bg-yellow-700"
+                                variant="outline"
+                                className="border-yellow-600 text-yellow-600 hover:bg-yellow-600 hover:text-white transition-colors"
                                 onClick={() => openRatingDialog(item.order_id!)}
                                 disabled={actionLoading[item.order_id!] === 'rating'}
                               >
                                 <Star className="w-4 h-4 mr-1" />
-                                Đánh giá
+                                Đánh giá người bán
                               </Button>
                             ) : (
                               <Badge className={item.buyer_rating === 1 ? "bg-green-600" : "bg-red-600"}>
@@ -497,57 +499,12 @@ export default function DashboardPage() {
       </div>
 
       {/* Rating Dialog */}
-      <Dialog open={ratingDialogOpen} onOpenChange={setRatingDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Đánh giá người bán</DialogTitle>
-            <DialogDescription>
-              Vui lòng chọn loại đánh giá và nhập nhận xét của bạn
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-3">
-              <Label>Loại đánh giá</Label>
-              <RadioGroup value={ratingType} onValueChange={(value) => setRatingType(value as '1' | '-1')}>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="1" id="positive" />
-                  <Label htmlFor="positive" className="font-normal cursor-pointer">
-                    Tích cực - Người bán đáng tin cậy
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="-1" id="negative" />
-                  <Label htmlFor="negative" className="font-normal cursor-pointer">
-                    Tiêu cực - Người bán không đáng tin cậy
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="comment">Nhận xét (tùy chọn)</Label>
-              <Textarea
-                id="comment"
-                placeholder="Nhập nhận xét của bạn về người bán..."
-                value={ratingComment}
-                onChange={(e) => setRatingComment(e.target.value)}
-                rows={4}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRatingDialogOpen(false)}>
-              Hủy
-            </Button>
-            <Button 
-              onClick={submitRating}
-              disabled={selectedOrderId ? actionLoading[selectedOrderId] === 'rating' : false}
-              className={ratingType === '1' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
-            >
-              {selectedOrderId && actionLoading[selectedOrderId] === 'rating' ? 'Đang gửi...' : 'Gửi đánh giá'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <RatingDialog
+        open={ratingDialogOpen}
+        onOpenChange={setRatingDialogOpen}
+        onSubmit={submitRating}
+        isSubmitting={selectedOrderId ? actionLoading[selectedOrderId] === 'rating' : false}
+      />
     </div>
   )
 }

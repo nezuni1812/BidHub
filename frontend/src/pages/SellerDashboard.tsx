@@ -12,10 +12,7 @@ import { useEffect, useState } from "react"
 import { getSellerStats, getSellerProducts, getSellerOrders, markAsShipped, cancelOrder, rateBuyer, type SellerStats, type SellerProduct, type SellerOrder } from "@/lib/seller"
 import { formatPrice, formatTimeRemaining, getImageUrl } from "@/lib/products"
 import { useToast } from "@/components/ui/use-toast"
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Textarea } from "@/components/ui/textarea"
+import { BuyerRatingDialog } from "@/components/buyer-rating-dialog"
 
 export default function SellerDashboardPage() {
   const { user } = useAuth();
@@ -29,8 +26,6 @@ export default function SellerDashboardPage() {
   const [actionLoading, setActionLoading] = useState<Record<number, string>>({});
   const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
-  const [ratingType, setRatingType] = useState<'1' | '-1'>('1');
-  const [ratingComment, setRatingComment] = useState('');
 
   // Protect route - only sellers can access
   useEffect(() => {
@@ -199,27 +194,24 @@ export default function SellerDashboardPage() {
 
   const openRatingDialog = (orderId: number) => {
     setSelectedOrderId(orderId);
-    setRatingType('1');
-    setRatingComment('');
     setRatingDialogOpen(true);
   };
 
-  const submitRating = async () => {
+  const submitRating = async (rating: 1 | -1, comment: string) => {
     if (!selectedOrderId) return;
     
     try {
       setActionLoading(prev => ({ ...prev, [selectedOrderId]: 'rating' }));
       
-      await rateBuyer(selectedOrderId, parseInt(ratingType) as 1 | -1, ratingComment);
+      await rateBuyer(selectedOrderId, rating, comment);
       
       toast({
         title: "Thành công",
-        description: ratingType === '1' ? "Đã gửi đánh giá tích cực" : "Đã gửi đánh giá tiêu cực",
+        description: rating === 1 ? "Đã gửi đánh giá tích cực" : "Đã gửi đánh giá tiêu cực",
       });
       
       setRatingDialogOpen(false);
       setSelectedOrderId(null);
-      setRatingComment('');
       
       // Refresh orders
       await fetchDashboardData();
@@ -304,7 +296,6 @@ export default function SellerDashboardPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="font-semibold text-lg">{item.title}</h3>
-                        <Badge className="bg-green-600">{item.status}</Badge>
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm text-muted-foreground">
                         <div>
@@ -438,7 +429,7 @@ export default function SellerDashboardPage() {
                               disabled={actionLoading[order.id] === 'rating'}
                             >
                               <Star className="w-4 h-4 mr-1" />
-                              Đánh giá
+                              Đánh giá người mua
                             </Button>
                           ) : (
                             <Badge className={order.seller_rating === 1 ? "bg-green-600" : "bg-red-600"}>
@@ -466,57 +457,12 @@ export default function SellerDashboardPage() {
       </div>
 
       {/* Rating Dialog */}
-      <Dialog open={ratingDialogOpen} onOpenChange={setRatingDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Đánh giá người mua</DialogTitle>
-            <DialogDescription>
-              Vui lòng chọn loại đánh giá và nhập nhận xét của bạn
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="space-y-3">
-              <Label>Loại đánh giá</Label>
-              <RadioGroup value={ratingType} onValueChange={(value) => setRatingType(value as '1' | '-1')}>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="1" id="positive" />
-                  <Label htmlFor="positive" className="font-normal cursor-pointer">
-                    Tích cực - Người mua đáng tin cậy
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="-1" id="negative" />
-                  <Label htmlFor="negative" className="font-normal cursor-pointer">
-                    Tiêu cực - Người mua không đáng tin cậy
-                  </Label>
-                </div>
-              </RadioGroup>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="comment">Nhận xét (tùy chọn)</Label>
-              <Textarea
-                id="comment"
-                placeholder="Nhập nhận xét của bạn về người mua..."
-                value={ratingComment}
-                onChange={(e) => setRatingComment(e.target.value)}
-                rows={4}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRatingDialogOpen(false)}>
-              Hủy
-            </Button>
-            <Button 
-              onClick={submitRating}
-              disabled={selectedOrderId ? actionLoading[selectedOrderId] === 'rating' : false}
-              className={ratingType === '1' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
-            >
-              {selectedOrderId && actionLoading[selectedOrderId] === 'rating' ? 'Đang gửi...' : 'Gửi đánh giá'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <BuyerRatingDialog
+        open={ratingDialogOpen}
+        onOpenChange={setRatingDialogOpen}
+        onSubmit={submitRating}
+        isSubmitting={selectedOrderId ? actionLoading[selectedOrderId] === 'rating' : false}
+      />
     </div>
   )
 }

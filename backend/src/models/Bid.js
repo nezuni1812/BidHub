@@ -20,7 +20,7 @@ class Bid {
         b.bid_price,
         b.is_auto,
         b.created_at,
-        CONCAT(LEFT(u.full_name, 1), REPEAT('*', LENGTH(u.full_name) - 1)) as bidder_name
+        CONCAT(LEFT(u.full_name, 4), REPEAT('*', GREATEST(LENGTH(u.full_name) - 4, 0))) as bidder_name
       FROM bids b
       JOIN users u ON b.user_id = u.id
       WHERE b.product_id = $1

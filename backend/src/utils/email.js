@@ -149,7 +149,7 @@ const sendQuestionNotificationEmail = async (sellerEmail, sellerName, productTit
 const sendBidPlacedEmail = async (toEmail, userName, productTitle, productId, bidPrice, isOutbid = false) => {
   const productLink = `${config.frontendUrl}/product/${productId}`;
   const subject = isOutbid 
-    ? `Bido - Bạn đã bị trả giá cho "${productTitle}"`
+    ? `Bido - Bạn đã bị vượt giá "${productTitle}"`
     : `Bido - Có lượt đặt giá mới cho "${productTitle}"`;
   
   const html = `

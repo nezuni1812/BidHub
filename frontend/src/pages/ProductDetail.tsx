@@ -1241,7 +1241,7 @@ export default function ProductDetail() {
                       Chưa có lượt đặt giá nào
                     </p>
                   ) : (
-                    bids.map((bid) => {
+                    bids.map((bid, index) => {
                       if (isSeller) {
                         console.log(
                           "[DEBUG] isSeller:",
@@ -1255,6 +1255,7 @@ export default function ProductDetail() {
                         );
                       }
                       const isDenied = (bid as any).is_denied;
+                      const isLatestBid = index === 0 && !isDenied;
                       return (
                         <div
                           key={bid.id}
@@ -1287,6 +1288,11 @@ export default function ProductDetail() {
                                 >
                                   {bid.masked_bidder_name}
                                 </span>
+                              )}
+                              {isLatestBid && (
+                                <Badge variant="default" className="text-xs bg-green-600 hover:bg-green-700">
+                                  Đang giữ giá
+                                </Badge>
                               )}
                               {bid.is_auto && (
                                 <Badge variant="secondary" className="text-xs">

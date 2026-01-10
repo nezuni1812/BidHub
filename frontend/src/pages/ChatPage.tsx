@@ -345,15 +345,17 @@ export default function ChatPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                           <h3 className="font-semibold truncate">{conv.other_user_name}</h3>
-                          <span className="text-xs text-muted-foreground">
-                            {formatTime(conv.last_message_time)}
-                          </span>
+                          {conv.last_message_time && (
+                            <span className="text-xs text-muted-foreground">
+                              {formatTime(conv.last_message_time)}
+                            </span>
+                          )}
                         </div>
-                        <p className="text-sm text-muted-foreground truncate mb-1">
+                        <p className="text-xs text-muted-foreground truncate mb-1">
                           {conv.product_title}
                         </p>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {conv.last_message || 'No messages yet'}
+                        <p className="text-xs text-muted-foreground truncate">
+                          {conv.last_message || 'Chưa có tin nhắn nào'}
                         </p>
                       </div>
                       {conv.unread_count > 0 && (
