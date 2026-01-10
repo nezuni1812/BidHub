@@ -7,6 +7,7 @@ const compression = require('compression');
 const swaggerUi = require('swagger-ui-express');
 const passport = require('./config/passport');
 const { logger, errorLogger, winstonInstance } = require('./config/logger');
+const { apiLimiter } = require('./middleware/rateLimiter');
 require('dotenv').config();
 
 const config = require('./config');
@@ -46,6 +47,9 @@ app.use(express.urlencoded({ extended: true, charset: 'utf-8' }));
 
 // Winston logger middleware (logs all HTTP requests)
 app.use(logger);
+
+// Apply rate limiting to all API routes
+app.use(config.apiPrefix, apiLimiter);
 
 // Initialize Passport
 app.use(passport.initialize());

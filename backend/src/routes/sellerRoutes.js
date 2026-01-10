@@ -14,6 +14,7 @@ const {
   allowUnratedBidderValidation,
   paginationValidation
 } = require('../validators/sellerValidator');
+const { createProductLimiter, uploadLimiter } = require('../middleware/rateLimiter');
 
 // All routes require authentication and seller role
 router.use(authenticate);
@@ -187,6 +188,8 @@ router.get(
  */
 router.post(
   '/products',
+  createProductLimiter,
+  uploadLimiter,
   upload.fields([
     { name: 'main_image', maxCount: 1 },
     { name: 'additional_images', maxCount: 9 }

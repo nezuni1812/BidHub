@@ -95,6 +95,49 @@ services:
     depends_on:
       - elasticsearch
 
+  logstash:
+    image: logstash:7.17.18
+    container_name: bidhub-logstash
+    restart: unless-stopped
+    volumes:
+      - ./logstash/pipeline:/usr/share/logstash/pipeline
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
+      - ./logs:/usr/share/logstash/logs
+    ports:
+      - "5044:5044"
+      - "9600:9600"
+    environment:
+      - LS_JAVA_OPTS=-Xms512m -Xmx512m
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    networks:
+      - bidhub-network
+    depends_on:
+      - elasticsearch
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/stats || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  filebeat:
+    image: elastic/filebeat:7.17.18
+    container_name: bidhub-filebeat
+    restart: unless-stopped
+    user: root
+    volumes:
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./logs:/var/log/bidhub:ro
+      - filebeat_data:/usr/share/filebeat/data
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - LOGSTASH_HOSTS=logstash:5044
+    networks:
+      - bidhub-network
+    depends_on:
+      - elasticsearch
+      - logstash
+    command: filebeat -e -strict.perms=false
+
 volumes:
   postgres_data:
     driver: local
@@ -103,6 +146,8 @@ volumes:
   pgadmin_data:
     driver: local
   esdata:
+    driver: local
+  filebeat_data:
     driver: local
 
 networks:

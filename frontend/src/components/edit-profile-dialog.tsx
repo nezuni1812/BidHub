@@ -1,6 +1,6 @@
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,54 +8,99 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Edit2 } from "lucide-react"
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Edit2 } from "lucide-react";
 
 interface EditProfileDialogProps {
-  currentName: string
-  currentAddress: string
-  currentDateOfBirth?: string
-  onSave: (data: { name: string; address: string; date_of_birth?: string }) => void
+  currentName: string;
+  currentAddress: string;
+  currentDateOfBirth?: string;
+  onSave: (data: {
+    name: string;
+    address: string;
+    date_of_birth?: string;
+  }) => void;
 }
 
-export function EditProfileDialog({ currentName, currentAddress, currentDateOfBirth, onSave }: EditProfileDialogProps) {
-  const [open, setOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  
+export function EditProfileDialog({
+  currentName,
+  currentAddress,
+  currentDateOfBirth,
+  onSave,
+}: EditProfileDialogProps) {
+  const [open, setOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
   const getLocalDateString = (dateStr?: string) => {
-    if (!dateStr) return ''
-    const date = new Date(dateStr)
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-  }
-  
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
   const [formData, setFormData] = useState({
     name: currentName,
     address: currentAddress,
     date_of_birth: getLocalDateString(currentDateOfBirth),
-  })
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const newErrors: Record<string, string> = {}
+    e.preventDefault();
+    const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) newErrors.name = "Vui lòng nhập họ tên"
+    // Validate name
+    if (!formData.name.trim()) {
+      newErrors.name = "Vui lòng nhập họ tên";
+    } else if (formData.name.trim().length < 2) {
+      newErrors.name = "Họ tên phải có ít nhất 2 ký tự";
+    } else if (formData.name.trim().length > 100) {
+      newErrors.name = "Họ tên không được quá 100 ký tự";
+    } else if (!/^[\p{L}\s]+$/u.test(formData.name.trim())) {
+      newErrors.name = "Họ tên chỉ được chứa chữ cái và khoảng trắng";
+    }
 
-    setErrors(newErrors)
-    if (Object.keys(newErrors).length > 0) return
+    // Validate address
+    if (formData.address && formData.address.trim()) {
+      if (formData.address.trim().length < 5) {
+        newErrors.address = "Địa chỉ phải có ít nhất 5 ký tự";
+      } else if (formData.address.trim().length > 200) {
+        newErrors.address = "Địa chỉ không được quá 200 ký tự";
+      }
+    }
 
-    setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    setIsLoading(false)
+    // Validate date of birth
+    if (formData.date_of_birth) {
+      const dob = new Date(formData.date_of_birth);
+      const today = new Date();
+      const age = today.getFullYear() - dob.getFullYear();
+      const minDate = new Date("1900-01-01");
 
-    onSave(formData)
-    setOpen(false)
-  }
+      if (dob > today) {
+        newErrors.date_of_birth = "Ngày sinh không thể là ngày tương lai";
+      } else if (dob < minDate) {
+        newErrors.date_of_birth = "Ngày sinh không hợp lệ";
+      } else if (age < 13) {
+        newErrors.date_of_birth = "Bạn phải từ 13 tuổi trở lên";
+      } else if (age > 120) {
+        newErrors.date_of_birth = "Ngày sinh không hợp lệ";
+      }
+    }
+
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) return;
+
+    setIsLoading(true);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setIsLoading(false);
+
+    onSave(formData);
+    setOpen(false);
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -68,7 +113,9 @@ export function EditProfileDialog({ currentName, currentAddress, currentDateOfBi
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Chỉnh sửa hồ sơ</DialogTitle>
-          <DialogDescription>Cập nhật thông tin hồ sơ của bạn bên dưới.</DialogDescription>
+          <DialogDescription>
+            Cập nhật thông tin hồ sơ của bạn bên dưới.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -77,11 +124,15 @@ export function EditProfileDialog({ currentName, currentAddress, currentDateOfBi
             <Input
               type="text"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, name: e.target.value })
+              }
               placeholder="Nhập họ và tên của bạn"
               className={errors.name ? "border-destructive mt-2" : "mt-2"}
             />
-            {errors.name && <p className="text-xs text-destructive mt-1">{errors.name}</p>}
+            {errors.name && (
+              <p className="text-xs text-destructive mt-1">{errors.name}</p>
+            )}
           </div>
 
           <div>
@@ -89,7 +140,9 @@ export function EditProfileDialog({ currentName, currentAddress, currentDateOfBi
             <Input
               type="text"
               value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, address: e.target.value })
+              }
               placeholder="Nhập địa chỉ của bạn"
               className="mt-2"
             />
@@ -103,7 +156,9 @@ export function EditProfileDialog({ currentName, currentAddress, currentDateOfBi
             <Input
               type="date"
               value={formData.date_of_birth}
-              onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, date_of_birth: e.target.value })
+              }
               className="mt-2"
             />
             <p className="text-xs text-muted-foreground mt-1">
@@ -121,12 +176,16 @@ export function EditProfileDialog({ currentName, currentAddress, currentDateOfBi
             >
               Hủy
             </Button>
-            <Button type="submit" disabled={isLoading} className="flex-1 bg-primary">
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 bg-primary"
+            >
               {isLoading ? "Đang lưu..." : "Lưu thay đổi"}
             </Button>
           </div>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

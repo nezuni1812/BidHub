@@ -863,12 +863,14 @@ export default function ProductDetail() {
                   <div
                     className="absolute inset-0"
                     style={{
-                      transform: isTransitioning 
-                        ? (slideDirection === 'next' ? 'translateX(-100%)' : 'translateX(100%)')
-                        : 'translateX(0)',
-                      transition: 'transform 0.5s ease-in-out',
+                      transform: isTransitioning
+                        ? slideDirection === "next"
+                          ? "translateX(-100%)"
+                          : "translateX(100%)"
+                        : "translateX(0)",
+                      transition: "transform 0.5s ease-in-out",
                       zIndex: isTransitioning ? 2 : 1,
-                      pointerEvents: isTransitioning ? 'none' : 'auto'
+                      pointerEvents: isTransitioning ? "none" : "auto",
                     }}
                   >
                     <img
@@ -880,15 +882,19 @@ export default function ProductDetail() {
                       className="w-full h-full object-contain"
                     />
                   </div>
-                  
+
                   <div
                     className="absolute inset-0 cursor-pointer"
                     style={{
-                      transform: isTransitioning 
-                        ? 'translateX(0)'
-                        : (slideDirection === 'next' ? 'translateX(100%)' : slideDirection === 'prev' ? 'translateX(-100%)' : 'translateX(0)'),
-                      transition: 'transform 0.5s ease-in-out',
-                      zIndex: isTransitioning ? 1 : 2
+                      transform: isTransitioning
+                        ? "translateX(0)"
+                        : slideDirection === "next"
+                        ? "translateX(100%)"
+                        : slideDirection === "prev"
+                        ? "translateX(-100%)"
+                        : "translateX(0)",
+                      transition: "transform 0.5s ease-in-out",
+                      zIndex: isTransitioning ? 1 : 2,
                     }}
                     onClick={() => setIsFullScreen(true)}
                     onMouseEnter={() => setIsPaused(true)}
@@ -1193,13 +1199,10 @@ export default function ProductDetail() {
                 </div>
                 {product.description && (
                   <div
-                    className="text-muted-foreground whitespace-pre-wrap prose max-w-none"
+                    className="prose prose-sm max-w-none text-muted-foreground"
                     dangerouslySetInnerHTML={{ __html: product.description }}
                   />
-                )}  
-                {/* <p className="text-muted-foreground whitespace-pre-wrap">
-                  {product.description}
-                </p> */}
+                )}
 
                 {product.description_history &&
                   product.description_history.length > 0 && (
@@ -1226,15 +1229,14 @@ export default function ProductDetail() {
                                   })}
                                 </span>
                               </div>
-                              { history.additional_description && (
-                              <div className="text-sm text-muted-foreground whitespace-pre-wrap prose max-w-none"
-                                dangerouslySetInnerHTML={{
-                                  __html: history.additional_description,
-                                }}
-                              /> )}
-                              {/* <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                                {history.additional_description}
-                              </p> */}
+                              {history.additional_description && (
+                                <div
+                                  className="prose prose-sm max-w-none text-sm text-muted-foreground"
+                                  dangerouslySetInnerHTML={{
+                                    __html: history.additional_description,
+                                  }}
+                                />
+                              )}
                             </div>
                           )
                         )}

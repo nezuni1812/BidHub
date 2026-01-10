@@ -14,7 +14,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { RichTextEditor } from "@/components/rich-text-editor"
+import { RichTextEditor } from "@/components/rich-text-editor";
 
 interface AvailableBidder {
   id: string;
@@ -200,7 +200,18 @@ export default function PostItemPage() {
   const handleMainImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      const imageError = validateImageFile(file);
+      if (imageError) {
+        toast({
+          title: "Lỗi ảnh chính",
+          description: imageError,
+          variant: "destructive",
+        });
+        e.target.value = ""; // Reset input
+        return;
+      }
       setMainImage(file);
+      setErrors({ ...errors, mainImage: undefined });
     }
   };
 
@@ -209,7 +220,35 @@ export default function PostItemPage() {
   ) => {
     const files = e.target.files;
     if (files) {
-      setAdditionalImages((prev) => [...prev, ...Array.from(files)]);
+      const newFiles = Array.from(files);
+
+      // Check total count
+      if (additionalImages.length + newFiles.length > 9) {
+        toast({
+          title: "Quá nhiều ảnh",
+          description: "Chỉ được tải lên tối đa 9 ảnh phụ",
+          variant: "destructive",
+        });
+        e.target.value = "";
+        return;
+      }
+
+      // Validate each file
+      for (const file of newFiles) {
+        const imageError = validateImageFile(file);
+        if (imageError) {
+          toast({
+            title: "Lỗi ảnh phụ",
+            description: `${file.name}: ${imageError}`,
+            variant: "destructive",
+          });
+          e.target.value = "";
+          return;
+        }
+      }
+
+      setAdditionalImages((prev) => [...prev, ...newFiles]);
+      setErrors({ ...errors, additionalImages: undefined });
     }
   };
 
@@ -237,8 +276,27 @@ export default function PostItemPage() {
     setAdditionalImages((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const getPlainTextFromHtml = (html: string) => html.replace(/<[^>]+>/g, "").trim();
+  const getPlainTextFromHtml = (html: string) =>
+    html.replace(/<[^>]+>/g, "").trim();
 
+  // File validation constants
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+  const ALLOWED_IMAGE_TYPES = [
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/webp",
+  ];
+
+  const validateImageFile = (file: File): string | null => {
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      return "Chỉ chấp nhận file JPG, PNG, WEBP";
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      return "Kích thước file không được vượt quá 10MB";
+    }
+    return null;
+  };
 
   const validateForm = () => {
     const newErrors: typeof errors = {};
@@ -246,15 +304,25 @@ export default function PostItemPage() {
     // Validate title
     if (!formData.title.trim()) {
       newErrors.title = "Vui lòng nhập tên sản phẩm";
-    } else if (formData.title.trim().length < 3) {
-      newErrors.title = "Tên sản phẩm phải có ít nhất 3 ký tự";
-    } else if (formData.title.trim().length > 200) {
-      newErrors.title = "Tên sản phẩm không được quá 200 ký tự";
+    } else if (formData.title.trim().length < 10) {
+      newErrors.title = "Tên sản phẩm phải có ít nhất 10 ký tự";
+    } else if (formData.title.trim().length > 255) {
+      newErrors.title = "Tên sản phẩm không được quá 255 ký tự";
+    } else if (!/^[\p{L}\p{N}\s\-,.()]+$/u.test(formData.title.trim())) {
+      newErrors.title = "Tên sản phẩm chứa ký tự không hợp lệ";
     }
 
     // Validate category
     if (!formData.category_id) {
       newErrors.category = "Vui lòng chọn danh mục";
+    } else {
+      const selectedCategory = categories.find(
+        (cat) => cat.id.toString() === formData.category_id
+      );
+      if (selectedCategory?.parent_id === null) {
+        newErrors.category =
+          "Vui lòng chọn danh mục con, không thể chọn danh mục cha";
+      }
     }
 
     // Validate description
@@ -262,45 +330,91 @@ export default function PostItemPage() {
 
     if (!plainDescription) {
       newErrors.description = "Vui lòng nhập mô tả sản phẩm";
-    } else if (plainDescription.length < 10) {
-      newErrors.description = "Mô tả phải có ít nhất 10 ký tự";
+    } else if (plainDescription.length < 50) {
+      newErrors.description = "Mô tả phải có ít nhất 50 ký tự";
     } else if (plainDescription.length > 5000) {
       newErrors.description = "Mô tả không được quá 5000 ký tự";
     }
 
     // Validate starting bid
-    if (
-      !formData.startingBid ||
-      parseFloat(parseNumber(formData.startingBid)) <= 0
-    ) {
-      newErrors.startingBid = "Giá khởi điểm phải lớn hơn 0";
+    const startingBid = parseFloat(parseNumber(formData.startingBid));
+    if (!formData.startingBid || isNaN(startingBid)) {
+      newErrors.startingBid = "Vui lòng nhập giá khởi điểm";
+    } else if (startingBid < 1000) {
+      newErrors.startingBid = "Giá khởi điểm phải từ 1,000 VNĐ trở lên";
+    } else if (startingBid > 1000000000000) {
+      newErrors.startingBid = "Giá khởi điểm không được vượt quá 1,000 tỷ VNĐ";
     }
 
     // Validate bidding increment
-    if (
-      !formData.biddingIncrement ||
-      parseFloat(parseNumber(formData.biddingIncrement)) <= 0
-    ) {
-      newErrors.biddingIncrement = "Bước giá phải lớn hơn 0";
+    const biddingIncrement = parseFloat(parseNumber(formData.biddingIncrement));
+    if (!formData.biddingIncrement || isNaN(biddingIncrement)) {
+      newErrors.biddingIncrement = "Vui lòng nhập bước giá";
+    } else if (biddingIncrement < 1000) {
+      newErrors.biddingIncrement = "Bước giá phải từ 1,000 VNĐ trở lên";
+    } else if (biddingIncrement > startingBid * 0.5) {
+      newErrors.biddingIncrement =
+        "Bước giá không nên vượt quá 50% giá khởi điểm";
     }
 
     // Validate buy now price
-    if (
-      formData.buyNowPrice &&
-      parseFloat(parseNumber(formData.buyNowPrice)) <=
-        parseFloat(parseNumber(formData.startingBid))
-    ) {
-      newErrors.buyNowPrice = "Giá mua ngay phải lớn hơn giá khởi điểm";
+    if (formData.buyNowPrice) {
+      const buyNowPrice = parseFloat(parseNumber(formData.buyNowPrice));
+      if (isNaN(buyNowPrice)) {
+        newErrors.buyNowPrice = "Giá mua ngay không hợp lệ";
+      } else if (buyNowPrice < 1000) {
+        newErrors.buyNowPrice = "Giá mua ngay phải từ 1,000 VNĐ trở lên";
+      } else if (buyNowPrice <= startingBid) {
+        newErrors.buyNowPrice = "Giá mua ngay phải lớn hơn giá khởi điểm";
+      } else if (buyNowPrice < startingBid * 1.2) {
+        newErrors.buyNowPrice =
+          "Giá mua ngay nên cao hơn giá khởi điểm ít nhất 20%";
+      }
+    }
+
+    // Validate end date time
+    if (!formData.endDateTime) {
+      newErrors.endDateTime = "Vui lòng chọn thời gian kết thúc";
+    } else {
+      const endTime = new Date(formData.endDateTime);
+      const now = new Date();
+      const minEndTime = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours from now
+      const maxEndTime = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days from now
+
+      if (endTime <= now) {
+        newErrors.endDateTime =
+          "Thời gian kết thúc phải sau thời điểm hiện tại";
+      } else if (endTime < minEndTime) {
+        newErrors.endDateTime = "Đấu giá phải diễn ra ít nhất 24 giờ";
+      } else if (endTime > maxEndTime) {
+        newErrors.endDateTime = "Đấu giá không được kéo dài quá 30 ngày";
+      }
     }
 
     // Validate main image
     if (!mainImage) {
       newErrors.mainImage = "Vui lòng tải lên ảnh chính";
+    } else {
+      const imageError = validateImageFile(mainImage);
+      if (imageError) {
+        newErrors.mainImage = imageError;
+      }
     }
 
     // Validate additional images
-    if (additionalImages.length < 2) {
-      newErrors.additionalImages = "Vui lòng tải lên ít nhất 2 ảnh phụ";
+    if (additionalImages.length < 3) {
+      newErrors.additionalImages = "Vui lòng tải lên ít nhất 3 ảnh phụ";
+    } else if (additionalImages.length > 9) {
+      newErrors.additionalImages = "Chỉ được tải lên tối đa 9 ảnh phụ";
+    } else {
+      // Check each additional image
+      for (let i = 0; i < additionalImages.length; i++) {
+        const imageError = validateImageFile(additionalImages[i]);
+        if (imageError) {
+          newErrors.additionalImages = `Ảnh ${i + 1}: ${imageError}`;
+          break;
+        }
+      }
     }
 
     setErrors(newErrors);
@@ -595,9 +709,9 @@ export default function PostItemPage() {
                   value={formData.description}
                   placeholder="Mô tả chi tiết sản phẩm của bạn..."
                   onChange={(html) => {
-                    setFormData({ ...formData, description: html })
+                    setFormData({ ...formData, description: html });
                     if (errors.description)
-                      setErrors({ ...errors, description: undefined })
+                      setErrors({ ...errors, description: undefined });
                   }}
                 />
                 {errors.description && (

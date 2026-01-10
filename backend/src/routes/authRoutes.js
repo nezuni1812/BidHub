@@ -22,6 +22,7 @@ const {
 } = require('../validators/authValidator');
 const validate = require('../middleware/validate');
 const { authenticate } = require('../middleware/auth');
+const { authLimiter, passwordResetLimiter } = require('../middleware/rateLimiter');
 
 /**
  * @swagger
@@ -57,7 +58,7 @@ const { authenticate } = require('../middleware/auth');
  *       409:
  *         description: Email already exists
  */
-router.post('/register', registerValidation, validate, register);
+router.post('/register', authLimiter, registerValidation, validate, register);
 
 /**
  * @swagger
@@ -136,7 +137,7 @@ router.post('/resend-otp', resendOTPValidation, validate, resendOTP);
  *       401:
  *         description: Invalid credentials
  */
-router.post('/login', loginValidation, validate, login);
+router.post('/login', authLimiter, loginValidation, validate, login);
 
 /**
  * @swagger
@@ -291,7 +292,7 @@ router.get('/google/callback', googleCallback);
  *       400:
  *         description: Email not found
  */
-router.post('/forgot-password', forgotPassword);
+router.post('/forgot-password', passwordResetLimiter, forgotPassword);
 
 /**
  * @swagger
