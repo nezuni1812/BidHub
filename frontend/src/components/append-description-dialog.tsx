@@ -42,6 +42,7 @@ export function AppendDescriptionDialog({ onAppend, isSeller }: AppendDescriptio
       await onAppend(newText.trim())
       setNewText("")
       setOpen(false)
+      window.location.reload()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Không thể cập nhật mô tả")
     } finally {
@@ -61,13 +62,12 @@ export function AppendDescriptionDialog({ onAppend, isSeller }: AppendDescriptio
         <DialogHeader>
           <DialogTitle>Bổ sung thông tin mô tả sản phẩm</DialogTitle>
           <DialogDescription>
-            Thông tin mới sẽ được chèn (append) vào mô tả cũ, không thay thế mô tả hiện tại.
+            Thông tin mới sẽ được chèn vào mô tả cũ, không thay thế mô tả hiện tại.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-sm font-medium">Nội dung bổ sung</label>
             <RichTextEditor
               value={newText}
               placeholder="Nhập thông tin bổ sung cho mô tả sản phẩm..."

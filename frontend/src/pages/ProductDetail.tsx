@@ -38,6 +38,7 @@ import {
 } from "@/lib/watchlist";
 import { askQuestion, answerQuestion } from "@/lib/questions";
 import { useAuth } from "@/contexts/AuthContext";
+import { RatingBadge } from "@/components/rating-badge";
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
@@ -965,6 +966,25 @@ export default function ProductDetail() {
                   ))}
                 </div>
               )}
+
+              <div className="flex items-center justify-center gap-2">
+                <button
+                  onClick={toggleWatchlist}
+                  className={`p-2 rounded-full transition-all duration-300 ${
+                    isFavorited
+                      ? "bg-red-500 text-white hover:bg-red-600"
+                      : "bg-muted hover:bg-muted/80 text-foreground"
+                  }`}
+                  title={isFavorited ? "Đã thích" : "Thích sản phẩm"}
+                >
+                  <Heart
+                    className={`w-5 h-5 ${isFavorited ? "fill-current" : ""}`}
+                  />
+                </button>
+                <span className="text-sm text-muted-foreground">
+                  {isFavorited ? "Đã thích" : "Thích sản phẩm"}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -978,7 +998,7 @@ export default function ProductDetail() {
                   <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 flex items-center gap-2">
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                     <span className="text-sm font-semibold text-green-600 dark:text-green-400">
-                      🏆 Bạn đang đặt giá cao nhất!
+                      Bạn đang đặt giá cao nhất!
                     </span>
                   </div>
                 )}
@@ -1047,37 +1067,6 @@ export default function ProductDetail() {
                     </p>
                   </div>
                 )}
-
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className={`flex-1 transition-colors ${
-                      isFavorited
-                        ? "bg-red-500 hover:bg-red-600 text-white"
-                        : "bg-transparent"
-                    }`}
-                    onClick={toggleWatchlist}
-                  >
-                    <Heart
-                      className={`w-5 h-5 ${isFavorited ? "fill-current" : ""}`}
-                    />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="flex-1 bg-transparent"
-                  >
-                    <Share2 className="w-5 h-5" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="flex-1 bg-transparent"
-                  >
-                    <Flag className="w-5 h-5" />
-                  </Button>
-                </div>
               </div>
             </Card>
 
@@ -1098,37 +1087,7 @@ export default function ProductDetail() {
                       {(product as any).masked_seller_name || product.seller_name}
                     </p>
                   )}
-                  {(() => {
-                    const rating =
-                      parseFloat(product.seller_rating as any) * 100;
-                    let bgColor = "bg-gray-100 dark:bg-gray-800";
-                    let textColor = "text-gray-600 dark:text-gray-400";
-
-                    if (rating >= 80) {
-                      bgColor = "bg-green-100 dark:bg-green-900/30";
-                      textColor = "text-green-700 dark:text-green-400";
-                    } else if (rating >= 60) {
-                      bgColor = "bg-blue-100 dark:bg-blue-900/30";
-                      textColor = "text-blue-700 dark:text-blue-400";
-                    } else if (rating >= 40) {
-                      bgColor = "bg-yellow-100 dark:bg-yellow-900/30";
-                      textColor = "text-yellow-700 dark:text-yellow-400";
-                    } else if (rating >= 20) {
-                      bgColor = "bg-orange-100 dark:bg-orange-900/30";
-                      textColor = "text-orange-700 dark:text-orange-400";
-                    } else {
-                      bgColor = "bg-red-100 dark:bg-red-900/30";
-                      textColor = "text-red-700 dark:text-red-400";
-                    }
-
-                    return (
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 ${bgColor} ${textColor} rounded-full text-xs font-medium`}
-                      >
-                        {rating.toFixed(0)}%
-                      </span>
-                    );
-                  })()}
+                  <RatingBadge rating={parseFloat(product.seller_rating as any)} />
                 </div>
                 {!isSeller && (
                   <Button
@@ -1151,38 +1110,9 @@ export default function ProductDetail() {
                   <p className="font-semibold">
                     {(product as any).masked_winner_name || product.winner_name}
                   </p>
-                  {product.winner_rating &&
-                    (() => {
-                      const rating =
-                        parseFloat(product.winner_rating as any) * 100;
-                      let bgColor = "bg-gray-100 dark:bg-gray-800";
-                      let textColor = "text-gray-600 dark:text-gray-400";
-
-                      if (rating >= 80) {
-                        bgColor = "bg-green-100 dark:bg-green-900/30";
-                        textColor = "text-green-700 dark:text-green-400";
-                      } else if (rating >= 60) {
-                        bgColor = "bg-blue-100 dark:bg-blue-900/30";
-                        textColor = "text-blue-700 dark:text-blue-400";
-                      } else if (rating >= 40) {
-                        bgColor = "bg-yellow-100 dark:bg-yellow-900/30";
-                        textColor = "text-yellow-700 dark:text-yellow-400";
-                      } else if (rating >= 20) {
-                        bgColor = "bg-orange-100 dark:bg-orange-900/30";
-                        textColor = "text-orange-700 dark:text-orange-400";
-                      } else {
-                        bgColor = "bg-red-100 dark:bg-red-900/30";
-                        textColor = "text-red-700 dark:text-red-400";
-                      }
-
-                      return (
-                        <span
-                          className={`inline-flex items-center gap-1 px-2 py-0.5 ${bgColor} ${textColor} rounded-full text-xs font-medium`}
-                        >
-                          {rating.toFixed(0)}%
-                        </span>
-                      );
-                    })()}
+                  {product.winner_rating && (
+                    <RatingBadge rating={parseFloat(product.winner_rating as any)} />
+                  )}
                 </div>
               </Card>
             )}

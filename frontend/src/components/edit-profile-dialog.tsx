@@ -124,11 +124,12 @@ export function EditProfileDialog({
             <Input
               type="text"
               value={formData.name}
-              onChange={(e) =>
+              onChange={(e) => {
                 setFormData({ ...formData, name: e.target.value })
-              }
+                if (errors.name) setErrors({ ...errors, name: '' })
+              }}
               placeholder="Nhập họ và tên của bạn"
-              className={errors.name ? "border-destructive mt-2" : "mt-2"}
+              className={errors.name ? "border-destructive focus-visible:ring-destructive mt-2" : "mt-2"}
             />
             {errors.name && (
               <p className="text-xs text-destructive mt-1">{errors.name}</p>
@@ -140,12 +141,16 @@ export function EditProfileDialog({
             <Input
               type="text"
               value={formData.address}
-              onChange={(e) =>
+              onChange={(e) => {
                 setFormData({ ...formData, address: e.target.value })
-              }
+                if (errors.address) setErrors({ ...errors, address: '' })
+              }}
               placeholder="Nhập địa chỉ của bạn"
-              className="mt-2"
+              className={errors.address ? "border-destructive focus-visible:ring-destructive mt-2" : "mt-2"}
             />
+            {errors.address && (
+              <p className="text-xs text-destructive mt-1">{errors.address}</p>
+            )}
             <p className="text-xs text-muted-foreground mt-1">
               Địa chỉ giao hàng của bạn (tùy chọn)
             </p>
@@ -156,11 +161,15 @@ export function EditProfileDialog({
             <Input
               type="date"
               value={formData.date_of_birth}
-              onChange={(e) =>
+              onChange={(e) => {
                 setFormData({ ...formData, date_of_birth: e.target.value })
-              }
-              className="mt-2"
+                if (errors.date_of_birth) setErrors({ ...errors, date_of_birth: '' })
+              }}
+              className={errors.date_of_birth ? "border-destructive focus-visible:ring-destructive mt-2" : "mt-2"}
             />
+            {errors.date_of_birth && (
+              <p className="text-xs text-destructive mt-1">{errors.date_of_birth}</p>
+            )}
             <p className="text-xs text-muted-foreground mt-1">
               Ngày sinh của bạn (tùy chọn)
             </p>

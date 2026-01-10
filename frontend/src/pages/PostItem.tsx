@@ -15,6 +15,7 @@ import { api } from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { RichTextEditor } from "@/components/rich-text-editor";
+import { RatingBadge } from "@/components/rating-badge";
 
 interface AvailableBidder {
   id: string;
@@ -647,8 +648,7 @@ export default function PostItemPage() {
                       setErrors({ ...errors, title: undefined });
                   }}
                   placeholder="Nhập tên sản phẩm"
-                  className={`mt-2 ${errors.title ? "border-destructive" : ""}`}
-                  required
+                  className={`mt-2 ${errors.title ? "border-destructive focus-visible:ring-destructive" : ""}`}
                 />
                 {errors.title && (
                   <p className="text-xs text-destructive mt-1">
@@ -678,9 +678,8 @@ export default function PostItemPage() {
                         setErrors({ ...errors, category: undefined });
                     }}
                     className={`w-full mt-2 px-3 py-2 rounded-lg border bg-background text-sm ${
-                      errors.category ? "border-destructive" : "border-border"
+                      errors.category ? "border-destructive focus-visible:ring-destructive" : "border-border"
                     }`}
-                    required
                   >
                     <option value="">-- Chọn danh mục --</option>
                     {categories.map((cat) => (
@@ -778,6 +777,11 @@ export default function PostItemPage() {
                   </div>
                 </div>
               )}
+              {errors.mainImage && (
+                <p className="text-xs text-destructive mt-2">
+                  {errors.mainImage}
+                </p>
+              )}
             </div>
 
             {/* Additional Images */}
@@ -787,7 +791,7 @@ export default function PostItemPage() {
                   Ảnh phụ *
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Tối thiểu 2 ảnh, tối đa 10 ảnh
+                  Tối thiểu 3 ảnh, tối đa 9 ảnh
                 </p>
               </div>
 
@@ -838,6 +842,11 @@ export default function PostItemPage() {
               {additionalImages.length > 0 && (
                 <p className="text-sm text-muted-foreground mt-3">
                   Đã tải lên {additionalImages.length} ảnh phụ
+                </p>
+              )}
+              {errors.additionalImages && (
+                <p className="text-xs text-destructive mt-2">
+                  {errors.additionalImages}
                 </p>
               )}
             </div>
@@ -915,11 +924,7 @@ export default function PostItemPage() {
                             <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
                               {bidder.role}
                             </span>
-                            {parseFloat(bidder.rating) > 0 && (
-                              <span className="text-xs text-muted-foreground">
-                                ⭐ {parseFloat(bidder.rating).toFixed(2)}
-                              </span>
-                            )}
+                            <RatingBadge rating={parseFloat(bidder.rating)} />
                           </div>
                         </div>
                       </Label>
@@ -941,16 +946,22 @@ export default function PostItemPage() {
                     id="startBid"
                     type="text"
                     value={formatNumber(formData.startingBid)}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setFormData({
                         ...formData,
                         startingBid: parseNumber(e.target.value),
-                      })
-                    }
+                      });
+                      if (errors.startingBid)
+                        setErrors({ ...errors, startingBid: undefined });
+                    }}
                     placeholder="VD: 1,000,000"
-                    className="mt-2"
-                    required
+                    className={`mt-2 ${errors.startingBid ? "border-destructive focus-visible:ring-destructive" : ""}`}
                   />
+                  {errors.startingBid && (
+                    <p className="text-xs text-destructive mt-1">
+                      {errors.startingBid}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Label htmlFor="increment">Bước giá (VND) *</Label>
@@ -958,16 +969,22 @@ export default function PostItemPage() {
                     id="increment"
                     type="text"
                     value={formatNumber(formData.biddingIncrement)}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setFormData({
                         ...formData,
                         biddingIncrement: parseNumber(e.target.value),
-                      })
-                    }
+                      });
+                      if (errors.biddingIncrement)
+                        setErrors({ ...errors, biddingIncrement: undefined });
+                    }}
                     placeholder="VD: 100,000"
-                    className="mt-2"
-                    required
+                    className={`mt-2 ${errors.biddingIncrement ? "border-destructive focus-visible:ring-destructive" : ""}`}
                   />
+                  {errors.biddingIncrement && (
+                    <p className="text-xs text-destructive mt-1">
+                      {errors.biddingIncrement}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -977,15 +994,22 @@ export default function PostItemPage() {
                   id="buyNow"
                   type="text"
                   value={formatNumber(formData.buyNowPrice)}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setFormData({
                       ...formData,
                       buyNowPrice: parseNumber(e.target.value),
-                    })
-                  }
+                    });
+                    if (errors.buyNowPrice)
+                      setErrors({ ...errors, buyNowPrice: undefined });
+                  }}
                   placeholder="Tùy chọn - để trống nếu không có"
-                  className="mt-2"
+                  className={`mt-2 ${errors.buyNowPrice ? "border-destructive focus-visible:ring-destructive" : ""}`}
                 />
+                {errors.buyNowPrice && (
+                  <p className="text-xs text-destructive mt-1">
+                    {errors.buyNowPrice}
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -995,13 +1019,18 @@ export default function PostItemPage() {
                     id="endDateTime"
                     type="datetime-local"
                     value={formData.endDateTime}
-                    onChange={(e) =>
-                      setFormData({ ...formData, endDateTime: e.target.value })
-                    }
-                    className="mt-2"
-                    required
-                    step="60"
+                    onChange={(e) => {
+                      setFormData({ ...formData, endDateTime: e.target.value });
+                      if (errors.endDateTime)
+                        setErrors({ ...errors, endDateTime: undefined });
+                    }}
+                    className={`mt-2 ${errors.endDateTime ? "border-destructive focus-visible:ring-destructive" : ""}`}
                   />
+                  {errors.endDateTime && (
+                    <p className="text-xs text-destructive mt-1">
+                      {errors.endDateTime}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-end">
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -1030,9 +1059,7 @@ export default function PostItemPage() {
             <Button
               type="submit"
               size="lg"
-              disabled={
-                isSubmitting || !mainImage || additionalImages.length < 2
-              }
+              disabled={isSubmitting}
             >
               {isSubmitting ? "Đang đăng..." : "Đăng sản phẩm"}
             </Button>
@@ -1042,19 +1069,6 @@ export default function PostItemPage() {
               </Button>
             </Link>
           </div>
-          {(!mainImage || additionalImages.length < 2) && (
-            <div className="text-sm space-y-1">
-              {!mainImage && (
-                <p className="text-destructive">⚠ Vui lòng tải lên ảnh chính</p>
-              )}
-              {additionalImages.length < 2 && (
-                <p className="text-destructive">
-                  ⚠ Vui lòng tải lên ít nhất 2 ảnh phụ (
-                  {additionalImages.length}/2)
-                </p>
-              )}
-            </div>
-          )}
         </form>
       </div>
     </div>

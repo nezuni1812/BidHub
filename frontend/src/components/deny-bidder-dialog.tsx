@@ -33,12 +33,20 @@ export function DenyBidderDialog({
 }: DenyBidderDialogProps) {
   const [reason, setReason] = useState("")
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
 
   const handleDeny = async () => {
     if (!reason.trim()) {
-      alert("Vui lòng nhập lý do từ chối")
+      setError("Vui lòng nhập lý do từ chối")
       return
     }
+    
+    if (reason.trim().length < 10) {
+      setError("Lý do phải có ít nhất 10 ký tự")
+      return
+    }
+    
+    setError("")
 
     try {
       setLoading(true)
@@ -78,12 +86,16 @@ export function DenyBidderDialog({
               id="reason"
               placeholder="Vui lòng nhập lý do từ chối người đấu giá này..."
               value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              onChange={(e) => {
+                setReason(e.target.value)
+                if (error) setError("")
+              }}
               rows={4}
-              className="resize-none"
+              className={`resize-none ${error ? 'border-destructive focus-visible:ring-destructive' : ''}`}
             />
+            {error && <p className="text-xs text-destructive mt-1">{error}</p>}
             <p className="text-xs text-muted-foreground">
-              Lý do này sẽ được gửi đến người dùng qua email.
+              Lý do này sẽ được gửi đến người dùng qua email. {reason.trim().length > 0 && `(${reason.trim().length} ký tự)`}
             </p>
           </div>
 

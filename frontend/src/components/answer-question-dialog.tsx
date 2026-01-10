@@ -91,7 +91,6 @@ export function AnswerQuestionDialog({ isOpen, onClose, question, onAnswer }: An
                 value={answer}
                 onChange={handleAnswerChange}
                 className={`min-h-[120px] ${error ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
-                required
               />
               <div className="flex justify-between items-center">
                 <div>

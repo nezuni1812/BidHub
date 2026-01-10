@@ -130,9 +130,9 @@ export function LoginForm() {
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input 
                 id="email" 
-                type="email" 
+                type="text" 
                 placeholder="you@example.com" 
-                className="pl-10" 
+                className={`pl-10 ${errors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                 value={formData.email}
                 onChange={handleChange}
                 disabled={isLoading}
@@ -156,7 +156,7 @@ export function LoginForm() {
                 id="password" 
                 type="password" 
                 placeholder="••••••••" 
-                className="pl-10" 
+                className={`pl-10 ${errors.password ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                 value={formData.password}
                 onChange={handleChange}
                 disabled={isLoading}

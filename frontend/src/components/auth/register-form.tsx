@@ -155,7 +155,7 @@ export function RegisterForm() {
                 <Input 
                   id="full_name" 
                   placeholder="Nguyễn Văn A" 
-                  className="pl-10" 
+                  className={`pl-10 ${errors.full_name ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                   value={formData.full_name}
                   onChange={handleChange}
                   disabled={isLoading}
@@ -172,9 +172,9 @@ export function RegisterForm() {
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input 
                   id="email" 
-                  type="email" 
+                  type="text" 
                   placeholder="you@example.com" 
-                  className="pl-10" 
+                  className={`pl-10 ${errors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                   value={formData.email}
                   onChange={handleChange}
                   disabled={isLoading}
@@ -192,7 +192,7 @@ export function RegisterForm() {
                 <Input 
                   id="address" 
                   placeholder="Địa chỉ của bạn" 
-                  className="pl-10" 
+                  className={`pl-10 ${errors.address ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                   value={formData.address}
                   onChange={handleChange}
                   disabled={isLoading}
@@ -210,11 +210,10 @@ export function RegisterForm() {
                 <Input 
                   id="date_of_birth" 
                   type="date" 
-                  className="pl-10" 
+                  className={`pl-10 ${errors.date_of_birth ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                   value={formData.date_of_birth}
                   onChange={handleChange}
                   disabled={isLoading}
-                  max={new Date().toISOString().split('T')[0]}
                 />
               </div>
               {errors.date_of_birth && (
@@ -230,7 +229,7 @@ export function RegisterForm() {
                   id="password" 
                   type="password" 
                   placeholder="••••••••" 
-                  className="pl-10" 
+                  className={`pl-10 ${errors.password ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                   value={formData.password}
                   onChange={handleChange}
                   disabled={isLoading}
@@ -249,7 +248,7 @@ export function RegisterForm() {
                   id="confirmPassword" 
                   type="password" 
                   placeholder="••••••••" 
-                  className="pl-10" 
+                  className={`pl-10 ${errors.confirmPassword ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   disabled={isLoading}

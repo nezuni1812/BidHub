@@ -126,9 +126,12 @@ export function ChangePasswordDialog({ onSave, onBeforeOpen }: ChangePasswordDia
             <Input
               type="password"
               value={formData.oldPassword}
-              onChange={(e) => setFormData({ ...formData, oldPassword: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, oldPassword: e.target.value })
+                if (errors.oldPassword) setErrors({ ...errors, oldPassword: '' })
+              }}
               placeholder="Nhập mật khẩu hiện tại"
-              className={errors.oldPassword ? "border-destructive mt-2" : "mt-2"}
+              className={errors.oldPassword ? "border-destructive focus-visible:ring-destructive mt-2" : "mt-2"}
             />
             {errors.oldPassword && <p className="text-xs text-destructive mt-1">{errors.oldPassword}</p>}
           </div>
@@ -138,9 +141,12 @@ export function ChangePasswordDialog({ onSave, onBeforeOpen }: ChangePasswordDia
             <Input
               type="password"
               value={formData.newPassword}
-              onChange={(e) => setFormData({ ...formData, newPassword: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, newPassword: e.target.value })
+                if (errors.newPassword) setErrors({ ...errors, newPassword: '' })
+              }}
               placeholder="Nhập mật khẩu mới"
-              className={errors.newPassword ? "border-destructive mt-2" : "mt-2"}
+              className={errors.newPassword ? "border-destructive focus-visible:ring-destructive mt-2" : "mt-2"}
             />
             {errors.newPassword && <p className="text-xs text-destructive mt-1">{errors.newPassword}</p>}
           </div>
@@ -150,9 +156,12 @@ export function ChangePasswordDialog({ onSave, onBeforeOpen }: ChangePasswordDia
             <Input
               type="password"
               value={formData.confirmPassword}
-              onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+              onChange={(e) => {
+                setFormData({ ...formData, confirmPassword: e.target.value })
+                if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: '' })
+              }}
               placeholder="Nhập lại mật khẩu mới"
-              className={errors.confirmPassword ? "border-destructive mt-2" : "mt-2"}
+              className={errors.confirmPassword ? "border-destructive focus-visible:ring-destructive mt-2" : "mt-2"}
             />
             {errors.confirmPassword && <p className="text-xs text-destructive mt-1">{errors.confirmPassword}</p>}
           </div>

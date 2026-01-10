@@ -20,8 +20,15 @@ export function FeedbackDialog({ isOpen, onClose, userName, itemName, onSubmit }
   const [isLoading, setIsLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [hoveredRating, setHoveredRating] = useState(0)
+  const [error, setError] = useState("")
 
   const handleSubmit = async () => {
+    if (comment.length > 500) {
+      setError("Nhận xét không được vượt quá 500 ký tự")
+      return
+    }
+    
+    setError("")
     setIsLoading(true)
     try {
       await onSubmit(rating, comment)
@@ -105,10 +112,17 @@ export function FeedbackDialog({ isOpen, onClose, userName, itemName, onSubmit }
                     id="comment"
                     placeholder="Share your experience..."
                     value={comment}
-                    onChange={(e) => setComment(e.target.value)}
-                    className="min-h-24"
+                    onChange={(e) => {
+                      const value = e.target.value
+                      if (value.length <= 500) {
+                        setComment(value)
+                        if (error) setError("")
+                      }
+                    }}
+                    className={`min-h-24 ${error ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     disabled={isLoading}
                   />
+                  {error && <p className="text-xs text-destructive mt-1">{error}</p>}
                   <p className="text-xs text-muted-foreground mt-1">{comment.length}/500 characters</p>
                 </div>
 

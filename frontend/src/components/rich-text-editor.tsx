@@ -1,10 +1,12 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import UnderlineExtension from "@tiptap/extension-underline";
 import Placeholder from "@tiptap/extension-placeholder";
 import { useEffect } from "react";
 import {
   Bold,
   Italic,
+  Underline,
   List,
   ListOrdered,
   Heading2,
@@ -29,9 +31,10 @@ export function RichTextEditor({
     extensions: [
       StarterKit.configure({
         heading: {
-          levels: [2, 3],
+          levels: [1, 2, 3],
         },
       }),
+      UnderlineExtension,
       Placeholder.configure({
         placeholder: placeholder || "Nhập nội dung...",
       }),
@@ -85,6 +88,21 @@ export function RichTextEditor({
             title="Italic (Ctrl+I)"
           >
             <Italic className="h-4 w-4" />
+          </Button>
+
+          <Button
+            type="button"
+            variant={editor.isActive("underline") ? "default" : "ghost"}
+            size="sm"
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            className={`h-8 w-8 p-0 transition-all ${
+              editor.isActive("underline")
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "hover:bg-muted"
+            }`}
+            title="Underline (Ctrl+U)"
+          >
+            <Underline className="h-4 w-4" />
           </Button>
 
           <div className="w-px h-8 bg-border mx-1" />
@@ -142,7 +160,11 @@ export function RichTextEditor({
             type="button"
             variant={editor.isActive("blockquote") ? "default" : "ghost"}
             size="sm"
-            onClick={() => editor.chain().focus().toggleBlockquote().run()}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              editor.chain().focus().toggleBlockquote().run();
+            }}
             className={`h-8 w-8 p-0 transition-all ${
               editor.isActive("blockquote")
                 ? "bg-primary text-primary-foreground shadow-sm"
@@ -154,35 +176,11 @@ export function RichTextEditor({
           </Button>
 
           <div className="w-px h-8 bg-border mx-1" />
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => editor.chain().focus().undo().run()}
-            disabled={!editor.can().undo()}
-            className="h-8 w-8 p-0 hover:bg-muted transition-all"
-            title="Undo (Ctrl+Z)"
-          >
-            <Undo className="h-4 w-4" />
-          </Button>
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => editor.chain().focus().redo().run()}
-            disabled={!editor.can().redo()}
-            className="h-8 w-8 p-0 hover:bg-muted transition-all"
-            title="Redo (Ctrl+Y)"
-          >
-            <Redo className="h-4 w-4" />
-          </Button>
         </div>
       )}
 
       {/* Editor Content */}
-      <div className="p-3 min-h-[150px] max-h-[400px] overflow-y-auto prose prose-sm max-w-none">
+      <div className="px-3 min-h-[150px] max-h-[400px] overflow-y-auto prose prose-sm max-w-none">
         <EditorContent editor={editor} />
       </div>
     </div>

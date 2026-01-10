@@ -160,7 +160,7 @@ exports.appendDescription = asyncHandler(async (req, res) => {
   // Append to product description
   const updateQuery = `
     UPDATE products
-    SET description = description || E'\\n\\n--- Bổ sung ' || CURRENT_TIMESTAMP::DATE || ' ---\\n' || $1,
+    SET description = description || E'\\n\\n--- Bổ sung ' || CURRENT_TIMESTAMP::DATE || ' ---' || $1,
         updated_at = CURRENT_TIMESTAMP
     WHERE id = $2
     RETURNING *
