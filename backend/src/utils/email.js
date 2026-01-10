@@ -354,6 +354,43 @@ const sendQuestionAnsweredEmail = async (toEmail, userName, productTitle, produc
   return sendEmail({ to: toEmail, subject, html, text });
 };
 
+const sendProductDescriptionUpdateEmail = async (toEmail, userName, productTitle, productId, updateNote) => {
+  const productLink = `${config.frontendUrl}/product/${productId}`;
+  const subject = `Bido - Cập nhật mô tả cho "${productTitle}"`;
+  
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #4CAF50;">Xin chào ${userName},</h2>
+      <p>Người bán đã cập nhật mô tả cho sản phẩm <strong>${productTitle}</strong> mà bạn đang theo dõi.</p>
+      
+      <div style="background-color: #f9f9f9; padding: 20px; margin: 20px 0; border-radius: 5px; border-left: 4px solid #4CAF50;">
+        <p style="margin: 0; font-size: 14px; color: #666;"><strong>Nội dung bổ sung:</strong></p>
+        <p style="margin: 10px 0 0 0; font-size: 15px; color: #333;">
+          ${updateNote}
+        </p>
+      </div>
+      
+      <p>Vui lòng xem chi tiết để cập nhật thông tin mới nhất về sản phẩm.</p>
+      
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="${productLink}" 
+           style="background-color: #4CAF50; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
+          Xem sản phẩm
+        </a>
+      </div>
+      
+      <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
+      <p style="color: #999; font-size: 12px;">
+        Email này được gửi tự động, vui lòng không reply.<br>
+        © 2025 Bido. All rights reserved.
+      </p>
+    </div>
+  `;
+  
+  const text = `${subject}\n\nNội dung bổ sung: ${updateNote}\n\nXem tại: ${productLink}`;
+  return sendEmail({ to: toEmail, subject, html, text });
+};
+
 module.exports = {
   sendEmail,
   sendOTPEmail,
@@ -363,5 +400,6 @@ module.exports = {
   sendBidderDeniedEmail,
   sendAuctionEndedNoWinnerEmail,
   sendAuctionEndedWinnerEmail,
-  sendQuestionAnsweredEmail
+  sendQuestionAnsweredEmail,
+  sendProductDescriptionUpdateEmail
 };

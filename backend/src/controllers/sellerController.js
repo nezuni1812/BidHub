@@ -7,7 +7,7 @@ const Bid = require('../models/Bid');
 const Rating = require('../models/Rating');
 const User = require('../models/User');
 const ImageUploadService = require('../services/imageUploadService');
-const { sendQuestionAnsweredEmail, sendBidderDeniedEmail } = require('../utils/email');
+const { sendQuestionAnsweredEmail, sendBidderDeniedEmail, sendProductDescriptionUpdateEmail } = require('../utils/email');
 const db = require('../config/database');
 const { BadRequestError, NotFoundError, ForbiddenError } = require('../utils/errors');
 const EVENTS = require('../socket/events');
@@ -169,6 +169,48 @@ exports.appendDescription = asyncHandler(async (req, res) => {
 
   // Get history
   const history = await DescriptionHistory.getByProductId(productId);
+
+  // Send email notifications to all bidders who have bid on this product
+  try {
+    // Get all unique bidders for this product
+    const biddersQuery = `
+      SELECT DISTINCT u.id, u.email, u.full_name
+      FROM bids b
+      INNER JOIN users u ON b.user_id = u.id
+      WHERE b.product_id = $1 AND u.is_active = true
+      ORDER BY u.id
+    `;
+    const biddersResult = await db.query(biddersQuery, [productId]);
+    
+    // Send email to each bidder
+    for (const bidder of biddersResult.rows) {
+      if (bidder.email) {
+        await sendProductDescriptionUpdateEmail(
+          bidder.email,
+          bidder.full_name,
+          product.title,
+          productId,
+          additional_description
+        );
+      }
+    }
+    
+    console.log(`[DESCRIPTION UPDATE] Sent ${biddersResult.rows.length} email notifications for product ${productId}`);
+  } catch (emailError) {
+    console.error('[DESCRIPTION UPDATE] Email notification error:', emailError);
+    // Don't fail the update if email fails
+  }
+
+  // Emit socket event for real-time update
+  const io = req.app.get('io');
+  if (io) {
+    io.to(`product-${productId}`).emit('description-updated', {
+      product_id: parseInt(productId),
+      product_title: product.title,
+      additional_description,
+      updated_at: new Date()
+    });
+  }
 
   res.json({
     success: true,

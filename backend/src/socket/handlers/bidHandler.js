@@ -457,7 +457,6 @@ module.exports = (io, socket) => {
       }
 
       // STEP 13: Send email notifications
-      /*
       try {
         // Get seller info
         const seller = await User.findById(product.seller_id);
@@ -486,7 +485,7 @@ module.exports = (io, socket) => {
         }
 
         // Notify previous winner (outbid)
-        if (previousWinnerId) {
+        if (previousWinnerId && previousWinnerId !== winnerId) {
           const previousWinner = await User.findById(previousWinnerId);
           if (previousWinner && previousWinner.email) {
             await sendBidPlacedEmail(
@@ -503,7 +502,6 @@ module.exports = (io, socket) => {
         console.error('[AUTO-BID] Email notification error:', emailError);
         // Don't fail the bid if email fails
       }
-      */
 
       // STEP 14: Release lock (ASAP)
       await releaseLock(lock);
