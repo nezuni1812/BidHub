@@ -11,12 +11,21 @@ import { useAuth } from "@/contexts/AuthContext"
 import { ChangePasswordDialog } from "@/components/change-password-dialog"
 import { useToast } from "@/components/ui/use-toast"
 
+const maskUsername = (username: string): string => {
+  if (!username || username.length <= 4) return username;
+  const first4Chars = username.slice(0, 4);
+  const maskedRest = '*'.repeat(Math.max(username.length - 4, 0));
+  return `${first4Chars}${maskedRest}`;
+};
+
 interface Rating {
   id: number
   score: number
   comment: string
   created_at: string
   rater_name: string
+  masked_rater_name?: string
+  rater_id: number
   product_title: string | null
 }
 
@@ -267,7 +276,7 @@ export default function ProfilePage() {
               <div className="flex-1">
                 <div className="mb-4">
                   <div className="flex items-center gap-3 mb-1">
-                    <h1 className="text-3xl font-bold">{profile.full_name}</h1>
+                    <h1 className="text-3xl font-bold">{isOwnProfile ? profile.full_name : maskUsername(profile.full_name)}</h1>
                     {isOwnProfile && (
                       <>
                         <EditProfileDialog
@@ -336,7 +345,7 @@ export default function ProfilePage() {
                 <Card key={rating.id} className="p-6">
                   <div className="flex justify-between items-start mb-3">
                     <div>
-                      <p className="font-semibold">{rating.rater_name}</p>
+                      <p className="font-semibold">{maskUsername(rating.rater_name)}</p>
                       <p className="text-xs text-muted-foreground">{formatDate(rating.created_at)}</p>
                       {rating.product_title && (
                         <p className="text-xs text-muted-foreground mt-1">Sản phẩm: {rating.product_title}</p>

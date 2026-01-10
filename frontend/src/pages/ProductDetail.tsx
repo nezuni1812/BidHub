@@ -40,6 +40,14 @@ import { askQuestion, answerQuestion } from "@/lib/questions";
 import { useAuth } from "@/contexts/AuthContext";
 import { RatingBadge } from "@/components/rating-badge";
 
+// Helper function to mask username
+const maskUsername = (username: string): string => {
+  if (!username || username.length <= 4) return username;
+  const first4Chars = username.slice(0, 4);
+  const maskedRest = '*'.repeat(Math.max(username.length - 4, 0));
+  return `${first4Chars}${maskedRest}`;
+};
+
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const { toast } = useToast();
@@ -872,6 +880,7 @@ export default function ProductDetail() {
                       transition: "transform 0.5s ease-in-out",
                       zIndex: isTransitioning ? 2 : 1,
                       pointerEvents: isTransitioning ? "none" : "auto",
+                      opacity: isTransitioning ? 1 : 0,
                     }}
                   >
                     <img
@@ -1080,11 +1089,11 @@ export default function ProductDetail() {
                       to={`/profile/${product.seller_id}`}
                       className="font-semibold hover:text-primary transition-colors underline-offset-4 hover:underline"
                     >
-                      {(product as any).masked_seller_name || product.seller_name}
+                      {maskUsername(product.seller_name)}
                     </Link>
                   ) : (
                     <p className="font-semibold">
-                      {(product as any).masked_seller_name || product.seller_name}
+                      {product.seller_name}
                     </p>
                   )}
                   <RatingBadge rating={parseFloat(product.seller_rating as any)} />
@@ -1107,9 +1116,18 @@ export default function ProductDetail() {
               <Card className="p-6">
                 <h3 className="font-semibold mb-4">Người đặt giá cao nhất</h3>
                 <div className="flex items-center justify-between gap-2">
-                  <p className="font-semibold">
-                    {(product as any).masked_winner_name || product.winner_name}
-                  </p>
+                  {!isWinning && product.winner_id ? (
+                    <Link
+                      to={`/profile/${product.winner_id}`}
+                      className="font-semibold hover:text-primary transition-colors underline-offset-4 hover:underline"
+                    >
+                      {maskUsername(product.winner_name)}
+                    </Link>
+                  ) : (
+                    <p className="font-semibold">
+                      {product.winner_name}
+                    </p>
+                  )}
                   {product.winner_rating && (
                     <RatingBadge rating={parseFloat(product.winner_rating as any)} />
                   )}
@@ -1424,7 +1442,7 @@ export default function ProductDetail() {
                         {formatPrice(parseFloat(item.current_price as any))}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {item.total_bids} bids
+                        {item.total_bids} lượt đấu giá
                       </p>
                     </div>
                   </Card>

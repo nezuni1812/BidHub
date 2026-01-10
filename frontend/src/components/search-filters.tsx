@@ -114,6 +114,23 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
     return childIds.every(id => filters.categories.includes(id))
   }
 
+  // Helper: Get category name from ID
+  const getCategoryName = (categoryId: number): string | null => {
+    for (const parent of categories) {
+      if (parseInt(parent.id) === categoryId) {
+        return parent.name
+      }
+      if (parent.children) {
+        for (const child of parent.children) {
+          if (parseInt(child.id) === categoryId) {
+            return child.name
+          }
+        }
+      }
+    }
+    return null
+  }
+
   // Helper: Check if parent is selected (either directly or all children selected)
   const isParentSelected = (parent: Category): boolean => {
     const parentId = parseInt(parent.id)
@@ -147,10 +164,18 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
       }
     }
 
+    // Determine category name based on count
+    let categoryName = null
+    if (newCategories.length === 1) {
+      categoryName = getCategoryName(newCategories[0])
+    } else if (newCategories.length > 1) {
+      categoryName = 'Multiple'
+    }
+
     onChange({
       ...filters,
       categories: newCategories,
-      categoryName: newCategories.length > 0 ? 'Multiple' : null,
+      categoryName,
     })
   }
 
@@ -166,10 +191,18 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
       newCategories.push(childId)
     }
 
+    // Determine category name based on count
+    let categoryName = null
+    if (newCategories.length === 1) {
+      categoryName = getCategoryName(newCategories[0])
+    } else if (newCategories.length > 1) {
+      categoryName = 'Multiple'
+    }
+
     onChange({
       ...filters,
       categories: newCategories,
-      categoryName: newCategories.length > 0 ? 'Multiple' : null,
+      categoryName,
     })
   }
 
