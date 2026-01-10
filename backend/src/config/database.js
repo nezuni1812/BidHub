@@ -8,9 +8,10 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false,
-  max: 20,
+  max: 50, // Increased from 20 to 50
+  min: 2, // Minimum number of clients in pool
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 5000,
   // Set client encoding to UTF-8
   client_encoding: 'UTF8',
 });
