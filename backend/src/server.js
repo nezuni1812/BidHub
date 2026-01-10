@@ -67,7 +67,7 @@ app.use((req, res, next) => {
 app.get('/', (req, res) => {
   res.json({
     success: true,
-    message: 'Welcome to BidHub API',
+    message: 'Welcome to Bido API',
     version: '1.0.0',
     documentation: '/api-docs'
   });
@@ -90,7 +90,7 @@ server.listen(PORT, async () => {
   console.log(`
 ╔════════════════════════════════════════════╗
 ║                                            ║
-║           🎯 BidHub API Server            ║
+║           🎯 Bido API Server            ║
 ║                                            ║
 ╠════════════════════════════════════════════╣
 ║                                            ║

@@ -1,6 +1,6 @@
-# BidHub Backend API
+# Bido Backend API
 
-API backend cho hệ thống đấu giá BidHub sử dụng Express.js và PostgreSQL.
+API backend cho hệ thống đấu giá Bido sử dụng Express.js và PostgreSQL.
 
 ## 🚀 Features
 
@@ -268,4 +268,4 @@ Email: support@bidhub.com
 
 ---
 
-Made with ❤️ by BidHub Team
+Made with ❤️ by Bido Team

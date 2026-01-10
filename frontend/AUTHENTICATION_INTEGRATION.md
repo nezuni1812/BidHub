@@ -1,6 +1,6 @@
 # 🔐 Frontend Authentication Integration
 
-Complete integration of BidHub backend authentication with React frontend.
+Complete integration of Bido backend authentication with React frontend.
 
 ## ✅ Features Implemented
 

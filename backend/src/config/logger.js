@@ -1,7 +1,6 @@
 const winston = require('winston');
 const DailyRotateFile = require('winston-daily-rotate-file');
 const expressWinston = require('express-winston');
-const { ElasticsearchTransport } = require('winston-elasticsearch');
 
 const levels = {
   critical: 0,
@@ -34,48 +33,61 @@ const dailyRotateFile = (level) => new DailyRotateFile({
 });
 
 /**
- * Elasticsearch transport configuration
- */
-const esTransportOpts = {
-  clientOpts: {
-    node: process.env.ELASTICSEARCH_URL || 'http://localhost:9200',
-  },
-  level: 'info',
-  indexPrefix: 'bidhub-log'
-};
-
-const esTransport = new ElasticsearchTransport(esTransportOpts);
-
-/**
  * Create transports for all levels
  */
 const levelsList = Object.keys(levels);
 const rotateTransports = levelsList.map(dailyRotateFile);
 
 /**
+ * Optional Elasticsearch transport (only if enabled)
+ */
+const transports = [...rotateTransports];
+
+// Add Elasticsearch transport only if explicitly enabled
+if (process.env.ENABLE_ELASTICSEARCH_LOGGING === 'true') {
+  try {
+    const { ElasticsearchTransport } = require('winston-elasticsearch');
+    
+    const esTransportOpts = {
+      clientOpts: {
+        node: process.env.ELASTICSEARCH_URL || 'http://localhost:9200',
+      },
+      level: 'info',
+      indexPrefix: 'bidhub-log'
+    };
+
+    const esTransport = new ElasticsearchTransport(esTransportOpts);
+    
+    // Handle Elasticsearch errors gracefully
+    esTransport.on('error', (error) => {
+      console.error('⚠️  Elasticsearch logging error (non-fatal):', error.message);
+    });
+
+    esTransport.on('warning', (warning) => {
+      console.warn('⚠️  Elasticsearch warning:', warning);
+    });
+
+    transports.push(esTransport);
+    console.log('✅ Elasticsearch logging enabled');
+  } catch (error) {
+    console.warn('⚠️  Elasticsearch transport not available:', error.message);
+  }
+} else {
+  console.log('ℹ️  Elasticsearch logging disabled (logs will only go to files)');
+}
+
+/**
  * Winston instance
  */
 const winstonInstance = winston.createLogger({
   levels: levels,
-  transports: [
-    ...rotateTransports,
-    esTransport
-  ],
+  transports: transports,
   exitOnError: false
 });
 
 // Add whitelist fields
 expressWinston.requestWhitelist.push('body');
 expressWinston.responseWhitelist.push('body');
-
-// Handle Elasticsearch errors
-esTransport.on('error', (error) => {
-  console.error('⚠️  Elasticsearch logging error:', error.message);
-});
-
-esTransport.on('warning', (warning) => {
-  console.warn('⚠️  Elasticsearch warning:', warning);
-});
 
 /**
  * Express winston middleware

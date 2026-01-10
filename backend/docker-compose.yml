@@ -61,6 +61,7 @@ services:
     image: elasticsearch:7.17.18
     container_name: bidhub-elasticsearch
     restart: unless-stopped
+    profiles: ["elk", "monitoring"]
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
@@ -86,6 +87,7 @@ services:
     image: kibana:7.17.18
     container_name: bidhub-kibana
     restart: unless-stopped
+    profiles: ["elk", "monitoring"]
     ports:
       - "5601:5601"
     environment:
@@ -99,6 +101,7 @@ services:
     image: logstash:7.17.18
     container_name: bidhub-logstash
     restart: unless-stopped
+    profiles: ["elk", "monitoring"]
     volumes:
       - ./logstash/pipeline:/usr/share/logstash/pipeline
       - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
@@ -123,6 +126,7 @@ services:
     image: elastic/filebeat:7.17.18
     container_name: bidhub-filebeat
     restart: unless-stopped
+    profiles: ["elk", "monitoring"]
     user: root
     volumes:
       - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro

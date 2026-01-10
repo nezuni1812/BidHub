@@ -1,8 +1,8 @@
-# BidHub API - Tổng hợp Endpoints
+# Bido API - Tổng hợp Endpoints
 
 ## 📋 Tổng quan
 
-Hệ thống BidHub có **4 phân hệ chính**:
+Hệ thống Bido có **4 phân hệ chính**:
 
 1. **Public API** - Không cần authentication
 2. **Bidder API** - Dành cho người đấu giá

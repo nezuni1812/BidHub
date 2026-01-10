@@ -14,7 +14,7 @@ const router = express.Router();
 router.get('/', (req, res) => {
   res.json({ 
     success: true, 
-    message: 'Welcome to BidHub API',
+    message: 'Welcome to Bido API',
     version: '1.0.0',
     endpoints: {
       health: '/api/v1/health',
@@ -35,7 +35,7 @@ router.get('/', (req, res) => {
 router.get('/health', (req, res) => {
   res.json({ 
     success: true, 
-    message: 'BidHub API is running',
+    message: 'Bido API is running',
     timestamp: new Date().toISOString()
   });
 });

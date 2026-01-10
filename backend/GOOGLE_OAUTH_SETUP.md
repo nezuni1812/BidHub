@@ -1,8 +1,8 @@
-# 🔐 Google OAuth Setup Guide - BidHub
+# 🔐 Google OAuth Setup Guide - Bido
 
 ## 📋 Tổng quan
 
-Hướng dẫn này sẽ giúp bạn cài đặt đăng nhập Google OAuth cho BidHub backend.
+Hướng dẫn này sẽ giúp bạn cài đặt đăng nhập Google OAuth cho Bido backend.
 
 ---
 
@@ -41,7 +41,7 @@ npm install passport passport-google-oauth20
 3. Configure consent screen (nếu chưa có):
 
    - User Type: **External**
-   - App name: **BidHub**
+   - App name: **Bido**
    - User support email: your-email@gmail.com
    - Developer contact: your-email@gmail.com
    - Scopes: Email, Profile, OpenID
@@ -50,7 +50,7 @@ npm install passport passport-google-oauth20
 4. Tạo OAuth Client:
 
    - Application type: **Web application**
-   - Name: **BidHub Backend**
+   - Name: **Bido Backend**
 
    **Authorized JavaScript origins:**
 

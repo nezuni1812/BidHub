@@ -406,7 +406,7 @@ Import vào Postman: `CreateProduct_ImageUpload_Example.postman_collection.json`
 
 Hoặc tạo manual:
 
-**Collection:** BidHub API  
+**Collection:** Bido API  
 **Folder:** Seller  
 **Request:** Create Product with Images
 

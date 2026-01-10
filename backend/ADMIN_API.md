@@ -2,7 +2,7 @@
 
 ## Overview
 
-Tài liệu này mô tả các API dành cho Administrator trong hệ thống BidHub. Tất cả endpoints yêu cầu authentication và authorization với role `admin`.
+Tài liệu này mô tả các API dành cho Administrator trong hệ thống Bido. Tất cả endpoints yêu cầu authentication và authorization với role `admin`.
 
 **Base URL:** `http://localhost:3000/api/v1/admin`
 
