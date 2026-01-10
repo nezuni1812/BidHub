@@ -534,7 +534,7 @@ module.exports = (io, socket) => {
           bidder: {
             id: winnerId,
             // Mask name: "Nguyen Van A" → "N***"
-            name: winnerUser ? `${winnerUser.full_name.charAt(0)}${'*'.repeat(winnerUser.full_name.length - 1)}` : 'Anonymous'
+            name: winnerUser ? `${winnerUser.full_name.charAt(0)}${'*'.repeat(winnerUser.full_name.length - 4)}` : 'Anonymous'
           },
           timestamp: new Date(),
           wasExtended,

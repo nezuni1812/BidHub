@@ -144,7 +144,7 @@ class Product {
         u.rating as seller_rating,
         pi.url as main_image,
         (
-          SELECT CONCAT(LEFT(u2.full_name, 1), REPEAT('*', GREATEST(LENGTH(u2.full_name) - 1, 0)))
+          SELECT CONCAT(LEFT(u2.full_name, 4), REPEAT('*', GREATEST(LENGTH(u2.full_name) - 4, 0)))
           FROM users u2
           INNER JOIN bids b2 ON u2.id = b2.user_id
           LEFT JOIN denied_bidders db ON db.product_id = b2.product_id AND db.user_id = b2.user_id
@@ -291,7 +291,7 @@ class Product {
         b.bid_price,
         b.is_auto,
         b.created_at,
-        CONCAT(LEFT(u.full_name, 1), REPEAT('*', GREATEST(LENGTH(u.full_name) - 1, 0))) as masked_bidder_name,
+        CONCAT(LEFT(u.full_name, 4), REPEAT('*', GREATEST(LENGTH(u.full_name) - 4, 0))) as masked_bidder_name,
         CASE WHEN db.id IS NOT NULL THEN true ELSE false END as is_denied
       FROM bids b
       INNER JOIN users u ON b.user_id = u.id
