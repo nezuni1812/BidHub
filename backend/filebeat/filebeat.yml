@@ -1,0 +1,123 @@
+# ============================== Filebeat inputs ===============================
+
+filebeat.inputs:
+  # Bido application logs
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/bidhub/*.json
+
+    # Parse JSON logs
+    json.keys_under_root: true
+    json.add_error_key: true
+    json.message_key: message
+
+    # Add custom fields
+    fields:
+      log_type: application
+      service: bidhub-backend
+    fields_under_root: true
+
+    # Multiline logs (for stack traces)
+    multiline.pattern: '^[[:space:]]+(at|\.{3})[[:space:]]+'
+    multiline.negate: false
+    multiline.match: after
+
+  # Nginx/Access logs (if you have web server)
+  - type: log
+    enabled: false
+    paths:
+      - /var/log/nginx/access.log
+    fields:
+      log_type: access
+      service: nginx
+
+  # Error logs
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/bidhub/*-error.json
+    fields:
+      log_type: error
+      service: bidhub-backend
+      severity: error
+
+  # Critical logs
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/bidhub/*-critical.json
+    fields:
+      log_type: critical
+      service: bidhub-backend
+      severity: critical
+
+# ============================== Filebeat modules ==============================
+
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+
+# ======================= Elasticsearch template setting =======================
+
+setup.template.settings:
+  index.number_of_shards: 1
+  index.codec: best_compression
+
+# ================================== General ===================================
+
+# Publisher name
+name: bidhub-filebeat
+
+# Tags for all events
+tags: ["bidhub", "backend", "nodejs"]
+
+# Optional fields
+fields:
+  environment: development
+
+# ================================= Processors =================================
+
+processors:
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+  - add_cloud_metadata: ~
+  - add_docker_metadata: ~
+  - add_kubernetes_metadata: ~
+
+# ================================== Outputs ===================================
+
+# Output to Logstash (recommended for processing)
+output.logstash:
+  hosts: ["logstash:5044"]
+
+# Or output directly to Elasticsearch (uncomment if not using Logstash)
+# output.elasticsearch:
+#   hosts: ["http://elasticsearch:9200"]
+#   indices:
+#     - index: "bidhub-error-%{+yyyy.MM.dd}"
+#       when.contains:
+#         fields.log_type: "error"
+#     - index: "bidhub-critical-%{+yyyy.MM.dd}"
+#       when.contains:
+#         fields.log_type: "critical"
+#     - index: "bidhub-logs-%{+yyyy.MM.dd}"
+
+# ================================= Kibana =====================================
+
+setup.kibana:
+  host: "kibana:5601"
+
+# ================================= Logging ====================================
+
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat
+  keepfiles: 7
+  permissions: 0644
+
+# ============================= X-Pack Monitoring ==============================
+
+monitoring.enabled: false
