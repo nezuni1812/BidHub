@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { BidDialog } from "@/components/bid-dialog";
+import { BuyNowDialog } from "@/components/buy-now-dialog";
 import { AskQuestionDialog } from "@/components/ask-question-dialog";
 import { AnswerQuestionDialog } from "@/components/answer-question-dialog";
 import { AppendDescriptionDialog } from "@/components/append-description-dialog";
@@ -44,7 +45,7 @@ import { RatingBadge } from "@/components/rating-badge";
 const maskUsername = (username: string): string => {
   if (!username || username.length <= 4) return username;
   const first4Chars = username.slice(0, 4);
-  const maskedRest = '*'.repeat(Math.max(username.length - 4, 0));
+  const maskedRest = "*".repeat(Math.max(username.length - 4, 0));
   return `${first4Chars}${maskedRest}`;
 };
 
@@ -72,6 +73,7 @@ export default function ProductDetail() {
   );
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [showBidDialog, setShowBidDialog] = useState(false);
+  const [showBuyNowDialog, setShowBuyNowDialog] = useState(false);
   const [showQuestionDialog, setShowQuestionDialog] = useState(false);
   const [showAnswerDialog, setShowAnswerDialog] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<{
@@ -807,14 +809,14 @@ export default function ProductDetail() {
 
     if (!id || !buyNowPrice) return;
 
-    // Confirm purchase
-    const confirmPurchase = window.confirm(
-      `Xác nhận mua sản phẩm với giá ${formatPrice(
-        buyNowPrice
-      )}?\n\nSau khi mua, bạn sẽ được chuyển đến trang thanh toán.`
-    );
+    // Show dialog instead of window.confirm
+    setShowBuyNowDialog(true);
+  };
 
-    if (!confirmPurchase) return;
+  const handleConfirmBuyNow = async () => {
+    if (!id || !buyNowPrice) return;
+
+    const token = localStorage.getItem("access_token");
 
     try {
       const API_URL =
@@ -1092,11 +1094,11 @@ export default function ProductDetail() {
                       {maskUsername(product.seller_name)}
                     </Link>
                   ) : (
-                    <p className="font-semibold">
-                      {product.seller_name}
-                    </p>
+                    <p className="font-semibold">{product.seller_name}</p>
                   )}
-                  <RatingBadge rating={parseFloat(product.seller_rating as any)} />
+                  <RatingBadge
+                    rating={parseFloat(product.seller_rating as any)}
+                  />
                 </div>
                 {!isSeller && (
                   <Button
@@ -1124,12 +1126,12 @@ export default function ProductDetail() {
                       {maskUsername(product.winner_name)}
                     </Link>
                   ) : (
-                    <p className="font-semibold">
-                      {product.winner_name}
-                    </p>
+                    <p className="font-semibold">{product.winner_name}</p>
                   )}
                   {product.winner_rating && (
-                    <RatingBadge rating={parseFloat(product.winner_rating as any)} />
+                    <RatingBadge
+                      rating={parseFloat(product.winner_rating as any)}
+                    />
                   )}
                 </div>
               </Card>
@@ -1290,7 +1292,10 @@ export default function ProductDetail() {
                                 </span>
                               )}
                               {isLatestBid && (
-                                <Badge variant="default" className="text-xs bg-green-600 hover:bg-green-700">
+                                <Badge
+                                  variant="default"
+                                  className="text-xs bg-green-600 hover:bg-green-700"
+                                >
                                   Đang giữ giá
                                 </Badge>
                               )}
@@ -1467,6 +1472,14 @@ export default function ProductDetail() {
         minIncrement={bidStep}
         suggestedBid={suggestedBid}
         onPlaceBid={handlePlaceBid}
+      />
+
+      <BuyNowDialog
+        isOpen={showBuyNowDialog}
+        onClose={() => setShowBuyNowDialog(false)}
+        productTitle={product.title}
+        buyNowPrice={buyNowPrice || 0}
+        onConfirm={handleConfirmBuyNow}
       />
 
       <AskQuestionDialog

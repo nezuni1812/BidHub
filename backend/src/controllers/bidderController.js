@@ -1,6 +1,6 @@
 const asyncHandler = require('../middleware/asyncHandler');
 const { BadRequestError, ForbiddenError, NotFoundError } = require('../utils/errors');
-const { sendQuestionNotificationEmail } = require('../utils/email');
+const { sendQuestionNotificationEmail, sendAuctionEndedWinnerEmail } = require('../utils/email');
 const Watchlist = require('../models/Watchlist');
 const Bid = require('../models/Bid');
 const Product = require('../models/Product');
@@ -567,6 +567,42 @@ const buyNow = asyncHandler(async (req, res) => {
       buyerEmail: product.buyer_email,
       orderId: order.id
     });
+  }
+
+  // Send email notifications
+  try {
+    // Get buyer (winner) info
+    const buyer = await User.findById(buyerId);
+    
+    // Email to buyer (winner)
+    if (buyer && buyer.email) {
+      await sendAuctionEndedWinnerEmail(
+        buyer.email,
+        buyer.full_name,
+        product.title,
+        product.id,
+        product.buy_now_price,
+        true // isWinner
+      );
+      console.log(`[BUY NOW] Email sent to buyer: ${buyer.email}`);
+    }
+
+    // Email to seller
+    const seller = await User.findById(product.seller_id);
+    if (seller && seller.email) {
+      await sendAuctionEndedWinnerEmail(
+        seller.email,
+        seller.full_name,
+        product.title,
+        product.id,
+        product.buy_now_price,
+        false // not winner (is seller)
+      );
+      console.log(`[BUY NOW] Email sent to seller: ${seller.email}`);
+    }
+  } catch (emailError) {
+    console.error('[BUY NOW] Email notification error:', emailError);
+    // Don't fail the purchase if email fails
   }
 
   res.status(200).json({
